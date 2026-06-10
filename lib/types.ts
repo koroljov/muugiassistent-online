@@ -1,0 +1,113 @@
+export type Role = "admin" | "assistant";
+
+export type Lead = {
+  id: string;
+  created_at: string;
+  created_by: string | null;
+  assigned_to: string | null;
+  call_list_id: string | null;
+  property_address: string;
+  region: string | null;
+  portal: string | null;
+  property_link: string | null;
+  property_type: string | null;
+  deal_type: string | null;
+  price: number | null;
+  area: number | null;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
+  no_brokers_note: string | null;
+  listing_note: string | null;
+  image_url: string | null;
+  show_image: string | null;
+  object_display_mode: "pilt" | "portaalikaart" | "kompaktne info" | "automaatne" | null;
+  client_type: string | null;
+  company_name: string | null;
+  registry_code: string | null;
+  vat_number: string | null;
+  decision_maker: string | null;
+  business_need: string | null;
+  required_area: number | null;
+  budget: number | null;
+  technical_requirements: string | null;
+  status: string;
+  next_action_at: string | null;
+  last_call_result: string | null;
+  last_contact_at: string | null;
+  ai_summary: string | null;
+  ai_summary_at: string | null;
+  lead_score: number | null;
+  next_best_action: string | null;
+  archived_at: string | null;
+  call_lists?: Pick<CallList, "id" | "name"> | null;
+};
+
+export type Call = {
+  id: string;
+  lead_id: string;
+  caller_id: string | null;
+  call_time: string;
+  call_result: string | null;
+  time_on_market: string | null;
+  inquiries_count: string | null;
+  viewings_count: string | null;
+  offers: string | null;
+  price_change: string | null;
+  obstacle: string | null;
+  buyer_feedback: string | null;
+  urgency: string | null;
+  attitude: string | null;
+  no_help_reason: string | null;
+  no_broker_reason: string | null;
+  talk_reason: string | null;
+  specialist_contact: string | null;
+  next_action: string | null;
+  next_action_at: string | null;
+  next_action_time: string | null;
+  call_comment: string | null;
+  important_quote: string | null;
+  other_detail: string | null;
+  next_step: string | null;
+  ai_feedback: string | null;
+  created_at: string;
+};
+
+export type Task = {
+  id: string;
+  lead_id: string;
+  assigned_to: string | null;
+  type: string;
+  due_date: string | null;
+  due_time: string | null;
+  status: string;
+  comment: string | null;
+  reminder_email_sent: boolean;
+  calendar_event_id: string | null;
+  created_at: string;
+  leads?: Pick<Lead, "property_address" | "contact_name" | "phone"> | null;
+};
+
+export type CallList = {
+  id: string;
+  name: string;
+  description: string | null;
+  source: string | null;
+  status: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ImportJob = {
+  id: string;
+  file_name: string | null;
+  source: string | null;
+  status: string;
+  row_count: number;
+  inserted_count: number;
+  duplicate_count: number;
+  error_count: number;
+  created_by: string | null;
+  created_at: string;
+};
