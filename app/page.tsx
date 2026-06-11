@@ -38,7 +38,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       {view === "call" && lead ? <CallView lead={lead} calls={callRows} users={users || []} /> : null}
       {view === "call" && !lead ? <EmptyState title="Kontakt puudub" text="Lisa esmalt kontakt, siis saab kõnevaate avada." /> : null}
       {view === "stats" ? <StatsView leads={leadRows} calls={callRows} tasks={taskRows} /> : null}
-      {view === "settings" ? <SettingsView notifications={notifications || []} role={me?.role || "assistant"} /> : null}
+      {view === "settings" ? <SettingsView notifications={notifications || []} role={me?.role || "assistant"} activeTab={params.setting || "general"} /> : null}
       {view === "leads" ? <LeadsView leads={filteredLeads} users={users || []} callLists={callLists as CallList[]} role={me?.role || "assistant"} tasks={taskRows} editLead={editLead} isNewLead={isNewLead} tableMode={params.mode === "table"} params={params} errorMessage={errorMessage} /> : null}
     </Shell>
   );
@@ -417,34 +417,168 @@ function StatsView({ leads, calls, tasks }: { leads: Lead[]; calls: Call[]; task
   );
 }
 
-function SettingsView({ notifications, role }: { notifications: any[]; role: string }) {
+function SettingsView({ notifications, role, activeTab }: { notifications: any[]; role: string; activeTab: string }) {
+  const tabs = [
+    { id: "general", label: "Üldine", text: "Rakenduse töörežiim ja põhiseis." },
+    { id: "ai", label: "AI", text: "Kõneabi, kokkuvõtted ja järgmised küsimused." },
+    { id: "notifications", label: "Märguanded", text: "Üleandmised ja järeltegevuste teavitused." },
+    { id: "calendar", label: "Kalender", text: "Sisemine kalender ja .ics eksport." },
+    { id: "data", label: "Andmed", text: "Import, eksport ja varukoopiad." },
+    { id: "security", label: "Turvalisus", text: "Ligipääsud, rollid ja andmekaitse." },
+    { id: "users", label: "Kasutajad", text: "Müügijuht ja müügiassistendid." }
+  ];
+  const selected = tabs.some((tab) => tab.id === activeTab) ? activeTab : "general";
+  const appUrl = process.env.APP_URL || "";
+  const aiReady = Boolean(process.env.OPENAI_API_KEY);
+  const emailReady = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM);
+  const cronReady = Boolean(process.env.CRON_SECRET);
+
   return (
     <div className="stack">
       <div className="section-title">
-        <h2>Seaded ja märguanded</h2>
+        <div>
+          <p className="eyebrow">Rakenduse juhtimine</p>
+          <h2>Seaded</h2>
+        </div>
         <PrintButton />
       </div>
-      <div className="panel">
-        <h3>Märguanded</h3>
-        {notifications.length ? notifications.map((item) => <p key={item.id}><strong>{item.title}</strong><br />{item.message}</p>) : <p className="muted">Uusi märguandeid pole.</p>}
-      </div>
-      {role === "admin" ? (
-        <div className="panel stack">
-          <h3>Andmete allalaadimine</h3>
-          <p className="muted">Admin saab alla laadida kontaktid, kõned, järeltegevused, märguanded ja importimise ajaloo ühe ZIP failina.</p>
-          <div className="row">
-            <a className="button primary" href="/api/export/all">Laadi kogu andmestik ZIP failina alla</a>
-            <a className="button" href="/api/export?type=contacts">Kontaktid CSV</a>
-            <a className="button" href="/api/export?type=calls">Kõned CSV</a>
-            <a className="button" href="/api/export?type=tasks">Järeltegevused CSV</a>
-          </div>
-        </div>
-      ) : null}
-      <div className="panel">
-        <h3>Integratsioonid</h3>
-        <p>Google Calendar ja Outlook Calendar vajavad OAuth ühendust backendis. Esimene live-versioon toetab süsteemisisest kalendrit ja .ics eksporti.</p>
+
+      <div className="settings-layout">
+        <aside className="settings-sidebar panel">
+          {tabs.map((tab) => (
+            <a key={tab.id} className={selected === tab.id ? "active" : ""} href={`/?view=settings&setting=${tab.id}`}>
+              <strong>{tab.label}</strong>
+              <span>{tab.text}</span>
+            </a>
+          ))}
+        </aside>
+
+        <section className="settings-content panel stack">
+          {selected === "general" ? (
+            <>
+              <div>
+                <p className="eyebrow">Ülevaade</p>
+                <h3>Rakenduse seis</h3>
+              </div>
+              <div className="settings-card-grid">
+                <SettingStatus title="Supabase ühendus" ok text="Andmebaasi võtmed on olemas ja app saab sisselogimist kasutada." />
+                <SettingStatus title="Live aadress" ok={Boolean(appUrl)} text={appUrl || "APP_URL tuleb Vercelis määrata pärast esimese aadressi saamist."} />
+                <SettingStatus title="Kasutaja roll" ok text={role === "admin" ? "Oled müügijuhi rollis." : "Oled müügiassistendi rollis."} />
+                <SettingStatus title="Ekspordid" ok text="CSV ja ZIP eksport on rakenduses olemas." />
+              </div>
+            </>
+          ) : null}
+
+          {selected === "ai" ? (
+            <>
+              <div>
+                <p className="eyebrow">Kõneabi</p>
+                <h3>AI seadistus</h3>
+              </div>
+              <div className="settings-card-grid">
+                <SettingStatus title="OpenAI võti" ok={aiReady} text={aiReady ? "AI päringud saavad kasutada päris mudelit." : "OPENAI_API_KEY on veel puudu, seega AI töötab piiratud varuloogikaga."} />
+                <SettingStatus title="Live coach" ok text="Kõne ajal valikute põhjal järgmise küsimuse soovitus on rakenduses olemas." />
+                <SettingStatus title="AI kokkuvõte" ok text="Kõne järel saab salvestada kokkuvõtte, riski ja järgmise tegevuse." />
+              </div>
+              <div className="settings-note">
+                <strong>Soovitus:</strong> enne päris kasutust lisa Vercelis `OPENAI_API_KEY`, muidu jäävad AI vastused liiga üldiseks.
+              </div>
+            </>
+          ) : null}
+
+          {selected === "notifications" ? (
+            <>
+              <div>
+                <p className="eyebrow">Teavitused</p>
+                <h3>Märguanded</h3>
+              </div>
+              <div className="settings-card-grid">
+                <SettingStatus title="Sisemised märguanded" ok text="Assistendilt müügispetsialistile suunamised tekivad rakendusse märguandena." />
+                <SettingStatus title="E-maili saatmine" ok={emailReady} text={emailReady ? "Resend on seadistatud." : "RESEND_API_KEY ja RESEND_FROM on veel puudu."} />
+                <SettingStatus title="Automaatne meeldetuletus" ok={cronReady} text={cronReady ? "CRON_SECRET on olemas." : "CRON_SECRET on veel puudu; lisame selle Vercelis hiljem."} />
+              </div>
+              <div className="notification-list">
+                {notifications.length ? notifications.map((item) => <article key={item.id}><strong>{item.title}</strong><span>{item.message}</span></article>) : <p className="muted">Uusi märguandeid pole.</p>}
+              </div>
+            </>
+          ) : null}
+
+          {selected === "calendar" ? (
+            <>
+              <div>
+                <p className="eyebrow">Järeltegevused</p>
+                <h3>Kalender</h3>
+              </div>
+              <div className="settings-card-grid">
+                <SettingStatus title="Sisemine kalender" ok text="Järeltegevused on rakenduses kalendrivaates." />
+                <SettingStatus title=".ics eksport" ok text="Taski saab kalendrisse eksportida." />
+                <SettingStatus title="Google/Outlook sync" ok={false} text="Otse-sünkroon on järgmine arendusetapp, praegu töötab .ics." />
+              </div>
+            </>
+          ) : null}
+
+          {selected === "data" ? (
+            <>
+              <div>
+                <p className="eyebrow">Varukoopiad</p>
+                <h3>Andmed</h3>
+              </div>
+              {role === "admin" ? (
+                <>
+                  <p className="muted">Admin saab alla laadida kontaktid, kõned, järeltegevused, märguanded ja importimise ajaloo.</p>
+                  <div className="settings-actions">
+                    <a className="button primary" href="/api/export/all">Laadi kogu andmestik ZIP failina alla</a>
+                    <a className="button" href="/api/export?type=contacts">Kontaktid CSV</a>
+                    <a className="button" href="/api/export?type=calls">Kõned CSV</a>
+                    <a className="button" href="/api/export?type=tasks">Järeltegevused CSV</a>
+                  </div>
+                </>
+              ) : <p className="muted">Andmete eksport on ainult müügijuhile.</p>}
+            </>
+          ) : null}
+
+          {selected === "security" ? (
+            <>
+              <div>
+                <p className="eyebrow">Ligipääs</p>
+                <h3>Turvalisus</h3>
+              </div>
+              <div className="settings-card-grid">
+                <SettingStatus title="Sisselogimine" ok text="Rakendus nõuab Supabase kasutajat." />
+                <SettingStatus title="Rollipõhine vaade" ok text="Müügijuht näeb rohkem toiminguid kui assistent." />
+                <SettingStatus title="Salajased võtmed" ok text=".env.local ei lähe GitHubi üles." />
+              </div>
+            </>
+          ) : null}
+
+          {selected === "users" ? (
+            <>
+              <div>
+                <p className="eyebrow">Tiim</p>
+                <h3>Kasutajad</h3>
+              </div>
+              <div className="settings-card-grid">
+                <SettingStatus title="Müügijuht" ok text="Saab hallata kontakte, eksporti ja admini toiminguid." />
+                <SettingStatus title="Müügiassistent" ok text="Saab teha kõnesid, märkida tulemusi ja suunata edasi." />
+                <SettingStatus title="Uue kasutaja lisamine" ok={false} text="Lisamine käib praegu Supabase Auth ja public.users tabeli kaudu." />
+              </div>
+            </>
+          ) : null}
+        </section>
       </div>
     </div>
+  );
+}
+
+function SettingStatus({ title, ok, text }: { title: string; ok: boolean; text: string }) {
+  return (
+    <article className="setting-status">
+      <div>
+        <span className={ok ? "status-dot ok" : "status-dot warn"} />
+        <strong>{title}</strong>
+      </div>
+      <p>{text}</p>
+    </article>
   );
 }
 
