@@ -1,5 +1,25 @@
 export type Role = "admin" | "assistant";
 
+export type UserPreference = {
+  user_id: string;
+  theme: "light" | "soft" | "dark";
+  accent: "green" | "blue" | "rose" | "graphite";
+  background: "plain" | "warm" | "cool";
+  density: "compact" | "comfortable";
+  text_size: "compact" | "normal";
+  updated_at: string;
+};
+
+export type AppUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  created_at?: string;
+  updated_at?: string;
+  user_preferences?: UserPreference | UserPreference[] | null;
+};
+
 export type Lead = {
   id: string;
   created_at: string;

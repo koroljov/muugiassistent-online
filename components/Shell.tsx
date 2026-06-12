@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
+import type { UserPreference } from "@/lib/types";
 
 export function Shell({
   children,
   active,
   currentLeadId,
-  user
+  user,
+  preferences
 }: {
   children: React.ReactNode;
   active: "dashboard" | "leads" | "call" | "calendar" | "stats" | "import" | "settings";
   currentLeadId?: string;
   user?: { name?: string | null; role?: string | null };
+  preferences?: Partial<UserPreference> | null;
 }) {
   const tabs = [
     ["dashboard", "/", "Töölaud"],
@@ -22,8 +25,16 @@ export function Shell({
     ["settings", "/?view=settings", "Seaded"]
   ] as const;
 
+  const pref = {
+    theme: preferences?.theme || "light",
+    accent: preferences?.accent || "green",
+    background: preferences?.background || "plain",
+    density: preferences?.density || "compact",
+    text_size: preferences?.text_size || "compact"
+  };
+
   return (
-    <div className="app-shell">
+    <div className={`app-shell theme-${pref.theme} accent-${pref.accent} bg-${pref.background} density-${pref.density} text-${pref.text_size}`}>
       <header className="topbar">
         <div>
           <h1>Müügiassistent</h1>

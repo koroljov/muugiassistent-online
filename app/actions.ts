@@ -22,6 +22,103 @@ export async function signOut() {
   redirect("/login");
 }
 
+async function requireAdmin() {
+  const supabase = getSupabaseServer();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/login");
+  const { data: me } = await supabase.from("users").select("role").eq("id", auth.user.id).single();
+  if (me?.role !== "admin") redirect("/?view=settings&setting=users&error=Admini%20õigused%20on%20vajalikud");
+  return auth.user;
+}
+
+function settingsError(tab: string, message: string): never {
+  redirect(`/?view=settings&setting=${tab}&error=${encodeURIComponent(message)}`);
+}
+
+export async function createAppUser(formData: FormData) {
+  await requireAdmin();
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const password = String(formData.get("password") || "");
+  const role = String(formData.get("role") || "assistant") === "admin" ? "admin" : "assistant";
+  if (!name || !email || password.length < 8) settingsError("users", "Nimi, e-post ja vähemalt 8 tähemärgiga parool on vajalikud.");
+
+  const admin = getSupabaseAdmin();
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { name }
+  });
+  if (error || !data.user) settingsError("users", error?.message || "Kasutaja loomine ei õnnestunud.");
+  const createdUser = data.user;
+
+  const { error: profileError } = await admin.from("users").insert({ id: createdUser.id, email, name, role });
+  if (profileError) {
+    await admin.auth.admin.deleteUser(createdUser.id);
+    settingsError("users", profileError.message);
+  }
+
+  await admin.from("user_preferences").insert({ user_id: createdUser.id });
+  revalidatePath("/");
+  redirect("/?view=settings&setting=users&saved=1");
+}
+
+export async function updateAppUser(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") || "");
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const password = String(formData.get("password") || "");
+  const role = String(formData.get("role") || "assistant") === "admin" ? "admin" : "assistant";
+  if (!id || !name || !email) settingsError("users", "Kasutaja id, nimi ja e-post on vajalikud.");
+
+  const admin = getSupabaseAdmin();
+  const authPayload: { email: string; password?: string; user_metadata: { name: string } } = { email, user_metadata: { name } };
+  if (password) {
+    if (password.length < 8) settingsError("users", "Uus parool peab olema vähemalt 8 tähemärki.");
+    authPayload.password = password;
+  }
+  const { error: authError } = await admin.auth.admin.updateUserById(id, authPayload);
+  if (authError) settingsError("users", authError.message);
+
+  const { error } = await admin.from("users").update({ email, name, role, updated_at: new Date().toISOString() }).eq("id", id);
+  if (error) settingsError("users", error.message);
+  revalidatePath("/");
+  redirect("/?view=settings&setting=users&saved=1");
+}
+
+export async function deleteAppUser(formData: FormData) {
+  const currentUser = await requireAdmin();
+  const id = String(formData.get("id") || "");
+  if (!id) settingsError("users", "Kasutaja id puudub.");
+  if (id === currentUser.id) settingsError("users", "Iseennast ei saa siit kustutada.");
+  const admin = getSupabaseAdmin();
+  const { error } = await admin.auth.admin.deleteUser(id);
+  if (error) settingsError("users", error.message);
+  revalidatePath("/");
+  redirect("/?view=settings&setting=users&saved=1");
+}
+
+export async function saveUserPreferences(formData: FormData) {
+  const supabase = getSupabaseServer();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/login");
+  const preference = {
+    user_id: auth.user.id,
+    theme: String(formData.get("theme") || "light"),
+    accent: String(formData.get("accent") || "green"),
+    background: String(formData.get("background") || "plain"),
+    density: String(formData.get("density") || "compact"),
+    text_size: String(formData.get("text_size") || "compact"),
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await supabase.from("user_preferences").upsert(preference);
+  if (error) settingsError("appearance", error.message);
+  revalidatePath("/");
+  redirect("/?view=settings&setting=appearance&saved=1");
+}
+
 export async function saveLead(formData: FormData) {
   const supabase = getSupabaseServer();
   const { data: auth } = await supabase.auth.getUser();

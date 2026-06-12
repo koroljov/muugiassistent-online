@@ -5,7 +5,18 @@ create table if not exists public.users (
   email text unique not null,
   name text not null,
   role text not null check (role in ('admin', 'assistant')) default 'assistant',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.user_preferences (
+  user_id uuid primary key references public.users(id) on delete cascade,
+  theme text not null default 'light' check (theme in ('light', 'soft', 'dark')),
+  accent text not null default 'green' check (accent in ('green', 'blue', 'rose', 'graphite')),
+  background text not null default 'plain' check (background in ('plain', 'warm', 'cool')),
+  density text not null default 'compact' check (density in ('compact', 'comfortable')),
+  text_size text not null default 'compact' check (text_size in ('compact', 'normal')),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.call_lists (
@@ -14,7 +25,7 @@ create table if not exists public.call_lists (
   description text,
   source text,
   status text not null default 'aktiivne',
-  created_by uuid references public.users(id),
+  created_by uuid references public.users(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -22,8 +33,8 @@ create table if not exists public.call_lists (
 create table if not exists public.leads (
   id uuid primary key default uuid_generate_v4(),
   created_at timestamptz not null default now(),
-  created_by uuid references public.users(id),
-  assigned_to uuid references public.users(id),
+  created_by uuid references public.users(id) on delete set null,
+  assigned_to uuid references public.users(id) on delete set null,
   call_list_id uuid references public.call_lists(id),
   property_address text not null,
   region text,
@@ -64,7 +75,7 @@ create table if not exists public.leads (
 create table if not exists public.calls (
   id uuid primary key default uuid_generate_v4(),
   lead_id uuid not null references public.leads(id) on delete cascade,
-  caller_id uuid references public.users(id),
+  caller_id uuid references public.users(id) on delete set null,
   call_time timestamptz not null default now(),
   call_result text,
   time_on_market text,
@@ -94,7 +105,7 @@ create table if not exists public.calls (
 create table if not exists public.tasks (
   id uuid primary key default uuid_generate_v4(),
   lead_id uuid not null references public.leads(id) on delete cascade,
-  assigned_to uuid references public.users(id),
+  assigned_to uuid references public.users(id) on delete set null,
   type text not null,
   due_date date,
   due_time time,
@@ -120,7 +131,7 @@ create table if not exists public.summaries (
   id uuid primary key default uuid_generate_v4(),
   lead_id uuid not null references public.leads(id) on delete cascade,
   call_id uuid references public.calls(id) on delete set null,
-  generated_by uuid references public.users(id),
+  generated_by uuid references public.users(id) on delete set null,
   summary text not null,
   recommended_next_step text,
   created_at timestamptz not null default now()
@@ -142,7 +153,7 @@ create table if not exists public.import_jobs (
   inserted_count integer not null default 0,
   duplicate_count integer not null default 0,
   error_count integer not null default 0,
-  created_by uuid references public.users(id),
+  created_by uuid references public.users(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
@@ -167,8 +178,25 @@ alter table public.leads add column if not exists required_area numeric;
 alter table public.leads add column if not exists budget numeric;
 alter table public.leads add column if not exists technical_requirements text;
 alter table public.calls add column if not exists next_action_time time;
+alter table public.users add column if not exists updated_at timestamptz not null default now();
+
+alter table public.call_lists drop constraint if exists call_lists_created_by_fkey;
+alter table public.call_lists add constraint call_lists_created_by_fkey foreign key (created_by) references public.users(id) on delete set null;
+alter table public.leads drop constraint if exists leads_created_by_fkey;
+alter table public.leads add constraint leads_created_by_fkey foreign key (created_by) references public.users(id) on delete set null;
+alter table public.leads drop constraint if exists leads_assigned_to_fkey;
+alter table public.leads add constraint leads_assigned_to_fkey foreign key (assigned_to) references public.users(id) on delete set null;
+alter table public.calls drop constraint if exists calls_caller_id_fkey;
+alter table public.calls add constraint calls_caller_id_fkey foreign key (caller_id) references public.users(id) on delete set null;
+alter table public.tasks drop constraint if exists tasks_assigned_to_fkey;
+alter table public.tasks add constraint tasks_assigned_to_fkey foreign key (assigned_to) references public.users(id) on delete set null;
+alter table public.summaries drop constraint if exists summaries_generated_by_fkey;
+alter table public.summaries add constraint summaries_generated_by_fkey foreign key (generated_by) references public.users(id) on delete set null;
+alter table public.import_jobs drop constraint if exists import_jobs_created_by_fkey;
+alter table public.import_jobs add constraint import_jobs_created_by_fkey foreign key (created_by) references public.users(id) on delete set null;
 
 alter table public.users enable row level security;
+alter table public.user_preferences enable row level security;
 alter table public.call_lists enable row level security;
 alter table public.leads enable row level security;
 alter table public.calls enable row level security;
@@ -179,13 +207,33 @@ alter table public.settings enable row level security;
 alter table public.import_jobs enable row level security;
 
 create or replace function public.current_role()
-returns text language sql stable security definer as $$
+returns text language sql stable security definer
+set search_path = public
+as $$
   select role from public.users where id = auth.uid()
 $$;
 
 drop policy if exists "users see themselves and admins see all" on public.users;
 create policy "users see themselves and admins see all" on public.users
   for select using (id = auth.uid() or public.current_role() = 'admin');
+
+drop policy if exists "preferences own or admin select" on public.user_preferences;
+drop policy if exists "preferences own insert" on public.user_preferences;
+drop policy if exists "preferences own update" on public.user_preferences;
+
+create policy "preferences own or admin select" on public.user_preferences
+  for select using (user_id = auth.uid() or public.current_role() = 'admin');
+
+create policy "preferences own insert" on public.user_preferences
+  for insert with check (user_id = auth.uid() or public.current_role() = 'admin');
+
+create policy "preferences own update" on public.user_preferences
+  for update using (user_id = auth.uid() or public.current_role() = 'admin')
+  with check (user_id = auth.uid() or public.current_role() = 'admin');
+
+insert into public.user_preferences (user_id)
+select id from public.users
+on conflict (user_id) do nothing;
 
 drop policy if exists "call lists read authenticated" on public.call_lists;
 drop policy if exists "call lists insert authenticated" on public.call_lists;

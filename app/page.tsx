@@ -2,10 +2,10 @@ import { redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
 import { InlineAiCoach } from "@/components/InlineAiCoach";
 import { PrintButton } from "@/components/PrintButton";
-import { completeTask, deleteLead, postponeTask, saveCall, saveLead, updateTaskSchedule } from "./actions";
+import { completeTask, createAppUser, deleteAppUser, deleteLead, postponeTask, saveCall, saveLead, saveUserPreferences, updateAppUser, updateTaskSchedule } from "./actions";
 import { getSupabaseServer } from "@/lib/supabase-server";
 import { callResults, selectOptions } from "@/lib/options";
-import type { Call, CallList, Lead, Task } from "@/lib/types";
+import type { AppUser, Call, CallList, Lead, Task, UserPreference } from "@/lib/types";
 
 export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
@@ -14,12 +14,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const editLeadId = params.edit;
   const isNewLead = params.new === "1";
   const errorMessage = params.error;
+  const savedMessage = params.saved;
   const supabase = getSupabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
 
   const { data: me } = await supabase.from("users").select("*").eq("id", auth.user.id).single();
-  const { data: users = [] } = await supabase.from("users").select("id,name,role,email").order("name");
+  const { data: preferences } = await supabase.from("user_preferences").select("*").eq("user_id", auth.user.id).maybeSingle();
+  const { data: users = [] } = await supabase.from("users").select("id,name,role,email,created_at,updated_at").order("name");
   const { data: callLists = [] } = await supabase.from("call_lists").select("*").eq("status", "aktiivne").order("name");
   const { data: leads = [] } = await supabase.from("leads").select("*, call_lists(id,name)").is("archived_at", null).order("created_at", { ascending: false });
   const leadRows = (leads || []) as Lead[];
@@ -33,12 +35,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const editLead = leadRows.find((item) => item.id === editLeadId) || null;
 
   return (
-    <Shell active={view === "calendar" ? "calendar" : view === "stats" ? "stats" : view === "settings" ? "settings" : view === "call" ? "call" : view === "leads" ? "leads" : "dashboard"} currentLeadId={lead?.id} user={{ name: me?.name, role: me?.role }}>
+    <Shell active={view === "calendar" ? "calendar" : view === "stats" ? "stats" : view === "settings" ? "settings" : view === "call" ? "call" : view === "leads" ? "leads" : "dashboard"} currentLeadId={lead?.id} user={{ name: me?.name, role: me?.role }} preferences={preferences as UserPreference | null}>
       {view === "dashboard" ? <DashboardView leads={leadRows} calls={callRows} tasks={taskRows} /> : null}
       {view === "call" && lead ? <CallView lead={lead} calls={callRows} users={users || []} /> : null}
       {view === "call" && !lead ? <EmptyState title="Kontakt puudub" text="Lisa esmalt kontakt, siis saab kõnevaate avada." /> : null}
       {view === "stats" ? <StatsView leads={leadRows} calls={callRows} tasks={taskRows} /> : null}
-      {view === "settings" ? <SettingsView notifications={notifications || []} role={me?.role || "assistant"} activeTab={params.setting || "general"} /> : null}
+      {view === "settings" ? <SettingsView notifications={notifications || []} role={me?.role || "assistant"} activeTab={params.setting || "general"} users={users as AppUser[]} preferences={preferences as UserPreference | null} currentUserId={auth.user.id} errorMessage={errorMessage} saved={savedMessage} /> : null}
       {view === "leads" ? <LeadsView leads={filteredLeads} users={users || []} callLists={callLists as CallList[]} role={me?.role || "assistant"} tasks={taskRows} editLead={editLead} isNewLead={isNewLead} tableMode={params.mode === "table"} params={params} errorMessage={errorMessage} /> : null}
     </Shell>
   );
@@ -417,9 +419,28 @@ function StatsView({ leads, calls, tasks }: { leads: Lead[]; calls: Call[]; task
   );
 }
 
-function SettingsView({ notifications, role, activeTab }: { notifications: any[]; role: string; activeTab: string }) {
+function SettingsView({
+  notifications,
+  role,
+  activeTab,
+  users,
+  preferences,
+  currentUserId,
+  errorMessage,
+  saved
+}: {
+  notifications: any[];
+  role: string;
+  activeTab: string;
+  users: AppUser[];
+  preferences: UserPreference | null;
+  currentUserId: string;
+  errorMessage?: string;
+  saved?: string;
+}) {
   const tabs = [
     { id: "general", label: "Üldine", text: "Rakenduse töörežiim ja põhiseis." },
+    { id: "appearance", label: "Välimus", text: "Taust, värvid ja töövaate tihedus." },
     { id: "ai", label: "AI", text: "Kõneabi, kokkuvõtted ja järgmised küsimused." },
     { id: "notifications", label: "Märguanded", text: "Üleandmised ja järeltegevuste teavitused." },
     { id: "calendar", label: "Kalender", text: "Sisemine kalender ja .ics eksport." },
@@ -454,6 +475,9 @@ function SettingsView({ notifications, role, activeTab }: { notifications: any[]
         </aside>
 
         <section className="settings-content panel stack">
+          {errorMessage ? <div className="panel error-panel"><strong>Toiming ei õnnestunud.</strong><br />{errorMessage}</div> : null}
+          {saved ? <div className="panel success-panel">Muudatused salvestatud.</div> : null}
+
           {selected === "general" ? (
             <>
               <div>
@@ -467,6 +491,10 @@ function SettingsView({ notifications, role, activeTab }: { notifications: any[]
                 <SettingStatus title="Ekspordid" ok text="CSV ja ZIP eksport on rakenduses olemas." />
               </div>
             </>
+          ) : null}
+
+          {selected === "appearance" ? (
+            <AppearanceSettings preferences={preferences} />
           ) : null}
 
           {selected === "ai" ? (
@@ -552,21 +580,125 @@ function SettingsView({ notifications, role, activeTab }: { notifications: any[]
           ) : null}
 
           {selected === "users" ? (
-            <>
-              <div>
-                <p className="eyebrow">Tiim</p>
-                <h3>Kasutajad</h3>
-              </div>
-              <div className="settings-card-grid">
-                <SettingStatus title="Müügijuht" ok text="Saab hallata kontakte, eksporti ja admini toiminguid." />
-                <SettingStatus title="Müügiassistent" ok text="Saab teha kõnesid, märkida tulemusi ja suunata edasi." />
-                <SettingStatus title="Uue kasutaja lisamine" ok={false} text="Lisamine käib praegu Supabase Auth ja public.users tabeli kaudu." />
-              </div>
-            </>
+            <UserAdmin users={users} currentUserId={currentUserId} role={role} />
           ) : null}
         </section>
       </div>
     </div>
+  );
+}
+
+function AppearanceSettings({ preferences }: { preferences: UserPreference | null }) {
+  const pref = {
+    theme: preferences?.theme || "light",
+    accent: preferences?.accent || "green",
+    background: preferences?.background || "plain",
+    density: preferences?.density || "compact",
+    text_size: preferences?.text_size || "compact"
+  };
+
+  return (
+    <>
+      <div>
+        <p className="eyebrow">Isikupärastamine</p>
+        <h3>Välimus</h3>
+      </div>
+      <form action={saveUserPreferences} className="settings-form">
+        <label>Teema
+          <select name="theme" defaultValue={pref.theme}>
+            <option value="light">Hele</option>
+            <option value="soft">Pehme</option>
+            <option value="dark">Tume</option>
+          </select>
+        </label>
+        <label>Värv
+          <select name="accent" defaultValue={pref.accent}>
+            <option value="green">Roheline</option>
+            <option value="blue">Sinine</option>
+            <option value="rose">Roosa</option>
+            <option value="graphite">Grafiit</option>
+          </select>
+        </label>
+        <label>Taust
+          <select name="background" defaultValue={pref.background}>
+            <option value="plain">Puhas</option>
+            <option value="warm">Soe</option>
+            <option value="cool">Jahe</option>
+          </select>
+        </label>
+        <label>Tihedus
+          <select name="density" defaultValue={pref.density}>
+            <option value="compact">Kompaktne</option>
+            <option value="comfortable">Õhulisem</option>
+          </select>
+        </label>
+        <label>Tekst
+          <select name="text_size" defaultValue={pref.text_size}>
+            <option value="compact">Väiksem</option>
+            <option value="normal">Tavaline</option>
+          </select>
+        </label>
+        <div className="form-end"><button className="primary" type="submit">Salvesta välimus</button></div>
+      </form>
+      <div className="appearance-preview">
+        <article>
+          <strong>Kontaktikaart</strong>
+          <span>Tihedam töövaade, vähem suuri pealkirju ja rohkem infot ekraanil.</span>
+        </article>
+        <article>
+          <strong>Kõnevaade</strong>
+          <span>Värv ja taust muutuvad ainult sinu kasutajal, mitte kogu tiimil.</span>
+        </article>
+      </div>
+    </>
+  );
+}
+
+function UserAdmin({ users, currentUserId, role }: { users: AppUser[]; currentUserId: string; role: string }) {
+  if (role !== "admin") return <p className="muted">Kasutajate haldus on ainult müügijuhile.</p>;
+
+  return (
+    <>
+      <div>
+        <p className="eyebrow">Tiim</p>
+        <h3>Kasutajad</h3>
+      </div>
+      <form action={createAppUser} className="settings-form user-create-form">
+        <label>Nimi <input name="name" required /></label>
+        <label>E-post <input name="email" type="email" required /></label>
+        <label>Algparool <input name="password" type="password" minLength={8} required /></label>
+        <label>Roll
+          <select name="role" defaultValue="assistant">
+            <option value="assistant">Müügiassistent</option>
+            <option value="admin">Müügijuht</option>
+          </select>
+        </label>
+        <div className="form-end"><button className="primary" type="submit">Lisa kasutaja</button></div>
+      </form>
+      <div className="user-admin-list">
+        {users.map((user) => (
+          <article key={user.id} className="user-admin-row">
+            <form action={updateAppUser} className="user-edit-form">
+              <input type="hidden" name="id" value={user.id} />
+              <label>Nimi <input name="name" defaultValue={user.name} required /></label>
+              <label>E-post <input name="email" type="email" defaultValue={user.email} required /></label>
+              <label>Roll
+                <select name="role" defaultValue={user.role}>
+                  <option value="assistant">Müügiassistent</option>
+                  <option value="admin">Müügijuht</option>
+                </select>
+              </label>
+              <label>Uus parool <input name="password" type="password" minLength={8} placeholder="Jäta tühjaks" /></label>
+              <button type="submit">Salvesta</button>
+            </form>
+            <form action={deleteAppUser} className="delete-user-form">
+              <input type="hidden" name="id" value={user.id} />
+              <button type="submit" disabled={user.id === currentUserId}>{user.id === currentUserId ? "Sinu konto" : "Kustuta"}</button>
+            </form>
+          </article>
+        ))}
+      </div>
+    </>
   );
 }
 
