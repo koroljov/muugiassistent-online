@@ -4,9 +4,16 @@ export type UserPreference = {
   user_id: string;
   theme: "light" | "soft" | "dark";
   accent: "green" | "blue" | "rose" | "graphite";
-  background: "plain" | "warm" | "cool";
+  background: "plain" | "warm" | "cool" | "paper" | "contrast";
   density: "compact" | "comfortable";
-  text_size: "compact" | "normal";
+  text_size: "compact" | "normal" | "large";
+  surface_style: "flat" | "outlined" | "soft";
+  sidebar_density: "compact" | "roomy";
+  card_style: "simple" | "detailed";
+  focus_mode: "off" | "on";
+  mell_enabled: boolean;
+  mell_position: "right" | "left";
+  dashboard_layout: string[] | null;
   updated_at: string;
 };
 

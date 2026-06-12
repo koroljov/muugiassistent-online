@@ -104,6 +104,10 @@ export async function saveUserPreferences(formData: FormData) {
   const supabase = getSupabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
+  const dashboardLayout = String(formData.get("dashboard_layout") || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
   const preference = {
     user_id: auth.user.id,
     theme: String(formData.get("theme") || "light"),
@@ -111,12 +115,45 @@ export async function saveUserPreferences(formData: FormData) {
     background: String(formData.get("background") || "plain"),
     density: String(formData.get("density") || "compact"),
     text_size: String(formData.get("text_size") || "compact"),
+    surface_style: String(formData.get("surface_style") || "flat"),
+    sidebar_density: String(formData.get("sidebar_density") || "compact"),
+    card_style: String(formData.get("card_style") || "simple"),
+    focus_mode: String(formData.get("focus_mode") || "off"),
+    mell_enabled: formData.get("mell_enabled") === "on",
+    mell_position: String(formData.get("mell_position") || "right"),
+    dashboard_layout: dashboardLayout.length ? dashboardLayout : null,
     updated_at: new Date().toISOString()
   };
   const { error } = await supabase.from("user_preferences").upsert(preference);
   if (error) settingsError("appearance", error.message);
   revalidatePath("/");
   redirect("/?view=settings&setting=appearance&saved=1");
+}
+
+export async function moveDashboardWidget(formData: FormData) {
+  const supabase = getSupabaseServer();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect("/login");
+  const widget = String(formData.get("widget") || "");
+  const direction = String(formData.get("direction") || "");
+  const current = String(formData.get("current_layout") || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const index = current.indexOf(widget);
+  const target = direction === "up" ? index - 1 : index + 1;
+  if (index >= 0 && target >= 0 && target < current.length) {
+    const next = [...current];
+    [next[index], next[target]] = [next[target], next[index]];
+    const { error } = await supabase.from("user_preferences").upsert({
+      user_id: auth.user.id,
+      dashboard_layout: next,
+      updated_at: new Date().toISOString()
+    });
+    if (error) settingsError("appearance", error.message);
+  }
+  revalidatePath("/");
+  redirect("/");
 }
 
 export async function saveLead(formData: FormData) {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signOut } from "@/app/actions";
+import { MellAgent } from "@/components/MellAgent";
 import type { UserPreference } from "@/lib/types";
 
 export function Shell({
@@ -30,11 +31,17 @@ export function Shell({
     accent: preferences?.accent || "green",
     background: preferences?.background || "plain",
     density: preferences?.density || "compact",
-    text_size: preferences?.text_size || "compact"
+    text_size: preferences?.text_size || "compact",
+    surface_style: preferences?.surface_style || "flat",
+    sidebar_density: preferences?.sidebar_density || "compact",
+    card_style: preferences?.card_style || "simple",
+    focus_mode: preferences?.focus_mode || "off",
+    mell_enabled: preferences?.mell_enabled ?? true,
+    mell_position: preferences?.mell_position || "right"
   };
 
   return (
-    <div className={`app-shell theme-${pref.theme} accent-${pref.accent} bg-${pref.background} density-${pref.density} text-${pref.text_size}`}>
+    <div className={`app-shell theme-${pref.theme} accent-${pref.accent} bg-${pref.background} density-${pref.density} text-${pref.text_size} surface-${pref.surface_style} sidebar-${pref.sidebar_density} card-${pref.card_style} focus-${pref.focus_mode}`}>
       <header className="topbar">
         <div>
           <h1>Müügiassistent</h1>
@@ -54,6 +61,7 @@ export function Shell({
         ))}
       </nav>
       <main>{children}</main>
+      {pref.mell_enabled ? <MellAgent active={active} currentLeadId={currentLeadId} role={user?.role} position={pref.mell_position as "right" | "left"} /> : null}
     </div>
   );
 }

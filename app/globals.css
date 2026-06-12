@@ -103,6 +103,14 @@ label {
 
 .app-shell.bg-warm { background: #f8f0e5; }
 .app-shell.bg-cool { background: #eef5f7; }
+.app-shell.bg-paper { background: #faf8f1; }
+.app-shell.bg-contrast {
+  --bg: #f1f4f8;
+  --panel: #ffffff;
+  --ink: #101418;
+  --muted: #4b5563;
+  --line: #9aa4b2;
+}
 .app-shell.theme-dark.bg-warm, .app-shell.theme-dark.bg-cool { background: var(--bg); }
 
 .app-shell.density-comfortable {
@@ -127,6 +135,40 @@ label {
 .app-shell.text-normal th,
 .app-shell.text-normal td,
 .app-shell.text-normal label { font-size: 14px; }
+.app-shell.text-large { font-size: 16px; }
+.app-shell.text-large h1 { font-size: 24px; }
+.app-shell.text-large h2 { font-size: 24px; }
+.app-shell.text-large h3 { font-size: 19px; }
+.app-shell.text-large th,
+.app-shell.text-large td,
+.app-shell.text-large label { font-size: 15px; }
+
+.app-shell.surface-outlined .panel,
+.app-shell.surface-outlined .lead-card,
+.app-shell.surface-outlined .kpi {
+  box-shadow: none;
+  border-width: 2px;
+}
+
+.app-shell.surface-soft .panel,
+.app-shell.surface-soft .lead-card,
+.app-shell.surface-soft .kpi {
+  box-shadow: 0 18px 48px rgba(24, 35, 31, 0.12);
+}
+
+.app-shell.sidebar-roomy .settings-sidebar a {
+  padding: 15px;
+}
+
+.app-shell.card-detailed .lead-card {
+  grid-template-columns: 170px minmax(0, 1fr);
+}
+
+.app-shell.focus-on .eyebrow,
+.app-shell.focus-on .appearance-preview,
+.app-shell.focus-on .capability-grid {
+  display: none;
+}
 
 .theme-dark .topbar,
 .theme-dark .tabs,
@@ -254,6 +296,35 @@ th { color: var(--muted); font-size: 12px; font-weight: 900; text-transform: upp
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-move-controls {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.panel-move-controls form {
+  margin: 0;
+}
+
+.panel-move-controls button {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.panel-move-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
 }
 
 .chart-grid {
@@ -474,7 +545,7 @@ th { color: var(--muted); font-size: 12px; font-weight: 900; text-transform: upp
 }
 
 .appearance-preview {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .appearance-preview article,
@@ -890,6 +961,83 @@ th { color: var(--muted); font-size: 12px; font-weight: 900; text-transform: upp
 .button-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .muted { color: var(--muted); }
 
+.mell-agent {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.mell-agent.mell-left {
+  right: auto;
+  left: 18px;
+  justify-items: start;
+}
+
+.mell-agent > * {
+  pointer-events: auto;
+}
+
+.mell-toggle {
+  min-width: 62px;
+  min-height: 42px;
+  border-color: var(--green);
+  color: #fff;
+  background: var(--green);
+  box-shadow: var(--shadow);
+}
+
+.mell-card {
+  width: min(360px, calc(100vw - 28px));
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  background: var(--panel);
+  box-shadow: 0 20px 60px rgba(24, 35, 31, 0.18);
+}
+
+.mell-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.mell-head span {
+  display: block;
+  color: var(--orange);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.mell-head button {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.mell-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.mell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
 @media (max-width: 1180px) {
   .call-grid { grid-template-columns: 0.9fr 1.1fr; }
   .form-grid, .filter-grid, .kpi-grid, .dashboard-grid, .lead-card-grid, .chart-grid, .settings-card-grid, .settings-form, .appearance-preview, .user-create-form, .user-edit-form, .capability-grid, .workflow-grid { grid-template-columns: 1fr 1fr; }
@@ -945,6 +1093,7 @@ th { color: var(--muted); font-size: 12px; font-weight: 900; text-transform: upp
   .topbar,
   .tabs,
   .print-hide,
+  .mell-agent,
   button,
   .button,
   .filter-grid,

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
 import { InlineAiCoach } from "@/components/InlineAiCoach";
 import { PrintButton } from "@/components/PrintButton";
-import { completeTask, createAppUser, deleteAppUser, deleteLead, postponeTask, saveCall, saveLead, saveUserPreferences, updateAppUser, updateTaskSchedule } from "./actions";
+import { completeTask, createAppUser, deleteAppUser, deleteLead, moveDashboardWidget, postponeTask, saveCall, saveLead, saveUserPreferences, updateAppUser, updateTaskSchedule } from "./actions";
 import { getSupabaseServer } from "@/lib/supabase-server";
 import { callResults, selectOptions } from "@/lib/options";
 import type { AppUser, Call, CallList, Lead, Task, UserPreference } from "@/lib/types";
@@ -36,7 +36,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
 
   return (
     <Shell active={view === "calendar" ? "calendar" : view === "stats" ? "stats" : view === "settings" ? "settings" : view === "call" ? "call" : view === "leads" ? "leads" : "dashboard"} currentLeadId={lead?.id} user={{ name: me?.name, role: me?.role }} preferences={preferences as UserPreference | null}>
-      {view === "dashboard" ? <DashboardView leads={leadRows} calls={callRows} tasks={taskRows} /> : null}
+      {view === "dashboard" ? <DashboardView leads={leadRows} calls={callRows} tasks={taskRows} preferences={preferences as UserPreference | null} /> : null}
       {view === "call" && lead ? <CallView lead={lead} calls={callRows} users={users || []} /> : null}
       {view === "call" && !lead ? <EmptyState title="Kontakt puudub" text="Lisa esmalt kontakt, siis saab kõnevaate avada." /> : null}
       {view === "stats" ? <StatsView leads={leadRows} calls={callRows} tasks={taskRows} /> : null}
@@ -46,7 +46,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   );
 }
 
-function DashboardView({ leads, calls, tasks }: { leads: Lead[]; calls: Call[]; tasks: Task[] }) {
+const defaultDashboardLayout = ["today-tasks", "overdue", "planned-calls", "hot-leads", "handoff", "recent-calls", "ai-priorities", "activity"];
+
+function DashboardView({ leads, calls, tasks, preferences }: { leads: Lead[]; calls: Call[]; tasks: Task[]; preferences: UserPreference | null }) {
   const today = new Date().toISOString().slice(0, 10);
   const openTasks = tasks.filter((task) => task.status !== "tehtud");
   const todayTasks = openTasks.filter((task) => task.due_date === today);
@@ -61,6 +63,18 @@ function DashboardView({ leads, calls, tasks }: { leads: Lead[]; calls: Call[]; 
     .sort((a, b) => (b.lead_score || 0) - (a.lead_score || 0))
     .filter((lead) => lead.next_best_action || (lead.lead_score || 0) >= 50)
     .slice(0, 5);
+
+  const layout = normalizedDashboardLayout(preferences?.dashboard_layout);
+  const panels = [
+    { id: "today-tasks", title: "Tänased järeltegevused", body: <TaskList tasks={todayTasks} /> },
+    { id: "overdue", title: "Üle tähtaja järeltegevused", body: <TaskList tasks={overdueTasks} /> },
+    { id: "planned-calls", title: "Tänaseks planeeritud kõned", body: <TaskList tasks={todayTasks.filter((task) => task.type.includes("helista"))} /> },
+    { id: "hot-leads", title: "Kõrge prioriteediga kontaktid", body: <LeadMiniList leads={hotLeads} /> },
+    { id: "handoff", title: "Üle antud müügispetsialistile", body: <LeadMiniList leads={handoffLeads} /> },
+    { id: "recent-calls", title: "Viimased kõned", body: <CallMiniList calls={calls.slice(0, 6)} leads={leads} /> },
+    { id: "ai-priorities", title: "AI soovitatud järgmised kontaktid", body: <LeadMiniList leads={priorities} showAction /> },
+    { id: "activity", title: "Tänane aktiivsus", body: <><p>Kõnesid täna: <strong>{todayCalls.length}</strong></p><p>Rääkinud kontakte: <strong>{talkedToday.length}</strong></p><p>Järeltegevusi täna: <strong>{todayTasks.length}</strong></p></> }
+  ].sort((a, b) => layout.indexOf(a.id) - layout.indexOf(b.id));
 
   return (
     <div className="stack">
@@ -82,15 +96,34 @@ function DashboardView({ leads, calls, tasks }: { leads: Lead[]; calls: Call[]; 
         <Kpi label="AI prioriteete" value={priorities.length} />
       </div>
       <div className="dashboard-grid">
-        <DashboardPanel title="Tänased järeltegevused"><TaskList tasks={todayTasks} /></DashboardPanel>
-        <DashboardPanel title="Üle tähtaja järeltegevused"><TaskList tasks={overdueTasks} /></DashboardPanel>
-        <DashboardPanel title="Tänaseks planeeritud kõned"><TaskList tasks={todayTasks.filter((task) => task.type.includes("helista"))} /></DashboardPanel>
-        <DashboardPanel title="Kõrge prioriteediga kontaktid"><LeadMiniList leads={hotLeads} /></DashboardPanel>
-        <DashboardPanel title="Üle antud müügispetsialistile"><LeadMiniList leads={handoffLeads} /></DashboardPanel>
-        <DashboardPanel title="Viimased kõned"><CallMiniList calls={calls.slice(0, 6)} leads={leads} /></DashboardPanel>
-        <DashboardPanel title="AI soovitatud järgmised kontaktid"><LeadMiniList leads={priorities} showAction /></DashboardPanel>
-        <DashboardPanel title="Tänane aktiivsus"><p>Kõnesid täna: <strong>{todayCalls.length}</strong></p><p>Rääkinud kontakte: <strong>{talkedToday.length}</strong></p><p>Järeltegevusi täna: <strong>{todayTasks.length}</strong></p></DashboardPanel>
+        {panels.map((panel, index) => (
+          <DashboardPanel key={panel.id} title={panel.title} controls={<PanelMoveControls id={panel.id} index={index} total={panels.length} layout={layout} />}>{panel.body}</DashboardPanel>
+        ))}
       </div>
+    </div>
+  );
+}
+
+function normalizedDashboardLayout(layout?: string[] | null) {
+  const saved = Array.isArray(layout) ? layout.filter((item) => defaultDashboardLayout.includes(item)) : [];
+  return [...saved, ...defaultDashboardLayout.filter((item) => !saved.includes(item))];
+}
+
+function PanelMoveControls({ id, index, total, layout }: { id: string; index: number; total: number; layout: string[] }) {
+  return (
+    <div className="panel-move-controls" aria-label="Muuda paneeli asukohta">
+      <form action={moveDashboardWidget}>
+        <input type="hidden" name="widget" value={id} />
+        <input type="hidden" name="direction" value="up" />
+        <input type="hidden" name="current_layout" value={layout.join(",")} />
+        <button type="submit" disabled={index === 0} aria-label="Nihuta paneel üles">↑</button>
+      </form>
+      <form action={moveDashboardWidget}>
+        <input type="hidden" name="widget" value={id} />
+        <input type="hidden" name="direction" value="down" />
+        <input type="hidden" name="current_layout" value={layout.join(",")} />
+        <button type="submit" disabled={index === total - 1} aria-label="Nihuta paneel alla">↓</button>
+      </form>
     </div>
   );
 }
@@ -669,7 +702,14 @@ function AppearanceSettings({ preferences }: { preferences: UserPreference | nul
     accent: preferences?.accent || "green",
     background: preferences?.background || "plain",
     density: preferences?.density || "compact",
-    text_size: preferences?.text_size || "compact"
+    text_size: preferences?.text_size || "compact",
+    surface_style: preferences?.surface_style || "flat",
+    sidebar_density: preferences?.sidebar_density || "compact",
+    card_style: preferences?.card_style || "simple",
+    focus_mode: preferences?.focus_mode || "off",
+    mell_enabled: preferences?.mell_enabled ?? true,
+    mell_position: preferences?.mell_position || "right",
+    dashboard_layout: normalizedDashboardLayout(preferences?.dashboard_layout)
   };
 
   return (
@@ -699,6 +739,8 @@ function AppearanceSettings({ preferences }: { preferences: UserPreference | nul
             <option value="plain">Puhas</option>
             <option value="warm">Soe</option>
             <option value="cool">Jahe</option>
+            <option value="paper">Paberjas</option>
+            <option value="contrast">Kõrge kontrast</option>
           </select>
         </label>
         <label>Tihedus
@@ -711,8 +753,47 @@ function AppearanceSettings({ preferences }: { preferences: UserPreference | nul
           <select name="text_size" defaultValue={pref.text_size}>
             <option value="compact">Väiksem</option>
             <option value="normal">Tavaline</option>
+            <option value="large">Suurem</option>
           </select>
         </label>
+        <label>Paneelid
+          <select name="surface_style" defaultValue={pref.surface_style}>
+            <option value="flat">Puhas pind</option>
+            <option value="outlined">Selge raam</option>
+            <option value="soft">Pehme vari</option>
+          </select>
+        </label>
+        <label>Menüü
+          <select name="sidebar_density" defaultValue={pref.sidebar_density}>
+            <option value="compact">Kompaktne</option>
+            <option value="roomy">Ruumilisem</option>
+          </select>
+        </label>
+        <label>Kaardid
+          <select name="card_style" defaultValue={pref.card_style}>
+            <option value="simple">Lihtne</option>
+            <option value="detailed">Detailsem</option>
+          </select>
+        </label>
+        <label>Fookus
+          <select name="focus_mode" defaultValue={pref.focus_mode}>
+            <option value="off">Tavaline</option>
+            <option value="on">Vähem müra</option>
+          </select>
+        </label>
+        <label>Mell
+          <select name="mell_enabled" defaultValue={pref.mell_enabled ? "on" : "off"}>
+            <option value="on">Sees</option>
+            <option value="off">Väljas</option>
+          </select>
+        </label>
+        <label>Melli asukoht
+          <select name="mell_position" defaultValue={pref.mell_position}>
+            <option value="right">Paremal</option>
+            <option value="left">Vasakul</option>
+          </select>
+        </label>
+        <input type="hidden" name="dashboard_layout" value={pref.dashboard_layout.join(",")} />
         <div className="form-end"><button className="primary" type="submit">Salvesta välimus</button></div>
       </form>
       <div className="appearance-preview">
@@ -723,6 +804,14 @@ function AppearanceSettings({ preferences }: { preferences: UserPreference | nul
         <article>
           <strong>Kõnevaade</strong>
           <span>Värv ja taust muutuvad ainult sinu kasutajal, mitte kogu tiimil.</span>
+        </article>
+        <article>
+          <strong>Töölaud</strong>
+          <span>Töölaua paneele saab nihutada otse töölaual ↑ ja ↓ nuppudega.</span>
+        </article>
+        <article>
+          <strong>Mell</strong>
+          <span>AI abiline avaneb igal lehel eraldi aknana ja pakub selle vaate jaoks sobivaid tegevusi.</span>
         </article>
       </div>
     </>
@@ -840,8 +929,8 @@ function CalendarBlock({ tasks }: { tasks: Task[] }) {
   );
 }
 
-function DashboardPanel({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="panel stack"><h3>{title}</h3>{children}</section>;
+function DashboardPanel({ title, controls, children }: { title: string; controls?: React.ReactNode; children: React.ReactNode }) {
+  return <section className="panel stack"><div className="panel-heading"><h3>{title}</h3>{controls}</div>{children}</section>;
 }
 
 function TaskList({ tasks }: { tasks: Task[] }) {

@@ -13,9 +13,16 @@ create table if not exists public.user_preferences (
   user_id uuid primary key references public.users(id) on delete cascade,
   theme text not null default 'light' check (theme in ('light', 'soft', 'dark')),
   accent text not null default 'green' check (accent in ('green', 'blue', 'rose', 'graphite')),
-  background text not null default 'plain' check (background in ('plain', 'warm', 'cool')),
+  background text not null default 'plain' check (background in ('plain', 'warm', 'cool', 'paper', 'contrast')),
   density text not null default 'compact' check (density in ('compact', 'comfortable')),
-  text_size text not null default 'compact' check (text_size in ('compact', 'normal')),
+  text_size text not null default 'compact' check (text_size in ('compact', 'normal', 'large')),
+  surface_style text not null default 'flat' check (surface_style in ('flat', 'outlined', 'soft')),
+  sidebar_density text not null default 'compact' check (sidebar_density in ('compact', 'roomy')),
+  card_style text not null default 'simple' check (card_style in ('simple', 'detailed')),
+  focus_mode text not null default 'off' check (focus_mode in ('off', 'on')),
+  mell_enabled boolean not null default true,
+  mell_position text not null default 'right' check (mell_position in ('right', 'left')),
+  dashboard_layout jsonb,
   updated_at timestamptz not null default now()
 );
 
@@ -178,6 +185,13 @@ alter table public.leads add column if not exists required_area numeric;
 alter table public.leads add column if not exists budget numeric;
 alter table public.leads add column if not exists technical_requirements text;
 alter table public.calls add column if not exists next_action_time time;
+alter table public.user_preferences add column if not exists surface_style text not null default 'flat';
+alter table public.user_preferences add column if not exists sidebar_density text not null default 'compact';
+alter table public.user_preferences add column if not exists card_style text not null default 'simple';
+alter table public.user_preferences add column if not exists focus_mode text not null default 'off';
+alter table public.user_preferences add column if not exists mell_enabled boolean not null default true;
+alter table public.user_preferences add column if not exists mell_position text not null default 'right';
+alter table public.user_preferences add column if not exists dashboard_layout jsonb;
 alter table public.users add column if not exists updated_at timestamptz not null default now();
 
 alter table public.call_lists drop constraint if exists call_lists_created_by_fkey;
