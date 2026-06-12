@@ -411,6 +411,42 @@ th { color: var(--muted); font-size: 12px; font-weight: 900; text-transform: upp
   gap: 8px;
 }
 
+.capability-grid,
+.workflow-grid {
+  display: grid;
+  gap: 9px;
+}
+
+.capability-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.workflow-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.capability-grid article,
+.workflow-grid article {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+
+.capability-grid span,
+.workflow-grid span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.workflow-grid .button {
+  width: max-content;
+}
+
 .settings-form {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -856,7 +892,7 @@ th { color: var(--muted); font-size: 12px; font-weight: 900; text-transform: upp
 
 @media (max-width: 1180px) {
   .call-grid { grid-template-columns: 0.9fr 1.1fr; }
-  .form-grid, .filter-grid, .kpi-grid, .dashboard-grid, .lead-card-grid, .chart-grid, .settings-card-grid, .settings-form, .appearance-preview, .user-create-form, .user-edit-form { grid-template-columns: 1fr 1fr; }
+  .form-grid, .filter-grid, .kpi-grid, .dashboard-grid, .lead-card-grid, .chart-grid, .settings-card-grid, .settings-form, .appearance-preview, .user-create-form, .user-edit-form, .capability-grid, .workflow-grid { grid-template-columns: 1fr 1fr; }
   .settings-layout { grid-template-columns: 260px minmax(0, 1fr); }
   .lead-card { grid-template-columns: 120px minmax(0, 1fr); }
   .form-panel { grid-column: 1 / -1; }
@@ -884,7 +920,7 @@ th { color: var(--muted); font-size: 12px; font-weight: 900; text-transform: upp
   .user-menu { align-items: stretch; justify-content: space-between; text-align: left; }
   .tabs { top: 128px; }
   main { padding: 14px; }
-  .call-grid, .form-grid, .filter-grid, .kpi-grid, .dashboard-grid, .lead-card-grid, .lead-card, .task-schedule, .choice-grid, .choice-group.compact .choice-grid, .call-note-grid, .chart-grid, .settings-layout, .settings-card-grid, .settings-form, .appearance-preview, .user-admin-row, .user-create-form, .user-edit-form { grid-template-columns: 1fr; }
+  .call-grid, .form-grid, .filter-grid, .kpi-grid, .dashboard-grid, .lead-card-grid, .lead-card, .task-schedule, .choice-grid, .choice-group.compact .choice-grid, .call-note-grid, .chart-grid, .settings-layout, .settings-card-grid, .settings-form, .appearance-preview, .user-admin-row, .user-create-form, .user-edit-form, .capability-grid, .workflow-grid { grid-template-columns: 1fr; }
   .settings-sidebar { position: static; }
   .filter-actions { align-items: stretch; flex-direction: column; }
   .call-grid { padding-right: 0; }

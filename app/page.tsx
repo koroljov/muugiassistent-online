@@ -438,15 +438,17 @@ function SettingsView({
   errorMessage?: string;
   saved?: string;
 }) {
+  const isAdmin = role === "admin";
   const tabs = [
     { id: "general", label: "Üldine", text: "Rakenduse töörežiim ja põhiseis." },
+    { id: "workflow", label: "Töövoog", text: isAdmin ? "Juhtimine, kvaliteet ja tiimi rütm." : "Sinu kõned, impordid ja järeltegevused." },
     { id: "appearance", label: "Välimus", text: "Taust, värvid ja töövaate tihedus." },
     { id: "ai", label: "AI", text: "Kõneabi, kokkuvõtted ja järgmised küsimused." },
     { id: "notifications", label: "Märguanded", text: "Üleandmised ja järeltegevuste teavitused." },
     { id: "calendar", label: "Kalender", text: "Sisemine kalender ja .ics eksport." },
-    { id: "data", label: "Andmed", text: "Import, eksport ja varukoopiad." },
-    { id: "security", label: "Turvalisus", text: "Ligipääsud, rollid ja andmekaitse." },
-    { id: "users", label: "Kasutajad", text: "Müügijuht ja müügiassistendid." }
+    { id: "data", label: "Andmed", text: isAdmin ? "Import, eksport ja varukoopiad." : "Sinu ligipääsuga kontaktide eksport." },
+    { id: "security", label: "Turvalisus", text: isAdmin ? "Ligipääsud, rollid ja andmekaitse." : "Sinu konto ja lubatud tegevused." },
+    ...(isAdmin ? [{ id: "users", label: "Kasutajad", text: "Müügijuht ja müügiassistendid." }] : [])
   ];
   const selected = tabs.some((tab) => tab.id === activeTab) ? activeTab : "general";
   const appUrl = process.env.APP_URL || "";
@@ -488,9 +490,14 @@ function SettingsView({
                 <SettingStatus title="Supabase ühendus" ok text="Andmebaasi võtmed on olemas ja app saab sisselogimist kasutada." />
                 <SettingStatus title="Live aadress" ok={Boolean(appUrl)} text={appUrl || "APP_URL tuleb Vercelis määrata pärast esimese aadressi saamist."} />
                 <SettingStatus title="Kasutaja roll" ok text={role === "admin" ? "Oled müügijuhi rollis." : "Oled müügiassistendi rollis."} />
-                <SettingStatus title="Ekspordid" ok text="CSV ja ZIP eksport on rakenduses olemas." />
+                <SettingStatus title="Ekspordid" ok text={isAdmin ? "Kogu andmestiku ZIP ja CSV ekspordid on olemas." : "Saad eksportida enda ligipääsuga kontaktid, kõned ja ülesanded."} />
               </div>
+              <RoleCapabilities role={role} />
             </>
+          ) : null}
+
+          {selected === "workflow" ? (
+            <WorkflowSettings role={role} />
           ) : null}
 
           {selected === "appearance" ? (
@@ -548,10 +555,10 @@ function SettingsView({
           {selected === "data" ? (
             <>
               <div>
-                <p className="eyebrow">Varukoopiad</p>
+                <p className="eyebrow">{isAdmin ? "Varukoopiad" : "Minu andmed"}</p>
                 <h3>Andmed</h3>
               </div>
-              {role === "admin" ? (
+              {isAdmin ? (
                 <>
                   <p className="muted">Admin saab alla laadida kontaktid, kõned, järeltegevused, märguanded ja importimise ajaloo.</p>
                   <div className="settings-actions">
@@ -561,7 +568,17 @@ function SettingsView({
                     <a className="button" href="/api/export?type=tasks">Järeltegevused CSV</a>
                   </div>
                 </>
-              ) : <p className="muted">Andmete eksport on ainult müügijuhile.</p>}
+              ) : (
+                <>
+                  <p className="muted">Assistendina saad paindlikult alla laadida ainult need kirjed, mis on sulle määratud või sinu loodud.</p>
+                  <div className="settings-actions">
+                    <a className="button primary" href="/api/export?type=contacts">Minu kontaktid CSV</a>
+                    <a className="button" href="/api/export?type=calls">Minu kõned CSV</a>
+                    <a className="button" href="/api/export?type=tasks">Minu järeltegevused CSV</a>
+                    <a className="button" href="/import">Ava import</a>
+                  </div>
+                </>
+              )}
             </>
           ) : null}
 
@@ -573,8 +590,9 @@ function SettingsView({
               </div>
               <div className="settings-card-grid">
                 <SettingStatus title="Sisselogimine" ok text="Rakendus nõuab Supabase kasutajat." />
-                <SettingStatus title="Rollipõhine vaade" ok text="Müügijuht näeb rohkem toiminguid kui assistent." />
-                <SettingStatus title="Salajased võtmed" ok text=".env.local ei lähe GitHubi üles." />
+                <SettingStatus title="Rollipõhine vaade" ok text={isAdmin ? "Müügijuht saab kasutajaid, eksporti ja admini toiminguid hallata." : "Assistendil on paindlik töövaade, aga mitte kasutajate kustutamist ega kogu andmestiku eksporti."} />
+                <SettingStatus title="Salajased võtmed" ok text="Serverivõtmed ei ole brauseris nähtavad." />
+                <SettingStatus title="Andmete nähtavus" ok text={isAdmin ? "Admin näeb kogu aktiivset müügitoru." : "Assistent näeb talle määratud või tema loodud kontakte."} />
               </div>
             </>
           ) : null}
@@ -585,6 +603,63 @@ function SettingsView({
         </section>
       </div>
     </div>
+  );
+}
+
+function RoleCapabilities({ role }: { role: string }) {
+  const adminItems = [
+    ["Kasutajad", "Lisa, muuda ja kustuta kontosid."],
+    ["Andmed", "Laadi alla kogu andmestik ja kontrolli eksporti."],
+    ["Juhtimine", "Näe kogu tiimi kontakte, prioriteete ja üle tähtaja töid."],
+    ["Seadistus", "Kontrolli AI, e-posti, kalendri ja turvaolekut."]
+  ];
+  const assistantItems = [
+    ["Kontaktid", "Lisa ja muuda enda tööks vajalikke kontakte."],
+    ["Kõned", "Kasuta kõneskripti, AI soovitusi ja järeltegevusi."],
+    ["Import", "Too sisse tööfailid, kui müügijuht on selle töövoo andnud."],
+    ["Isiklik vaade", "Muuda välimust, tihedust ja ekspordi enda kirjed."]
+  ];
+  const items = role === "admin" ? adminItems : assistantItems;
+
+  return (
+    <div className="capability-grid">
+      {items.map(([title, text]) => (
+        <article key={title}>
+          <strong>{title}</strong>
+          <span>{text}</span>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function WorkflowSettings({ role }: { role: string }) {
+  const isAdmin = role === "admin";
+
+  return (
+    <>
+      <div>
+        <p className="eyebrow">{isAdmin ? "Admini töölaud" : "Assistendi töölaud"}</p>
+        <h3>Töövoog</h3>
+      </div>
+      <div className="workflow-grid">
+        <article>
+          <strong>{isAdmin ? "Tiimi rütm" : "Minu kõnepäev"}</strong>
+          <span>{isAdmin ? "Alusta töölaualt, vaata üle tähtaja tegevused ja kõrge prioriteediga kontaktid." : "Alusta kontaktidest või kalendrist, tee kõne, salvesta tulemus ja planeeri järgmine samm."}</span>
+          <a className="button" href="/">Ava töölaud</a>
+        </article>
+        <article>
+          <strong>{isAdmin ? "Kvaliteedikontroll" : "Paindlik tööjärjekord"}</strong>
+          <span>{isAdmin ? "Kasuta statistikat ja eksporti, et näha tulemusi, üleandmisi ja töömahtu." : "Filtreeri kontakte vastutaja, staatuse, prioriteedi ja järgmise tegevuse järgi."}</span>
+          <a className="button" href={isAdmin ? "/?view=stats" : "/?view=leads"}>{isAdmin ? "Ava statistika" : "Ava kontaktid"}</a>
+        </article>
+        <article>
+          <strong>{isAdmin ? "Kasutajad ja ligipääs" : "Minu import ja eksport"}</strong>
+          <span>{isAdmin ? "Hoia rollid korras: admin juhib, assistent töötab kontaktidega ja näeb oma tööala." : "Assistendil on lubatud importida ja eksportida enda ligipääsuga tööd, ilma kogu baasi avamata."}</span>
+          <a className="button" href={isAdmin ? "/?view=settings&setting=users" : "/?view=settings&setting=data"}>{isAdmin ? "Halda kasutajaid" : "Ava andmed"}</a>
+        </article>
+      </div>
+    </>
   );
 }
 
