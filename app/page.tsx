@@ -130,7 +130,7 @@ function PanelMoveControls({ id, index, total, layout }: { id: string; index: nu
   );
 }
 
-function LeadsView({ leads, users, callLists, role, tasks, editLead, isNewLead, tableMode, params, errorMessage }: { leads: Lead[]; users: any[]; callLists: CallList[]; role: string; tasks: Task[]; editLead: Lead | null; isNewLead: boolean; tableMode: boolean; params: Record<string, string | undefined>; errorMessage?: string }) {
+function LeadsView({ leads, users, callLists, role, tasks, editLead, isNewLead, tableMode, pipelineMode = false, params, errorMessage }: { leads: Lead[]; users: any[]; callLists: CallList[]; role: string; tasks: Task[]; editLead: Lead | null; isNewLead: boolean; tableMode: boolean; pipelineMode?: boolean; params: Record<string, string | undefined>; errorMessage?: string }) {
   return (
     <div className="stack">
       <div className="section-title">
