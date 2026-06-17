@@ -67,35 +67,32 @@ function DashboardView({ leads, calls, tasks, preferences }: { leads: Lead[]; ca
     .slice(0, 5);
 
   const layout = normalizedDashboardLayout(preferences?.dashboard_layout);
-  const panels = [
-    { id: "today-tasks", title: "Tänased järeltegevused", body: <TaskList tasks={todayTasks} /> },
-    { id: "overdue", title: "Üle tähtaja järeltegevused", body: <TaskList tasks={overdueTasks} /> },
-    { id: "planned-calls", title: "Tänaseks planeeritud kõned", body: <TaskList tasks={todayTasks.filter((task) => task.type.includes("helista"))} /> },
-    { id: "hot-leads", title: "Kõrge prioriteediga kontaktid", body: <LeadMiniList leads={hotLeads} /> },
-    { id: "handoff", title: "Üle antud müügispetsialistile", body: <LeadMiniList leads={handoffLeads} /> },
-    { id: "recent-calls", title: "Viimased kõned", body: <CallMiniList calls={calls.slice(0, 6)} leads={leads} /> },
-    { id: "ai-priorities", title: "AI soovitatud järgmised kontaktid", body: <LeadMiniList leads={priorities} showAction /> },
-    { id: "activity", title: "Tänane aktiivsus", body: <><p>Kõnesid täna: <strong>{todayCalls.length}</strong></p><p>Rääkinud kontakte: <strong>{talkedToday.length}</strong></p><p>Järeltegevusi täna: <strong>{todayTasks.length}</strong></p></> }
+  const allPanels = [
+    { id: "overdue", title: "Üle tähtaja järeltegevused", count: overdueTasks.length, body: <TaskList tasks={overdueTasks} /> },
+    { id: "today-tasks", title: "Tänased järeltegevused", count: todayTasks.length, body: <TaskList tasks={todayTasks} /> },
+    { id: "hot-leads", title: "Kõrge prioriteediga kontaktid", count: hotLeads.length, body: <LeadMiniList leads={hotLeads} /> },
+    { id: "ai-priorities", title: "AI soovitatud järgmised kontaktid", count: priorities.length, body: <LeadMiniList leads={priorities} showAction /> },
+    { id: "handoff", title: "Üle antud müügispetsialistile", count: handoffLeads.length, body: <LeadMiniList leads={handoffLeads} /> },
+    { id: "planned-calls", title: "Tänaseks planeeritud kõned", count: todayTasks.filter((task) => task.type.includes("helista")).length, body: <TaskList tasks={todayTasks.filter((task) => task.type.includes("helista"))} /> },
+    { id: "recent-calls", title: "Viimased kõned", count: calls.length, body: <CallMiniList calls={calls.slice(0, 6)} leads={leads} /> },
+    { id: "activity", title: "Tänane aktiivsus", count: todayCalls.length, body: <><p>Kõnesid täna: <strong>{todayCalls.length}</strong></p><p>Rääkinud kontakte: <strong>{talkedToday.length}</strong></p><p>Järeltegevusi täna: <strong>{todayTasks.length}</strong></p></> }
   ].sort((a, b) => layout.indexOf(a.id) - layout.indexOf(b.id));
+  const panels = allPanels.filter((p) => p.count > 0);
 
   return (
     <div className="stack">
       <div className="section-title">
         <div>
-          <p className="eyebrow">Tänane fookus</p>
+          <p className="eyebrow">{overdueTasks.length > 0 ? `${overdueTasks.length} üle tähtaja tegevust` : todayTasks.length > 0 ? `${todayTasks.length} planeeritud tegevust täna` : "Kõik korras — alusta kõnega"}</p>
           <h2>Töölaud</h2>
         </div>
         <a className="button primary" href="/?view=leads&new=1">Lisa uus kontakt</a>
       </div>
       <div className="kpi-grid">
-        <Kpi label="Kõnesid täna" value={todayCalls.length} />
-        <Kpi label="Vastatud kõnesid" value={answeredCalls.length} />
-        <Kpi label="Rääkinud kontakte" value={talkedToday.length} />
-        <Kpi label="Avatud kontakte" value={openContacts.length} />
-        <Kpi label="Üle antud kontakte" value={handoffLeads.length} />
-        <Kpi label="Järeltegevusi täna" value={todayTasks.length} />
         <Kpi label="Üle tähtaja" value={overdueTasks.length} />
+        <Kpi label="Avatud kontaktid" value={openContacts.length} />
         <Kpi label="AI prioriteete" value={priorities.length} />
+        <Kpi label="Kõnesid täna" value={todayCalls.length} />
       </div>
       <div className="dashboard-grid">
         {panels.map((panel, index) => (
@@ -1053,4 +1050,4 @@ function filterAndSortLeads(leads: Lead[], params: Record<string, string | undef
 function dateValue(value: string | null) {
   if (!value) return 0;
   return new Date(value).getTime() || 0;
-      }
+          }
