@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
+import { HandoffCard } from "@/components/HandoffCard";
+import { PipelineView } from "@/components/PipelineView";
 import { InlineAiCoach } from "@/components/InlineAiCoach";
 import { PrintButton } from "@/components/PrintButton";
 import { completeTask, createAppUser, deleteAppUser, deleteLead, moveDashboardWidget, postponeTask, saveCall, saveLead, saveUserPreferences, updateAppUser, updateTaskSchedule } from "./actions";
@@ -41,7 +43,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       {view === "call" && !lead ? <EmptyState title="Kontakt puudub" text="Lisa esmalt kontakt, siis saab kõnevaate avada." /> : null}
       {view === "stats" ? <StatsView leads={leadRows} calls={callRows} tasks={taskRows} /> : null}
       {view === "settings" ? <SettingsView notifications={notifications || []} role={me?.role || "assistant"} activeTab={params.setting || "general"} users={users as AppUser[]} preferences={preferences as UserPreference | null} currentUserId={auth.user.id} errorMessage={errorMessage} saved={savedMessage} /> : null}
-      {view === "leads" ? <LeadsView leads={filteredLeads} users={users || []} callLists={callLists as CallList[]} role={me?.role || "assistant"} tasks={taskRows} editLead={editLead} isNewLead={isNewLead} tableMode={params.mode === "table"} params={params} errorMessage={errorMessage} /> : null}
+      {view === "leads" ? <LeadsView leads={filteredLeads} users={users || []} callLists={callLists as CallList[]} role={me?.role || "assistant"} tasks={taskRows} editLead={editLead} isNewLead={isNewLead} tableMode={params.mode === "table"} pipelineMode={params.mode === "pipeline"} params={params} errorMessage={errorMessage} /> : null}
     </Shell>
   );
 }
@@ -140,6 +142,7 @@ function LeadsView({ leads, users, callLists, role, tasks, editLead, isNewLead, 
           <a className="button" href="/api/export?type=contacts">Laadi kontaktid alla</a>
           <a className="button" href="/api/export?type=high-priority">Kõrge prioriteet CSV</a>
           <a className="button" href="/?view=leads&mode=table">Tabelivaade</a>
+          <a className="button" href="/?view=leads&mode=pipeline">Pipeline</a>
           <a className="button primary" href="/?view=leads&new=1">Lisa uus kontakt</a>
         </div>
       </div>
@@ -147,7 +150,7 @@ function LeadsView({ leads, users, callLists, role, tasks, editLead, isNewLead, 
       <ContactFilters users={users} callLists={callLists} params={params} />
       {(editLead || isNewLead || leads.length === 0) ? <LeadForm users={users} callLists={callLists} lead={editLead} /> : null}
       {!editLead && !isNewLead && leads.length > 0 ? <LeadCards leads={leads} role={role} /> : null}
-      {tableMode ? <div className="panel table-wrap">
+      {pipelineMode ? <PipelineView leads={leads} /> : tableMode ? <div className="panel table-wrap">
         <table>
           <thead><tr><th>Aadress</th><th>Kontakt</th><th>Kõnenimekiri</th><th>Portaal</th><th>Staatus</th><th>Prioriteet</th><th>Järgmine tegevus</th><th>AI</th><th></th></tr></thead>
           <tbody>
@@ -328,7 +331,8 @@ Kas selle põhjus on pigem varasem halb kogemus, liiga palju kõnesid, teenustas
             <button name="mode" value="close" type="submit">Salvesta ja sulge kontakt</button>
           </div>
         </form>
-        <div className="ai-card">
+        <HandoffCard leadId={lead.id} formId="call-form" contactName={lead.contact_name} propertyAddress={lead.property_address} leadScore={lead.lead_score} />
+    <div className="ai-card">
           <h3>AI kokkuvõte kontaktist</h3>
           {lead.ai_summary ? <pre>{lead.ai_summary}</pre> : <p className="muted">AI kokkuvõtet pole veel. Kõne ajal kasuta ülal olevat live kõneabi.</p>}
           <form action="/api/ai-feedback" method="post"><input type="hidden" name="lead_id" value={lead.id} /><button type="submit">Tee AI kokkuvõte</button></form>
