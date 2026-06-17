@@ -149,7 +149,7 @@ function LeadsView({ leads, users, callLists, role, tasks, editLead, isNewLead, 
       {errorMessage ? <div className="panel error-panel"><strong>Salvestamine ei õnnestunud.</strong><br />{errorMessage}</div> : null}
       <ContactFilters users={users} callLists={callLists} params={params} />
       {(editLead || isNewLead || leads.length === 0) ? <LeadForm users={users} callLists={callLists} lead={editLead} /> : null}
-      {!editLead && !isNewLead && leads.length > 0 ? <LeadCards leads={leads} role={role} /> : null}
+      {!editLead && !isNewLead && leads.length > 0 && !pipelineMode ? <LeadCards leads={leads} role={role} /> : null}
       {pipelineMode ? <PipelineView leads={leads} /> : tableMode ? <div className="panel table-wrap">
         <table>
           <thead><tr><th>Aadress</th><th>Kontakt</th><th>Kõnenimekiri</th><th>Portaal</th><th>Staatus</th><th>Prioriteet</th><th>Järgmine tegevus</th><th>AI</th><th></th></tr></thead>
@@ -1053,4 +1053,4 @@ function filterAndSortLeads(leads: Lead[], params: Record<string, string | undef
 function dateValue(value: string | null) {
   if (!value) return 0;
   return new Date(value).getTime() || 0;
-}
+      }
