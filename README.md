@@ -224,3 +224,4 @@ Kõige praktilisem live’i mineku järjekord:
 6. Cron meeldetuletused.
 7. Google Calendar OAuth.
 8. Microsoft Calendar OAuth.
+
