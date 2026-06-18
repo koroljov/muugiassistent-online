@@ -58,7 +58,6 @@ function DashboardView({ leads, calls, tasks, preferences }: { leads: Lead[]; ca
   const hotLeads = leads.filter((lead) => (lead.lead_score || 0) >= 60).slice(0, 6);
   const handoffLeads = leads.filter((lead) => lead.status === "suunatud müügispetsialistile" || lead.last_call_result === "soovib müügispetsialisti kõnet").slice(0, 6);
   const todayCalls = calls.filter((call) => call.call_time?.slice(0, 10) === today);
-  const answeredCalls = todayCalls.filter((call) => call.call_result && call.call_result !== "ei vastanud");
   const talkedToday = todayCalls.filter((call) => (call.call_result || "").startsWith("rääkis"));
   const openContacts = leads.filter((lead) => ["pigem avatud", "soovib müügispetsialisti kõnet"].includes(lead.status));
   const priorities = [...leads]
@@ -83,7 +82,7 @@ function DashboardView({ leads, calls, tasks, preferences }: { leads: Lead[]; ca
     <div className="stack">
       <div className="section-title">
         <div>
-          <p className="eyebrow">{overdueTasks.length > 0 ? `${overdueTasks.length} üle tähtaja tegevust` : todayTasks.length > 0 ? `${todayTasks.length} planeeritud tegevust täna` : "Kõik korras — alusta kõnega"}</p>
+          <p className="eyebrow">{overdueTasks.length > 0 ? `${overdueTasks.length} øle tähtaja tegevust` : todayTasks.length > 0 ? `${todayTasks.length} planeeritud tegevust täna` : "Kõik korras — alusta kõnega"}</p>
           <h2>Töölaud</h2>
         </div>
         <a className="button primary" href="/?view=leads&new=1">Lisa uus kontakt</a>
@@ -118,7 +117,7 @@ function PanelMoveControls({ id, index, total, layout }: { id: string; index: nu
         <button type="submit" disabled={index === 0} aria-label="Nihuta paneel üles">↑</button>
       </form>
       <form action={moveDashboardWidget}>
-        <input type="hidden" name="widget" value={id} />
+  #     <input type="hidden" name="widget" value={id} />
         <input type="hidden" name="direction" value="down" />
         <input type="hidden" name="current_layout" value={layout.join(",")} />
         <button type="submit" disabled={index === total - 1} aria-label="Nihuta paneel alla">↓</button>
@@ -138,8 +137,11 @@ function LeadsView({ leads, users, callLists, role, tasks, editLead, isNewLead, 
         <div className="row">
           <a className="button" href="/api/export?type=contacts">Laadi kontaktid alla</a>
           <a className="button" href="/api/export?type=high-priority">Kõrge prioriteet CSV</a>
-          <a className="button" href="/?view=leads&mode=table">Tabelivaade</a>
-          <a className="button" href="/?view=leads&mode=pipeline">Pipeline</a>
+          <div className="view-toggle">
+            <a href="/?view=leads" title="Kaardid" className={!tableMode && !pipelineMode ? "active" : ""}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></a>
+            <a href="/?view=leads&mode=table" title="Tabel" className={tableMode ? "active" : ""}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></a>
+            <a href="/?view=leads&mode=pipeline" title="Pipeline" className={pipelineMode ? "active" : ""}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="12"/><rect x="17" y="3" width="5" height="15"/></svg></a>
+          </div>
           <a className="button primary" href="/?view=leads&new=1">Lisa uus kontakt</a>
         </div>
       </div>
@@ -177,19 +179,25 @@ function LeadsView({ leads, users, callLists, role, tasks, editLead, isNewLead, 
 }
 
 function ContactFilters({ users, callLists, params }: { users: any[]; callLists: CallList[]; params: Record<string, string | undefined> }) {
+  const hasExtraFilters = !!(params.portal || params.property_type || params.deal_type || params.assigned_to || params.priority || params.next_action || params.no_brokers_note);
   return (
     <form className="panel filter-grid" action="/" method="get">
       <input type="hidden" name="view" value="leads" />
       <label>Otsing <input name="q" placeholder="Aadress, kontaktisik, telefon, e-post või link" defaultValue={params.q || ""} /></label>
       <label>Kõnenimekiri <select name="call_list" defaultValue={params.call_list || ""}><option value="">Kõik</option>{callLists.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       <label>Staatus <select name="status" defaultValue={params.status || ""}><option value="">Kõik</option>{["uus", "vajab järelkõnet", "pigem avatud", "neutraalne", "suunatud müügispetsialistile", "suletud"].map((item) => <option key={item}>{item}</option>)}</select></label>
-      <label>Portaal <select name="portal" defaultValue={params.portal || ""}><option value="">Kõik</option>{selectOptions.portals.map((item) => <option key={item}>{item}</option>)}</select></label>
-      <label>Objekti tüüp <select name="property_type" defaultValue={params.property_type || ""}><option value="">Kõik</option>{selectOptions.propertyTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
-      <label>Tehing <select name="deal_type" defaultValue={params.deal_type || ""}><option value="">Kõik</option><option>Müük</option><option>Üür</option></select></label>
-      <label>Vastutaja <select name="assigned_to" defaultValue={params.assigned_to || ""}><option value="">Kõik</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</select></label>
-      <label>Prioriteet <select name="priority" defaultValue={params.priority || ""}><option value="">Kõik</option><option value="high">Kõrge</option><option value="medium">Keskmine</option><option value="low">Madal</option></select></label>
-      <label>Järgmine tegevus <select name="next_action" defaultValue={params.next_action || ""}><option value="">Kõik</option>{selectOptions.nextActions.map((item) => <option key={item}>{item}</option>)}</select></label>
-      <label>Mitte tülitada <select name="no_brokers_note" defaultValue={params.no_brokers_note || ""}><option value="">Kõik</option><option value="jah">Jah</option><option value="ei">Ei</option></select></label>
+      <details className="filter-extra" open={hasExtraFilters || undefined}>
+        <summary>Rohkem filtrid</summary>
+        <div className="filter-extra-grid">
+          <label>Portaal <select name="portal" defaultValue={params.portal || ""}><option value="">Kõik</option>{selectOptions.portals.map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label>Objekti tüüp <select name="property_type" defaultValue={params.property_type || ""}><option value="">Kõik</option>{selectOptions.propertyTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label>Tehing <select name="deal_type" defaultValue={params.deal_type || ""}><option value="">Kõik</option><option>Müük</option><option>Üür</option></select></label>
+          <label>Vastutaja <select name="assigned_to" defaultValue={params.assigned_to || ""}><option value="">Kõik</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</select></label>
+          <label>Prioriteet <select name="priority" defaultValue={params.priority || ""}><option value="">Kõik</option><option value="high">Kõrge</option><option value="medium">Keskmine</option><option value="low">Madal</option></select></label>
+          <label>Järgmine tegevus <select name="next_action" defaultValue={params.next_action || ""}><option value="">Kõik</option>{selectOptions.nextActions.map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label>Mitte tülitada <select name="no_brokers_note" defaultValue={params.no_brokers_note || ""}><option value="">Kõik</option><option value="jah">Jah</option><option value="ei">Ei</option></select></label>
+        </div>
+      </details>
       <label>Sorteeri <select name="sort" defaultValue={params.sort || "created_at"}><option value="priority">Prioriteet</option><option value="created_at">Lisamise aeg</option><option value="last_contact_at">Viimane kontakt</option><option value="next_action_at">Järgmine tegevus</option><option value="price">Hind</option><option value="area">Pindala</option></select></label>
       <div className="filter-actions"><button className="primary" type="submit">Filtreeri</button><a className="button" href="/?view=leads">Tühjenda</a></div>
     </form>
@@ -319,7 +327,7 @@ Kas selle põhjus on pigem varasem halb kogemus, liiga palju kõnesid, teenustas
             <ChoiceGroup legend="Miks ei soovi abi" name="no_help_reason" options={selectOptions.noHelpReasons} compact multiple />
             <ChoiceGroup legend="Miks rääkima jäi" name="talk_reason" options={selectOptions.talkReasons} compact multiple />
           </details>
-          <label>Kommentaar kõnest <textarea name="call_comment" placeholder="Kirjuta 1-2 lauset: mida klient ütles, mis teda päriselt takistab." /></label>
+          <label>Kommentaar kõnest <textarea name="call_comment" placeholder="Kirjuta 1-2 lauset: mida klient øtles, mis teda päriselt takistab." /></label>
           <label>Järgmine samm <textarea name="next_step" placeholder="Näiteks: saata SMS, müügispetsialist helistab, teha hinnavaatlus." /></label>
           <div className="button-grid">
             <button className="primary" name="mode" value="normal" type="submit">Salvesta kõne</button>
@@ -521,10 +529,10 @@ function SettingsView({
                 <h3>Rakenduse seis</h3>
               </div>
               <div className="settings-card-grid">
-                <SettingStatus title="Supabase ühendus" ok text="Andmebaasi võtmed on olemas ja app saab sisselogimist kasutada." />
+                <SettingStatus title="Supabase øhendus" ok text="Andmebaasi võtmed on olemas ja app saab sisselogimist kasutada." />
                 <SettingStatus title="Live aadress" ok={Boolean(appUrl)} text={appUrl || "APP_URL tuleb Vercelis määrata pärast esimese aadressi saamist."} />
                 <SettingStatus title="Kasutaja roll" ok text={role === "admin" ? "Oled müügijuhi rollis." : "Oled müügiassistendi rollis."} />
-                <SettingStatus title="Ekspordid" ok text={isAdmin ? "Kogu andmestiku ZIP ja CSV ekspordid on olemas." : "Saad eksportida enda ligipääsuga kontaktid, kõned ja ülesanded."} />
+                <SettingStatus title="Kaksprdid" ok text={isAdmin ? "Kogu andmestiku ZIP ja CSV ekspordid on olemas." : "Saad eksportida enda ligipääsuga kontaktid, kõned ja ülesanded."} />
               </div>
               <RoleCapabilities role={role} />
             </>
@@ -644,7 +652,7 @@ function RoleCapabilities({ role }: { role: string }) {
   const adminItems = [
     ["Kasutajad", "Lisa, muuda ja kustuta kontosid."],
     ["Andmed", "Laadi alla kogu andmestik ja kontrolli eksporti."],
-    ["Juhtimine", "Näe kogu tiimi kontakte, prioriteete ja üle tähtaja töid."],
+    ["Juhtimine", "Näe kogu tiimi kontakte, prioriteete ja øle tähtaja töid."],
     ["Seadistus", "Kontrolli AI, e-posti, kalendri ja turvaolekut."]
   ];
   const assistantItems = [
@@ -1050,4 +1058,4 @@ function filterAndSortLeads(leads: Lead[], params: Record<string, string | undef
 function dateValue(value: string | null) {
   if (!value) return 0;
   return new Date(value).getTime() || 0;
-          }
+      }
