@@ -1860,6 +1860,25 @@ async function archiveLead() {
 // NEW LEAD + AUTO-FILL FROM LISTING URL
 // ============================================================
 
+// Proxy helper — proovib corsproxy.io (kiirem), fallback allorigins.win
+async function proxyFetch(url, timeoutMs = 12000) {
+  // corsproxy.io tagastab otse HTML teksti
+  try {
+    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url), {
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    if (!r.ok) throw new Error('corsproxy status ' + r.status);
+    return await r.text();
+  } catch (e) {
+    // Fallback: allorigins.win tagastab { contents: "..." }
+    const r2 = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url), {
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    const j = await r2.json();
+    return j.contents || '';
+  }
+}
+
 function onUrlInput(val) {
   const btn = document.getElementById('nUrlBtn');
   const st  = document.getElementById('nUrlStatus');
@@ -1875,10 +1894,7 @@ async function fetchListing() {
   st.style.color = 'var(--tx2)';
   st.textContent = 'Laen kuulutust...';
   try {
-    const proxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-    const r = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-    const j = await r.json();
-    const htm = j.contents || '';
+    const htm = await proxyFetch(url);
 
     // Safe meta extractor using indexOf
     function getMeta(prop) {
@@ -1972,10 +1988,7 @@ async function fetchListingEdit() {
   if (st) { st.style.color = 'var(--tx2)'; st.textContent = 'Laen kuulutust...'; }
 
   try {
-    const proxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-    const r = await fetch(proxy, { signal: AbortSignal.timeout(10000) });
-    const j = await r.json();
-    const htm = j.contents || '';
+    const htm = await proxyFetch(url);
 
     function getMeta(prop) {
       const needle = 'property="' + prop + '"';
