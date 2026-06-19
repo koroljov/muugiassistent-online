@@ -1716,6 +1716,7 @@ function openLead(id) {
           </select>
         </div>
         <div class="kv-row"><span class="kv-lbl">Järgmine tegevus</span><input class="kv-inp" id="lNext" type="date" value="${l.next_action_at||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Kuulutuse URL</span><input class="kv-inp" id="lUrl" placeholder="https://www.kv.ee/..." value="${l.listing_note&&l.listing_note.startsWith('http')?l.listing_note:''}"></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?l.listing_note:''}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${l.lead_comment||''}</textarea></div>
       </div>
@@ -1819,7 +1820,7 @@ async function saveLead() {
     price:            parseFloat(document.getElementById('lHind').value)   || null,
     contact_method:   document.getElementById('lKontaktViis').value        || null,
     next_action_at:   document.getElementById('lNext').value               || null,
-    listing_note:     document.getElementById('lMarkus').value.trim()      || null,
+    listing_note:     document.getElementById('lUrl').value.trim() || document.getElementById('lMarkus').value.trim() || null,
     lead_comment:     document.getElementById('lKommentaar').value.trim()  || null,
   };
   const { error } = await sb.from('leads').update(patch).eq('id', CURRENT.id);
