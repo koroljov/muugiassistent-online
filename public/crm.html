@@ -448,7 +448,7 @@ input, select, textarea, button {
   transition: height 0.2s ease;
 }
 .k-img-wrap.loaded {
-  height: 76px;
+  height: 100px;
 }
 .k-img-wrap img {
   width: 100%;
@@ -464,11 +464,30 @@ input, select, textarea, button {
   border-radius: 3px;
   display: inline-block;
 }
-.k-age {
+.k-days {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fff;
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+}
+.k-cm {
   font-size: 8px;
   color: var(--tx2);
-  margin-top: 4px;
-  opacity: 0.7;
+  margin-top: 3px;
+  opacity: 0.8;
+}
+.lead-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  display: block;
 }
 .n-ov { background: rgba(239,68,68,0.12); color: #ef4444; }
 .n-td { background: rgba(245,158,11,0.12); color: #f59e0b; }
@@ -1126,6 +1145,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
             <button class="btn-ghost" id="nUrlBtn" onclick="fetchListing()" style="padding:6px 10px;font-size:10px;white-space:nowrap;display:none">↓ Täida</button>
           </div>
           <div id="nUrlStatus" style="font-size:9px;color:var(--tx2);margin-top:3px;min-height:12px"></div>
+          <div id="nImgPreview" style="display:none;width:100%;height:80px;background-size:cover;background-position:center;border-radius:6px;margin-top:6px;border:1px solid var(--bd)"></div>
         </div>
         <div>
           <div class="set-lbl">Kontakti nimi *</div>
@@ -1134,6 +1154,19 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
         <div>
           <div class="set-lbl">Telefon</div>
           <input class="inp" id="nTel" placeholder="+372 5xxx xxxx" type="tel">
+        </div>
+        <div>
+          <div class="set-lbl">Kontakteerimise viis</div>
+          <select class="inp" id="nKontaktViis">
+            <option value="">—</option>
+            <option>Kõne (väljaminev)</option>
+            <option>Kõne (sissetulev)</option>
+            <option>KV.ee sõnum</option>
+            <option>E-mail</option>
+            <option>Soovitus</option>
+            <option>Isiklik tutvus</option>
+            <option>Muu</option>
+          </select>
         </div>
         <div>
           <div class="set-lbl">Objekti aadress</div>
@@ -1162,6 +1195,10 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
         <div>
           <div class="set-lbl">Märkus</div>
           <textarea class="inp" id="nMarkus" rows="2" style="resize:vertical" placeholder="Portaalist, soovituse kaudu..."></textarea>
+        </div>
+        <div>
+          <div class="set-lbl">Kommentaar</div>
+          <textarea class="inp" id="nKommentaar" rows="2" style="resize:vertical" placeholder="Täiendav info, esmamulje..."></textarea>
         </div>
       </div>
     </div>
@@ -1214,6 +1251,7 @@ const STAATUSED = [
 // STATE
 // ============================================================
 let LEADS = [];
+let _lastFetchedImg = '';
 let TASKS = [];
 let CALLS = [];
 let CURRENT = null;
@@ -1323,6 +1361,24 @@ function stateAge(ds) {
   return months + ' kuud staatuses';
 }
 
+function daysBadge(ds) {
+  if (!ds) return '';
+  const days = Math.floor((Date.now() - new Date(ds)) / 86400000);
+  if (days < 1) return '';
+  if (days < 7)  return days + 'p';
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return weeks + 'n';
+  return Math.floor(days / 30) + 'k';
+}
+function daysBadgeColor(ds) {
+  if (!ds) return '#6b7280';
+  const days = Math.floor((Date.now() - new Date(ds)) / 86400000);
+  if (days < 3) return '#22c55e';
+  if (days < 7) return '#f59e0b';
+  if (days < 14) return '#ef4444';
+  return '#6b7280';
+}
+
 function dateInfo(ds) {
   if (!ds) return null;
   const d = new Date(ds); d.setHours(0,0,0,0);
@@ -1366,21 +1422,26 @@ function makeKol(st, isReadOnly) {
     const di  = dateInfo(l.next_action_at);
     const dcs = di ? di.cls.split(' ').filter(c => c.startsWith('s-')).join(' ') : '';
     const hasUrl = l.listing_note && (l.listing_note.startsWith('http'));
-    const age = stateAge(l.status_changed_at || l.created_at);
+    const daysText  = daysBadge(l.status_changed_at || l.created_at);
+    const daysColor = daysBadgeColor(l.status_changed_at || l.created_at);
+    const imgPart = l.img_url
+      ? `<div class="k-img-wrap loaded"><img src="${l.img_url}" loading="lazy" onerror="this.parentElement.classList.remove('loaded');this.parentElement.style.height='0'"></div>`
+      : `<div class="k-img-wrap" id="kimg-${l.id}"></div>`;
     return `<div class="kard ${dcs}" draggable="true"
       data-lid="${l.id}"
-      data-kurl="${hasUrl ? l.listing_note.replace(/"/g,'') : ''}"
+      data-kurl="${!l.img_url && hasUrl ? l.listing_note.replace(/"/g,'') : ''}"
       style="border-left-color:${st.color}"
       onclick="openLead('${l.id}')"
       ondragstart="startDrag('${l.id}',event)"
       ondragend="endDrag(event)">
-      <div class="k-img-wrap" id="kimg-${l.id}"></div>
+      ${imgPart}
       <div class="k-badge" style="background:${st.color}"></div>
+      ${daysText ? `<div class="k-days" style="background:${daysColor}">${daysText}</div>` : ''}
       <div class="k-name">${l.contact_name || '(nimi puudub)'}</div>
       <div class="k-sub">${l.property_address || l.property_type || '—'}</div>
       <div class="k-eur"><b>${eur(leadEur(l))}</b>${l.deal_type ? ' · ' + l.deal_type : ''}</div>
+      ${l.contact_method ? `<div class="k-cm">📞 ${l.contact_method}</div>` : ''}
       ${di ? `<div class="k-next ${di.cls.split(' ')[0]}">${di.txt}</div>` : ''}
-      ${age ? `<div class="k-age">${age}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -1606,8 +1667,10 @@ function openLead(id) {
       ).join('')
     : '<div style="font-size:11px;color:var(--tx2);padding:4px 0">Kõnede ajalugu puudub.</div>';
 
+  const contactMethodOpts = ['Kõne (väljaminev)','Kõne (sissetulev)','KV.ee sõnum','E-mail','Soovitus','Isiklik tutvus','Muu'];
   document.getElementById('leadBody').innerHTML = `
     <div class="pbar">${pbar}</div>
+    ${l.img_url ? `<img class="lead-img" src="${l.img_url}" onerror="this.style.display='none'">` : ''}
 
     <div class="kv-grid">
       <div>
@@ -1616,8 +1679,15 @@ function openLead(id) {
         <div class="kv-row"><span class="kv-lbl">E-post</span><input class="kv-inp" id="lEmail" value="${l.email||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Aadress</span><input class="kv-inp" id="lAadress" value="${l.property_address||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
+          <select class="kv-inp" id="lKontaktViis">
+            <option value="">—</option>
+            ${contactMethodOpts.map(o => `<option${l.contact_method===o?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
         <div class="kv-row"><span class="kv-lbl">Järgmine tegevus</span><input class="kv-inp" id="lNext" type="date" value="${l.next_action_at||''}"></div>
-        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note||''}</textarea></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?l.listing_note:''}</textarea></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${l.lead_comment||''}</textarea></div>
       </div>
 
       <div>
@@ -1712,13 +1782,15 @@ async function changeStatus(newKey) {
 async function saveLead() {
   if (!CURRENT) return;
   const patch = {
-    contact_name:     document.getElementById('lNimi').value.trim()    || null,
-    phone:            document.getElementById('lTel').value.trim()     || null,
-    email:            document.getElementById('lEmail').value.trim()   || null,
-    property_address: document.getElementById('lAadress').value.trim() || null,
-    price:            parseFloat(document.getElementById('lHind').value) || null,
-    next_action_at:   document.getElementById('lNext').value           || null,
-    listing_note:     document.getElementById('lMarkus').value.trim()  || null,
+    contact_name:     document.getElementById('lNimi').value.trim()        || null,
+    phone:            document.getElementById('lTel').value.trim()         || null,
+    email:            document.getElementById('lEmail').value.trim()       || null,
+    property_address: document.getElementById('lAadress').value.trim()     || null,
+    price:            parseFloat(document.getElementById('lHind').value)   || null,
+    contact_method:   document.getElementById('lKontaktViis').value        || null,
+    next_action_at:   document.getElementById('lNext').value               || null,
+    listing_note:     document.getElementById('lMarkus').value.trim()      || null,
+    lead_comment:     document.getElementById('lKommentaar').value.trim()  || null,
   };
   const { error } = await sb.from('leads').update(patch).eq('id', CURRENT.id);
   if (error) { toast('❌ ' + error.message); return; }
@@ -1808,6 +1880,17 @@ async function fetchListing() {
     else if (/äripind|büroo|kontor|tootmis|ladu/.test(combined)) ptype = 'Äripind';
     else if (/krunt|maatükk|kinnistu/.test(combined)) ptype = 'Maa';
 
+    // OG Image
+    _lastFetchedImg = '';
+    const imgM = htm.match(/property="og:image"[^>]+content="([^"]+)"/) ||
+                 htm.match(/content="([^"]+)"[^>]+property="og:image"/) ||
+                 htm.match(/og:image["']\s*content=["']([^"']+)["']/);
+    if (imgM && imgM[1] && imgM[1].startsWith('http')) {
+      _lastFetchedImg = imgM[1];
+      const prev = document.getElementById('nImgPreview');
+      if (prev) { prev.style.backgroundImage = 'url(' + _lastFetchedImg + ')'; prev.style.display = 'block'; }
+    }
+
     // Area
     const areaM = htm.match(/(\d+[,.]?\d*)\s*m[²2]/);
     const area = areaM ? areaM[1].replace(',','.') : null;
@@ -1836,12 +1919,16 @@ async function fetchListing() {
 
 
 function openNew(defaultStatus = 'uus') {
-  ['nUrl','nNimi','nTel','nAadress','nHind','nMarkus'].forEach(id => document.getElementById(id).value = '');
+  ['nUrl','nNimi','nTel','nAadress','nHind','nMarkus','nKommentaar'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('nUrlBtn').style.display = 'none';
   document.getElementById('nUrlStatus').textContent = '';
   document.getElementById('nUrlStatus').style.color = 'var(--tx2)';
   document.getElementById('nTuup').value = '';
   document.getElementById('nTehing').value = '';
+  document.getElementById('nKontaktViis').value = '';
+  _lastFetchedImg = '';
+  const _prev = document.getElementById('nImgPreview');
+  if (_prev) { _prev.style.display = 'none'; _prev.style.backgroundImage = ''; }
   document.getElementById('newModal').dataset.status = defaultStatus;
   document.getElementById('newModal').classList.add('open');
   setTimeout(() => document.getElementById('nNimi').focus(), 100);
@@ -1862,6 +1949,9 @@ async function saveNewLead() {
     deal_type:        document.getElementById('nTehing').value         || null,
     price:            parseFloat(document.getElementById('nHind').value) || null,
     listing_note:     urlVal || noteBase || null,
+    img_url:          _lastFetchedImg || null,
+    contact_method:   document.getElementById('nKontaktViis').value    || null,
+    lead_comment:     document.getElementById('nKommentaar').value.trim() || null,
     status,
     status_changed_at: new Date().toISOString(),
     created_by:  USER?.id || null,
@@ -1943,6 +2033,12 @@ async function fetchImages() {
       if (imgUrl) {
         const wrap = document.getElementById('kimg-' + card.dataset.lid);
         if (wrap) injectImgWrap(wrap, imgUrl);
+        // Persist to DB so card loads instantly next time
+        const lid = card.dataset.lid;
+        sb.from('leads').update({ img_url: imgUrl }).eq('id', lid).then(() => {
+          const lead = LEADS.find(l => l.id === lid);
+          if (lead) lead.img_url = imgUrl;
+        });
       }
     } catch(e) {
       _OGC[ck] = '';
