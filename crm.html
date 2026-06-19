@@ -1,0 +1,2259 @@
+<!DOCTYPE html>
+<html lang="et" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MüügiAssistent</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+/* ============================================================
+   CSS VARIABLES — DARK (vaikimisi)
+   ============================================================ */
+:root {
+  --bg: #141418;
+  --sf: #1d1d23;
+  --cd: #25252e;
+  --bd: rgba(255,255,255,0.07);
+  --tx: #dde0ec;
+  --tx2: #66677e;
+  --ac: #28a85e;
+  --acb: rgba(40,168,94,0.12);
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --green: #22c55e;
+  --violet: #a78bfa;
+}
+
+[data-theme="light"] {
+  --bg: #eaecf1;
+  --sf: #ffffff;
+  --cd: #f4f5f9;
+  --bd: rgba(0,0,0,0.08);
+  --tx: #16162a;
+  --tx2: #5e6070;
+}
+
+/* COLOUR THEMES */
+.t-blue   { --ac: #4a80f0; --acb: rgba(74,128,240,0.12); }
+.t-brown  { --ac: #9c6228; --acb: rgba(156,98,40,0.12); }
+.t-grey   { --ac: #8a93ad; --acb: rgba(138,147,173,0.12); }
+
+/* ============================================================
+   RESET + BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--tx);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+#loginScreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: var(--bg);
+}
+
+.login-box {
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 14px;
+  padding: 36px;
+  width: 320px;
+}
+
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.login-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--ac);
+}
+
+.login-title { font-size: 15px; font-weight: 600; }
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 10px; color: var(--tx2); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.inp {
+  width: 100%;
+  background: var(--cd);
+  border: 1px solid var(--bd);
+  border-radius: 7px;
+  padding: 8px 11px;
+  color: var(--tx);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.inp:focus { border-color: var(--ac); }
+
+.btn-primary {
+  background: var(--ac);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 9px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.88; }
+
+#loginErr { font-size: 11px; color: var(--red); margin-top: 8px; min-height: 16px; }
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+#app { display: none; flex-direction: column; height: 100vh; }
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+#topbar {
+  background: var(--sf);
+  border-bottom: 1px solid var(--bd);
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.logo-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--ac);
+  flex-shrink: 0;
+}
+
+/* XP BAR */
+.xpw {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lvl-badge {
+  background: var(--acb);
+  color: var(--ac);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.xp-track {
+  flex: 1;
+  height: 4px;
+  background: var(--bd);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 40px;
+  max-width: 180px;
+}
+
+.xp-fill {
+  height: 100%;
+  background: var(--ac);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.xp-num { font-size: 9px; color: var(--tx2); white-space: nowrap; flex-shrink: 0; }
+.xp-streak { font-size: 9px; color: #c97a10; white-space: nowrap; flex-shrink: 0; }
+
+/* TOPBAR RIGHT */
+.tbr {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.ib {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--bd);
+  background: transparent;
+  color: var(--tx2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background 0.1s;
+}
+.ib:hover { background: var(--bd); color: var(--tx); }
+
+/* COLOR PICKER */
+.cpr { position: relative; }
+
+.cp-dot-main {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--ac);
+  cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+[data-theme="light"] .cp-dot-main { border-color: rgba(0,0,0,0.15); }
+
+.cp-drop {
+  display: none;
+  position: absolute;
+  right: 0; top: 24px;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 9px;
+  padding: 6px;
+  z-index: 200;
+  min-width: 158px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+.cp-drop.open { display: block; }
+
+.cp-drop-label {
+  font-size: 9px;
+  color: var(--tx2);
+  padding: 3px 8px 5px;
+  border-bottom: 1px solid var(--bd);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cp-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--tx);
+}
+.cp-opt:hover { background: var(--bd); }
+.cp-swatch { width: 10px; height: 10px; border-radius: 50%; }
+
+/* USER BUTTON */
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--bd);
+  cursor: pointer;
+  background: transparent;
+  color: var(--tx);
+  transition: background 0.1s;
+}
+.user-btn:hover { background: var(--bd); }
+
+.user-av {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--acb);
+  color: var(--ac);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.user-name { font-size: 10px; }
+
+/* ============================================================
+   TABS
+   ============================================================ */
+#tabs {
+  background: var(--sf);
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  flex-shrink: 0;
+}
+
+.tab {
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tx2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.1s;
+}
+.tab.active { color: var(--ac); border-bottom-color: var(--ac); }
+.tab:hover:not(.active) { color: var(--tx); }
+
+/* ============================================================
+   PIPELINE BAR
+   ============================================================ */
+#pipeBar {
+  background: var(--sf);
+  border-bottom: 1px solid var(--bd);
+  padding: 7px 14px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.ps { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.ps-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.ps-n { font-size: 11px; font-weight: 600; }
+.ps-l { font-size: 10px; color: var(--tx2); }
+
+.pipe-eur {
+  margin-left: auto;
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.pipe-eur span { font-size: 10px; color: var(--tx2); }
+.pipe-eur b { color: var(--ac); }
+
+/* ============================================================
+   MAIN
+   ============================================================ */
+#main {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.view { display: none; flex: 1; overflow: hidden; }
+.view.active { display: flex; }
+
+/* ============================================================
+   KANBAN
+   ============================================================ */
+#view-kanban {
+  overflow-x: auto;
+  padding: 12px;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.kol {
+  flex: 0 0 215px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.kol-head { padding: 2px 4px 8px; }
+
+.kol-name {
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+
+.kol-badge { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.kol-meta { font-size: 9px; color: var(--tx2); }
+.kol-meta b { color: var(--tx); }
+
+.kol-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+  padding-bottom: 6px;
+}
+
+/* LEAD CARD */
+.kard {
+  background: var(--cd);
+  border-radius: 8px;
+  padding: 9px 9px 9px 12px;
+  cursor: pointer;
+  border: none;
+  border-left: 3px solid transparent;
+  transition: border-left-color 0.12s, opacity 0.12s, transform 0.12s, box-shadow 0.12s;
+  position: relative;
+  overflow: hidden;
+}
+.kard:hover { opacity: 0.88; }
+.kard.s-overdue { box-shadow: inset 0 0 0 1px rgba(239,68,68,0.3); }
+.kard.s-today   { box-shadow: inset 0 0 0 1px rgba(245,158,11,0.3); }
+.kard.s-ok      { box-shadow: inset 0 0 0 1px rgba(34,197,94,0.15); }
+
+.k-name { font-size: 11px; font-weight: 600; margin-bottom: 2px; padding-right: 16px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.k-sub  { font-size: 9px; color: var(--tx2); margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k-eur  { font-size: 10px; color: var(--tx2); }
+.k-eur b { color: var(--ac); }
+
+.k-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+}
+
+/* CARD IMAGE */
+.k-img-wrap {
+  width: calc(100% + 21px);
+  margin: -9px -9px 8px -12px;
+  height: 0;
+  overflow: hidden;
+  background: transparent;
+  border-radius: 5px 5px 0 0;
+  transition: height 0.2s ease;
+}
+.k-img-wrap.loaded {
+  height: 100px;
+}
+.k-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.k-next {
+  font-size: 9px;
+  margin-top: 5px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.k-days {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fff;
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+}
+.k-cm {
+  font-size: 8px;
+  color: var(--tx2);
+  margin-top: 3px;
+  opacity: 0.8;
+}
+.lead-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  display: block;
+}
+.n-ov { background: rgba(239,68,68,0.12); color: #ef4444; }
+.n-td { background: rgba(245,158,11,0.12); color: #f59e0b; }
+.n-ok { background: rgba(34,197,94,0.1);   color: #22c55e; }
+
+.kard-add {
+  border: 1.5px dashed var(--bd) !important;
+  background: transparent !important;
+  opacity: 0.45;
+  text-align: center;
+  padding: 9px;
+  font-size: 10px;
+  color: var(--tx2);
+  cursor: pointer;
+  border-radius: 8px;
+}
+.kard-add:hover { opacity: 0.7 !important; }
+
+/* DRAG AND DROP */
+.kol.drag-over {
+  background: var(--acb);
+  outline: 3px dashed var(--ac);
+  outline-offset: -4px;
+  border-radius: 10px;
+  transform: scale(1.015);
+  transition: transform 0.1s ease;
+}
+.kol.drag-over .kol-head { opacity: 0.55; }
+.kard[draggable] { cursor: grab; }
+.kard.dragging   { opacity: 0.25; cursor: grabbing; transform: scale(0.93) rotate(-1.5deg); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+
+/* KANBAN SECTIONS */
+.kol-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.kol-sec-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tx2);
+  padding: 0 4px 7px 4px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.kol-sec-label .sec-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--tx2);
+  flex-shrink: 0;
+}
+
+.kol-sec-cols {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.kol-divider {
+  flex-shrink: 0;
+  width: 1px;
+  background: var(--bd);
+  align-self: stretch;
+  margin: 0 8px;
+}
+
+/* ============================================================
+   LIST VIEW
+   ============================================================ */
+#view-list { flex-direction: column; }
+
+#listWrap {
+  overflow-y: auto;
+  flex: 1;
+  padding: 12px;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+thead th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--bd);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+}
+
+tbody td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--bd);
+  vertical-align: middle;
+}
+
+tbody tr:hover td { background: var(--cd); cursor: pointer; }
+
+.chip {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+/* ============================================================
+   TASKS VIEW
+   ============================================================ */
+#view-tasks { flex-direction: column; }
+
+#tasksWrap {
+  overflow-y: auto;
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sec-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 8px 0 4px;
+}
+
+.task-card {
+  background: var(--cd);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.t-check {
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--bd);
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  color: #fff;
+  transition: background 0.12s;
+}
+.t-check.done { background: var(--ac); border-color: var(--ac); }
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--sf);
+  border-radius: 12px;
+  width: 660px;
+  max-width: 100%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+
+.modal-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.modal-title { font-size: 14px; font-weight: 600; flex: 1; }
+
+.modal-x {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--bd);
+  background: transparent;
+  color: var(--tx2);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.modal-body { padding: 16px 18px; overflow-y: auto; flex: 1; }
+.modal-foot {
+  padding: 12px 18px;
+  border-top: 1px solid var(--bd);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* PROGRESS BAR (status) */
+.pbar {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.pbar-step {
+  flex: 1;
+  min-width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.12s;
+  padding: 4px 2px;
+  border-radius: 5px;
+}
+.pbar-step:hover { opacity: 0.7; }
+.pbar-step.done, .pbar-step.current { opacity: 1; }
+
+.pbar-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--tx2);
+}
+.pbar-step.done    .pbar-dot { background: var(--ac); opacity: 0.55; }
+.pbar-step.current .pbar-dot { background: var(--ac); }
+
+.pbar-lbl { font-size: 8px; color: var(--tx2); text-align: center; white-space: nowrap; }
+.pbar-step.current .pbar-lbl { color: var(--ac); font-weight: 600; }
+
+/* MODAL FORM */
+.kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+@media (max-width: 540px) { .kv-grid { grid-template-columns: 1fr; } }
+
+.kv-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--bd);
+  gap: 8px;
+}
+.kv-lbl { font-size: 11px; color: var(--tx2); flex-shrink: 0; padding-top: 3px; }
+
+.kv-inp {
+  background: var(--cd);
+  border: 1px solid var(--bd);
+  border-radius: 5px;
+  padding: 4px 8px;
+  color: var(--tx);
+  outline: none;
+  font-size: 11px;
+  width: 100%;
+}
+.kv-inp:focus { border-color: var(--ac); }
+
+textarea.kv-inp { resize: vertical; min-height: 58px; }
+
+/* CALL LOG */
+.call-item {
+  background: var(--cd);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  border-left: 2px solid var(--ac);
+}
+.call-meta { font-size: 9px; color: var(--tx2); margin-top: 3px; }
+
+/* BUTTONS */
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--bd);
+  color: var(--tx2);
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.btn-ghost:hover { background: var(--bd); color: var(--tx); }
+
+.btn-sm {
+  background: var(--ac);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+.btn-sm:hover { opacity: 0.88; }
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #ef4444;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.btn-danger:hover { background: rgba(239,68,68,0.08); }
+
+/* ============================================================
+   SETTINGS PANEL
+   ============================================================ */
+#setPanel {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 220px;
+  background: var(--sf);
+  border-left: 1px solid var(--bd);
+  display: none;
+  flex-direction: column;
+  z-index: 50;
+  box-shadow: -8px 0 24px rgba(0,0,0,0.15);
+}
+#setPanel.open { display: flex; }
+
+.set-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.set-body {
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.set-sec {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tx2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--bd);
+  margin-top: 4px;
+}
+
+.set-lbl { font-size: 10px; color: var(--tx2); margin-bottom: 3px; }
+
+.set-inp {
+  width: 100%;
+  background: var(--cd);
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-size: 11px;
+  color: var(--tx);
+  outline: none;
+}
+.set-inp:focus { border-color: var(--ac); }
+
+.xp-box {
+  background: var(--acb);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+.xp-box-big { font-size: 22px; font-weight: 700; color: var(--ac); line-height: 1; }
+.xp-box-sub { font-size: 9px; color: var(--tx2); margin-top: 3px; }
+
+.xp-rules {
+  background: var(--cd);
+  border-radius: 6px;
+  padding: 9px 10px;
+  font-size: 9px;
+  color: var(--tx2);
+  line-height: 1.75;
+}
+.xp-rules-title { font-size: 10px; font-weight: 600; color: var(--tx); margin-bottom: 4px; }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--cd);
+  border: 1.5px solid var(--ac);
+  border-radius: 8px;
+  padding: 7px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ac);
+  display: none;
+  white-space: nowrap;
+  z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+#toast.show { display: block; }
+
+/* EMPTY */
+.empty { padding: 30px; text-align: center; color: var(--tx2); font-size: 12px; }
+
+/* ADD LEAD FLOATING BTN */
+#addBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 24px;
+  background: var(--ac);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  transition: opacity 0.15s;
+}
+#addBtn:hover { opacity: 0.88; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN
+     ============================================================ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-dot"></div>
+      <span class="login-title">MüügiAssistent</span>
+    </div>
+    <div class="field">
+      <label>E-post</label>
+      <input class="inp" type="email" id="loginEmail" placeholder="su@email.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Parool</label>
+      <input class="inp" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Logi sisse</button>
+    <div id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP
+     ============================================================ -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      MüügiAssistent
+    </div>
+
+    <div class="xpw">
+      <div class="lvl-badge" id="lvlBadge">Tase 1</div>
+      <div class="xp-track"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+      <div class="xp-num" id="xpNum">0/100 xp</div>
+      <div class="xp-streak" id="xpStreak" style="display:none">🔥 0p</div>
+    </div>
+
+    <div class="tbr">
+      <div class="cpr" id="cpr">
+        <div class="cp-dot-main" id="cpMain" onclick="togglePicker()"></div>
+        <div class="cp-drop" id="cpDrop">
+          <div class="cp-drop-label">Värviteema</div>
+          <div class="cp-opt" onclick="setColorTheme('','#28a85e')">
+            <div class="cp-swatch" style="background:#28a85e"></div>Roheline
+          </div>
+          <div class="cp-opt" onclick="setColorTheme('t-blue','#4a80f0')">
+            <div class="cp-swatch" style="background:#4a80f0"></div>Tume sinine
+          </div>
+          <div class="cp-opt" onclick="setColorTheme('t-brown','#9c6228')">
+            <div class="cp-swatch" style="background:#9c6228"></div>Luksuslik pruun
+          </div>
+          <div class="cp-opt" onclick="setColorTheme('t-grey','#8a93ad')">
+            <div class="cp-swatch" style="background:#8a93ad"></div>Space grey
+          </div>
+        </div>
+      </div>
+      <button class="ib" id="modeBtn" onclick="toggleMode()" title="Hele/Tume">☀</button>
+      <button class="ib" onclick="toggleSet()" title="Seaded">⚙</button>
+      <button class="user-btn" onclick="doLogout()">
+        <div class="user-av" id="userAv">MK</div>
+        <div class="user-name" id="userName">Meelis</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div id="tabs">
+    <div class="tab active" onclick="setView('kanban',this)">📋 Kanban</div>
+    <div class="tab" onclick="setView('list',this)">☰ Nimekiri</div>
+    <div class="tab" onclick="setView('tasks',this)">✓ Ülesanded</div>
+  </div>
+
+  <!-- PIPELINE BAR -->
+  <div id="pipeBar"></div>
+
+  <!-- MAIN CONTENT -->
+  <div id="main">
+
+    <!-- KANBAN -->
+    <div class="view active" id="view-kanban"></div>
+
+    <!-- LIST -->
+    <div class="view" id="view-list">
+      <div id="listWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Kontakt</th>
+              <th>Objekt / Märkus</th>
+              <th>Staatus</th>
+              <th>Hind</th>
+              <th>Järgmine</th>
+            </tr>
+          </thead>
+          <tbody id="listBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="view" id="view-tasks">
+      <div id="tasksWrap"></div>
+    </div>
+
+    <!-- SETTINGS PANEL -->
+    <div id="setPanel">
+      <div class="set-head">
+        Seaded
+        <span onclick="toggleSet()" style="cursor:pointer;font-size:20px;line-height:1;color:var(--tx2)">×</span>
+      </div>
+      <div class="set-body">
+        <div class="set-sec">Üldine</div>
+        <div>
+          <div class="set-lbl">Nimi</div>
+          <input class="set-inp" id="setName" value="Meelis" oninput="savePref()">
+        </div>
+        <div id="setRoleRow">
+          <div class="set-lbl">Roll</div>
+          <select class="set-inp" id="setRole" onchange="savePref()">
+            <option value="assistant">Müügiassistent</option>
+            <option value="specialist">Müügispetsialist</option>
+          </select>
+        </div>
+
+        <div class="set-sec">Punktid</div>
+        <div class="xp-box">
+          <div class="xp-box-big" id="setXpBig">0 xp</div>
+          <div class="xp-box-sub" id="setXpSub">Tase 1 · Algaja</div>
+        </div>
+        <div class="xp-rules">
+          <div class="xp-rules-title">Punktide loogika</div>
+          Uus lead lisatud +20<br>
+          Kõne tehtud +35<br>
+          Järelkõne planeeritud +50<br>
+          Huvi olemas +75<br>
+          Ülesanne tehtud +25<br>
+          Tehing sõlmitud +200<br>
+          <span style="color:var(--ac)">×2 boonus 7+ päeva streak</span>
+        </div>
+
+        <div id="userMgmtSection" style="display:none">
+          <div class="set-sec">Kasutajad</div>
+          <div id="userList" style="font-size:11px"></div>
+          <div style="font-size:9px;color:var(--tx2);margin-top:6px">
+            Uue kasutaja lisamiseks kasuta Supabase Dashboard → Authentication.
+          </div>
+        </div>
+
+        <div style="margin-top:auto">
+          <button class="btn-ghost" style="width:100%;font-size:11px" onclick="doLogout()">Logi välja</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ADD BTN -->
+<button id="addBtn" onclick="openNew()" style="display:none">+ Uus lead</button>
+
+<!-- ============================================================
+     LEAD MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="leadModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="leadTitle">Lead</div>
+      <button class="modal-x" onclick="closeModal('leadModal')">×</button>
+    </div>
+    <div class="modal-body" id="leadBody"></div>
+    <div class="modal-foot">
+      <button class="btn-danger" onclick="archiveLead()">Arhiveeri</button>
+      <button class="btn-ghost" onclick="closeModal('leadModal')">Sulge</button>
+      <button class="btn-sm" onclick="saveLead()">Salvesta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     NEW LEAD MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="newModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <div class="modal-title">Uus lead</div>
+      <button class="modal-x" onclick="closeModal('newModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;gap:10px">
+        <div>
+          <div class="set-lbl">Kuulutuse URL (kv.ee / kinnisvara24)</div>
+          <div style="display:flex;gap:6px">
+            <input class="inp" id="nUrl" placeholder="https://www.kv.ee/..." oninput="onUrlInput(this.value)" style="flex:1">
+            <button class="btn-ghost" id="nUrlBtn" onclick="fetchListing()" style="padding:6px 10px;font-size:10px;white-space:nowrap;display:none">↓ Täida</button>
+          </div>
+          <div id="nUrlStatus" style="font-size:9px;color:var(--tx2);margin-top:3px;min-height:12px"></div>
+          <div id="nImgPreview" style="display:none;width:100%;height:80px;background-size:cover;background-position:center;border-radius:6px;margin-top:6px;border:1px solid var(--bd)"></div>
+        </div>
+        <div>
+          <div class="set-lbl">Kontakti nimi *</div>
+          <input class="inp" id="nNimi" placeholder="Ees- ja perekonnanimi">
+        </div>
+        <div>
+          <div class="set-lbl">Telefon</div>
+          <input class="inp" id="nTel" placeholder="+372 5xxx xxxx" type="tel">
+        </div>
+        <div>
+          <div class="set-lbl">Kontakteerimise viis</div>
+          <select class="inp" id="nKontaktViis">
+            <option value="">—</option>
+            <option>Kõne (väljaminev)</option>
+            <option>Kõne (sissetulev)</option>
+            <option>KV.ee sõnum</option>
+            <option>E-mail</option>
+            <option>Soovitus</option>
+            <option>Isiklik tutvus</option>
+            <option>Muu</option>
+          </select>
+        </div>
+        <div>
+          <div class="set-lbl">Objekti aadress</div>
+          <input class="inp" id="nAadress" placeholder="Tänav nr, linn">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div class="set-lbl">Tüüp</div>
+            <select class="inp" id="nTuup">
+              <option value="">—</option>
+              <option>Korter</option><option>Maja</option><option>Äripind</option><option>Maa</option>
+            </select>
+          </div>
+          <div>
+            <div class="set-lbl">Tehing</div>
+            <select class="inp" id="nTehing">
+              <option value="">—</option>
+              <option value="muuk">Müük</option><option value="uur">Üür</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <div class="set-lbl">Hind / oodatav hind (€)</div>
+          <input class="inp" id="nHind" type="number" min="0" placeholder="näit. 150000">
+        </div>
+        <div>
+          <div class="set-lbl">Märkus</div>
+          <textarea class="inp" id="nMarkus" rows="2" style="resize:vertical" placeholder="Portaalist, soovituse kaudu..."></textarea>
+        </div>
+        <div>
+          <div class="set-lbl">Kommentaar</div>
+          <textarea class="inp" id="nKommentaar" rows="2" style="resize:vertical" placeholder="Täiendav info, esmamulje..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="closeModal('newModal')">Tühista</button>
+      <button class="btn-sm" onclick="saveNewLead()">Lisa lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// SUPABASE
+// ============================================================
+const SB_URL = 'https://iawvsfylguajkoikbdaf.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// ============================================================
+// STAATUSED
+// ============================================================
+// ASSISTENDI PIPELINE (section A) — revealed by scrolling left
+// MINU PIPELINE (section M) — default visible
+const STAATUSED = [
+  // assistantDrop: kas assistent tohib siia dropida
+  { key: 'uus',              nimi: 'Kontakt',         color: '#ef4444', section: 'A', xp: 0,  assistantDrop: true  },
+  { key: 'vestlus toimus',   nimi: 'Ühendust võetud', color: '#f59e0b', section: 'A', xp: 35, assistantDrop: true  },
+  { key: 'vajab järelkõnet', nimi: 'Järelkontakt',    color: '#fb923c', section: 'A', xp: 50, assistantDrop: true  },
+  // "Edasta →" jagab sama võtit 'prospect' Minu pipeline Prospect kolumniga.
+  // Mõlemad näitavad sama leadi samaaegselt. Kaob assistendi vaatest alles siis,
+  // kui Meelis tõstab leadi Prospect → Kontakt (või kaugemale).
+  { key: 'prospect',         nimi: 'Edasta →',        color: '#22c55e', section: 'A', xp: 0,  assistantDrop: true  },
+  { key: 'ei soovi abi',     nimi: 'Ei soovi',        color: '#6b7280', section: 'A', xp: 0,  assistantDrop: true  },
+  { key: 'pigem avatud',     nimi: 'Avatud (vana)',   color: '#94a3b8', section: 'A', xp: 0,  assistantDrop: false }, // legacy DB andmed
+  { key: 'tehing',           nimi: 'Tehing (vana)',   color: '#a78bfa', section: 'A', xp: 0,  assistantDrop: false },
+  // Prospect = sama võti 'prospect' mis Edasta → . Nähtav Minu pipeline'is.
+  { key: 'prospect',         nimi: 'Prospect',        color: '#818cf8', section: 'M', xp: 0   },
+  { key: 'k_kontakt',        nimi: 'Kontakt',         color: '#60a5fa', section: 'M', xp: 0   },
+  { key: 'leping',           nimi: 'Leping',                color: '#3b82f6', section: 'M', xp: 100 },
+  { key: 'ettevalmistus',    nimi: 'Ettevalmistus',         color: '#8b5cf6', section: 'M', xp: 150 },
+  { key: 'ostja',            nimi: 'Ostja',                 color: '#ec4899', section: 'M', xp: 100 },
+  { key: 't_ettevalmistus',  nimi: 'Tehingu ettevalmistus', color: '#f59e0b', section: 'M', xp: 150 },
+  { key: 'k_tehing',         nimi: 'Tehing',                color: '#22c55e', section: 'M', xp: 200 },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let LEADS = [];
+let _lastFetchedImg = '';
+let TASKS = [];
+let CALLS = [];
+let CURRENT = null;
+let USER = null;
+let XP   = parseInt(localStorage.getItem('ma_xp')     || '0');
+let STREAK = parseInt(localStorage.getItem('ma_streak')|| '0');
+
+const LEVELS      = [0, 100, 250, 500, 1000, 2000, 3500, 5000];
+const LEVEL_NAMES = ['Algaja','Uustulnuk','Aktiivne','Professionaal','Ekspert','Meister','Legend','Guru'];
+
+// ============================================================
+// AUTH
+// ============================================================
+document.getElementById('loginPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const err   = document.getElementById('loginErr');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'Täida mõlemad väljad.'; return; }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { err.textContent = error.message; return; }
+  USER = data.user;
+  startApp();
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('addBtn').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  USER = null;
+}
+
+// Auto-login
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { USER = session.user; startApp(); }
+})();
+
+// ============================================================
+// APP START
+// ============================================================
+async function startApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('addBtn').style.display = '';
+
+  let name = localStorage.getItem('ma_name') || USER?.email?.split('@')[0] || 'Kasutaja';
+  let role = localStorage.getItem('ma_role') || 'specialist';
+
+  // Lae profiil DB-st — vigade korral kasuta localStorage fallback
+  try {
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', USER?.id).single();
+    if (profile) {
+      name = profile.name || name;
+      role = profile.role || role;
+    }
+  } catch(e) {
+    console.warn('Profiili laadimine ebaõnnestus, kasutan localStorage:', e);
+  }
+
+  localStorage.setItem('ma_name', name);
+  localStorage.setItem('ma_role', role);
+
+  document.getElementById('setName').value  = name;
+  document.getElementById('setRole').value  = role;
+  document.getElementById('userName').textContent = name;
+  document.getElementById('userAv').textContent   = initials(name);
+
+  // Rolli-põhine UI
+  const isAssistant = role === 'assistant';
+  const roleRow  = document.getElementById('setRoleRow');
+  const userMgmt = document.getElementById('userMgmtSection');
+  if (roleRow)  roleRow.style.display      = isAssistant ? 'none' : '';
+  if (userMgmt) userMgmt.style.display = isAssistant ? 'none' : '';
+
+  updateXP();
+  await loadData();
+}
+
+// ============================================================
+// DATA
+// ============================================================
+async function loadData() {
+  const [lr, tr, cr] = await Promise.all([
+    sb.from('leads').select('*').is('archived_at', null).order('created_at', { ascending: false }),
+    sb.from('tasks').select('*').order('due_date', { ascending: true }),
+    sb.from('calls').select('*').order('call_time', { ascending: false }),
+  ]);
+  LEADS = lr.data || [];
+  TASKS = tr.data || [];
+  CALLS = cr.data || [];
+  render();
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function eur(v) {
+  if (!v || v == 0) return '—';
+  return new Intl.NumberFormat('et-EE').format(Math.round(Number(v))) + ' €';
+}
+
+function leadEur(l) { return l.price || l.budget || 0; }
+
+function initials(name) {
+  return (name || '??').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+function stateAge(ds) {
+  if (!ds) return null;
+  const d = new Date(ds);
+  const now = new Date();
+  const diffMs = now - d;
+  const days = Math.floor(diffMs / 86400000);
+  if (days === 0) return 'täna lisatud';
+  if (days === 1) return '1 päev staatuses';
+  if (days < 7)  return days + ' päeva staatuses';
+  const weeks = Math.floor(days / 7);
+  if (weeks === 1) return '1 nädal staatuses';
+  if (weeks < 5)  return weeks + ' nädalat staatuses';
+  const months = Math.floor(days / 30);
+  if (months === 1) return '1 kuu staatuses';
+  return months + ' kuud staatuses';
+}
+
+function daysBadge(ds) {
+  if (!ds) return '';
+  const days = Math.floor((Date.now() - new Date(ds)) / 86400000);
+  if (days < 1) return '';
+  if (days < 7)  return days + 'p';
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return weeks + 'n';
+  return Math.floor(days / 30) + 'k';
+}
+function daysBadgeColor(ds) {
+  if (!ds) return '#6b7280';
+  const days = Math.floor((Date.now() - new Date(ds)) / 86400000);
+  if (days < 3) return '#22c55e';
+  if (days < 7) return '#f59e0b';
+  if (days < 14) return '#ef4444';
+  return '#6b7280';
+}
+
+function dateInfo(ds) {
+  if (!ds) return null;
+  const d = new Date(ds); d.setHours(0,0,0,0);
+  const now = new Date(); now.setHours(0,0,0,0);
+  const tom = new Date(now); tom.setDate(tom.getDate()+1);
+  if (d < now) return { cls: 'n-ov s-overdue', txt: '⚠ ' + d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}) };
+  if (d < tom) return { cls: 'n-td s-today',   txt: '⏰ täna' };
+  return           { cls: 'n-ok s-ok',          txt: d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}) };
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  renderPipeBar();
+  renderKanban();
+  renderList();
+  renderTasks();
+  // Fetch OG images in background after DOM update
+  setTimeout(fetchImages, 50);
+}
+
+function renderPipeBar() {
+  const stDots = STAATUSED.map(st => {
+    const cnt = LEADS.filter(l => l.status === st.key).length;
+    return `<div class="ps"><div class="ps-dot" style="background:${st.color}"></div><span class="ps-n">${cnt}</span><span class="ps-l">${st.nimi}</span></div>`;
+  }).join('');
+
+  const total = LEADS.reduce((s, l) => s + leadEur(l), 0);
+  const open  = LEADS.filter(l => l.status !== 'ei soovi abi').reduce((s, l) => s + leadEur(l), 0);
+
+  document.getElementById('pipeBar').innerHTML = stDots +
+    `<div class="pipe-eur"><span>Portfellis: <b>${eur(total) || '0 €'}</b></span><span>Aktiivne: <b>${eur(open) || '0 €'}</b></span></div>`;
+}
+
+function makeKol(st, isReadOnly) {
+  const leads = LEADS.filter(l => l.status === st.key);
+  const total = leads.reduce((s, l) => s + leadEur(l), 0);
+
+  const cards = leads.map(l => {
+    const di  = dateInfo(l.next_action_at);
+    const dcs = di ? di.cls.split(' ').filter(c => c.startsWith('s-')).join(' ') : '';
+    const hasUrl = l.listing_note && (l.listing_note.startsWith('http'));
+    const daysText  = daysBadge(l.status_changed_at || l.created_at);
+    const daysColor = daysBadgeColor(l.status_changed_at || l.created_at);
+    const imgPart = l.img_url
+      ? `<div class="k-img-wrap loaded"><img src="${l.img_url}" loading="lazy" onerror="this.parentElement.classList.remove('loaded');this.parentElement.style.height='0'"></div>`
+      : `<div class="k-img-wrap" id="kimg-${l.id}"></div>`;
+    return `<div class="kard ${dcs}" draggable="true"
+      data-lid="${l.id}"
+      data-kurl="${!l.img_url && hasUrl ? l.listing_note.replace(/"/g,'') : ''}"
+      style="border-left-color:${st.color}"
+      onclick="openLead('${l.id}')"
+      ondragstart="startDrag('${l.id}',event)"
+      ondragend="endDrag(event)">
+      ${imgPart}
+      <div class="k-badge" style="background:${st.color}"></div>
+      ${daysText ? `<div class="k-days" style="background:${daysColor}">${daysText}</div>` : ''}
+      <div class="k-name">${l.contact_name || '(nimi puudub)'}</div>
+      <div class="k-sub">${l.property_address || l.property_type || '—'}</div>
+      <div class="k-eur"><b>${eur(leadEur(l))}</b>${l.deal_type ? ' · ' + l.deal_type : ''}</div>
+      ${l.contact_method ? `<div class="k-cm">📞 ${l.contact_method}</div>` : ''}
+      ${di ? `<div class="k-next ${di.cls.split(' ')[0]}">${di.txt}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const col = document.createElement('div');
+  col.className = 'kol';
+  // Drop-tsoon on terve kolumn, mitte ainult kol-cards
+  col.setAttribute('ondragover', `onDragOver(event)`);
+  col.setAttribute('ondragleave', `onDragLeave(event)`);
+  col.setAttribute('ondrop', `onDrop(event,'${st.key}',${isReadOnly})`);
+  col.innerHTML = `
+    <div class="kol-head">
+      <div class="kol-name">
+        <div class="kol-badge" style="background:${st.color};opacity:.85"></div>
+        ${st.nimi}
+      </div>
+      <div class="kol-meta"><b>${leads.length}</b>${total ? ` · <b>${eur(total)}</b>` : ''}</div>
+    </div>
+    <div class="kol-cards">
+      ${cards}
+      ${!isReadOnly ? `<div class="kard-add" onclick="openNew('${st.key}')">+ Lisa</div>` : ''}
+    </div>`;
+  return col;
+}
+
+function renderKanban() {
+  const wrap = document.getElementById('view-kanban');
+  const prevScroll = wrap.scrollLeft;
+  const hadScroll = prevScroll > 0;
+  wrap.innerHTML = '';
+
+  const role = localStorage.getItem('ma_role') || 'specialist';
+  const isAssistant = role === 'assistant';
+
+  // Assistendi section (A) — left, read-only for specialists; read-write for assistants
+  const secA = document.createElement('div');
+  secA.className = 'kol-section';
+  secA.id = 'kanban-sec-A';
+  const colsA = document.createElement('div');
+  colsA.className = 'kol-sec-cols';
+  const labelA = `<div class="kol-sec-label"><div class="sec-dot"></div>Assistendi pipeline</div>`;
+  STAATUSED.filter(s => s.section === 'A').forEach(st => {
+    // Assistent saab dropida ainult kui assistantDrop=true; spetsialist saab alati
+    const readOnly = isAssistant ? !st.assistantDrop : false;
+    colsA.appendChild(makeKol(st, readOnly));
+  });
+  secA.innerHTML = labelA;
+  secA.appendChild(colsA);
+
+  // Divider
+  const div = document.createElement('div');
+  div.className = 'kol-divider';
+  div.id = 'kanban-divider';
+
+  // Minu section (M) — default visible; read-only for assistants
+  const secM = document.createElement('div');
+  secM.className = 'kol-section';
+  secM.id = 'kanban-sec-M';
+  const colsM = document.createElement('div');
+  colsM.className = 'kol-sec-cols';
+  const labelM = `<div class="kol-sec-label"><div class="sec-dot" style="background:var(--ac)"></div>Minu pipeline</div>`;
+  STAATUSED.filter(s => s.section === 'M').forEach(st => {
+    colsM.appendChild(makeKol(st, isAssistant)); // assistent ei saa M-i dropida
+  });
+  secM.innerHTML = labelM;
+  secM.appendChild(colsM);
+
+  wrap.appendChild(secA);
+  wrap.appendChild(div);
+  wrap.appendChild(secM);
+
+  // Restore previous scroll if re-rendering (e.g., after drag-drop),
+  // otherwise scroll to show Minu pipeline by default.
+  setTimeout(() => {
+    if (hadScroll) {
+      wrap.scrollLeft = prevScroll;
+    } else {
+      wrap.scrollLeft = secA.offsetWidth + div.offsetWidth + 20;
+    }
+  }, 0);
+}
+
+// ============================================================
+// DRAG AND DROP
+// ============================================================
+let dragId = null;
+let _wasDragging = false;
+
+function startDrag(id, e) {
+  dragId = id;
+  _wasDragging = true;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id); // required for Firefox + Chrome to start drag
+  // Add visual class after a tick so it doesn't flash on a plain click
+  setTimeout(() => { if (dragId) e.target.classList.add('dragging'); }, 0);
+}
+
+function endDrag(e) {
+  e.target.classList.remove('dragging');
+  // Keep _wasDragging true briefly so onclick doesn't fire after drag ends
+  setTimeout(() => { _wasDragging = false; dragId = null; }, 150);
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function onDragLeave(e) {
+  // Only remove highlight when leaving the drop zone entirely, not entering a child element
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+}
+
+async function onDrop(e, statusKey, isReadOnly) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!dragId || isReadOnly) return;
+  await changeStatusById(dragId, statusKey);
+  dragId = null;
+}
+
+async function changeStatusById(id, newKey) {
+  const lead = LEADS.find(l => l.id === id);
+  if (!lead || lead.status === newKey) return;
+  const now_ts = new Date().toISOString();
+  const { error } = await sb.from('leads').update({ status: newKey, status_changed_at: now_ts }).eq('id', id);
+  if (error) { toast('❌ ' + error.message); return; }
+  const st  = STAATUSED.find(s => s.key === newKey);
+  const pts = st?.xp || 0;
+  lead.status = newKey;
+  lead.status_changed_at = now_ts;
+  if (pts) addXP(pts);
+  toast(pts ? `✓ ${st.nimi} · +${pts} xp` : '✓ Staatus muudetud');
+  render();
+}
+
+function renderList() {
+  const tbody = document.getElementById('listBody');
+  tbody.innerHTML = LEADS.map(l => {
+    const st = STAATUSED.find(s => s.key === l.status);
+    const di = dateInfo(l.next_action_at);
+    return `<tr onclick="openLead('${l.id}')">
+      <td><b>${l.contact_name || '—'}</b>${l.phone ? `<br><span style="font-size:10px;color:var(--tx2)">${l.phone}</span>` : ''}</td>
+      <td style="font-size:11px;color:var(--tx2)">${l.property_address || l.listing_note || '—'}</td>
+      <td><span class="chip" style="color:${st?.color||'var(--tx2)'};border-color:${st?.color||'var(--bd)'}">${st?.nimi||l.status}</span></td>
+      <td style="color:var(--ac);font-weight:600">${eur(leadEur(l))}</td>
+      <td>${di ? `<span class="${di.cls.split(' ')[0]}">${di.txt}</span>` : '—'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" class="empty">Leade pole.</td></tr>';
+}
+
+function renderTasks() {
+  const wrap = document.getElementById('tasksWrap');
+  const open = TASKS.filter(t => t.status !== 'tehtud');
+  const done = TASKS.filter(t => t.status === 'tehtud').slice(0, 10);
+
+  if (!open.length && !done.length) {
+    wrap.innerHTML = '<div class="empty">Ülesandeid pole.</div>';
+    return;
+  }
+
+  const renderT = (t) => {
+    const l  = LEADS.find(x => x.id === t.lead_id);
+    const di = dateInfo(t.due_date);
+    const isDone = t.status === 'tehtud';
+    return `<div class="task-card">
+      <div class="t-check ${isDone ? 'done' : ''}" onclick="toggleTask('${t.id}','${t.status}',event)">
+        ${isDone ? '✓' : ''}
+      </div>
+      <div style="flex:1">
+        <div style="font-size:11px;font-weight:500${isDone ? ';text-decoration:line-through;opacity:.45' : ''}">${t.type}${l ? ' · ' + (l.contact_name || l.property_address || '') : ''}</div>
+        ${t.comment ? `<div style="font-size:10px;color:var(--tx2)">${t.comment}</div>` : ''}
+        ${di ? `<div class="k-next ${di.cls.split(' ')[0]}" style="margin-top:3px">${di.txt}</div>` : ''}
+      </div>
+    </div>`;
+  };
+
+  wrap.innerHTML =
+    (open.length ? `<div class="sec-lbl">Avatud (${open.length})</div>${open.map(renderT).join('')}` : '') +
+    (done.length ? `<div class="sec-lbl" style="margin-top:8px">Tehtud</div>${done.map(renderT).join('')}` : '');
+}
+
+// ============================================================
+// LEAD MODAL
+// ============================================================
+function openLead(id) {
+  if (_wasDragging) return; // Don't open modal if user was dragging
+  CURRENT = LEADS.find(l => l.id === id);
+  if (!CURRENT) return;
+  const l         = CURRENT;
+  // 'prospect' on jagatud võti A+M — eelistame M sektsiooni vaate
+  const curSt   = STAATUSED.find(s => s.key === l.status && s.section === 'M')
+               || STAATUSED.find(s => s.key === l.status);
+  const section = curSt?.section || 'M';
+  const pipeSteps = STAATUSED.filter(s => s.section === section);
+  const aktIdx    = pipeSteps.findIndex(s => s.key === l.status);
+  const leadCalls = CALLS.filter(c => c.lead_id === l.id);
+
+  document.getElementById('leadTitle').textContent = l.contact_name || l.property_address || 'Lead';
+
+  const role = localStorage.getItem('ma_role') || 'specialist';
+  const isAssistant = role === 'assistant';
+  const canChangeSection = section === 'M' ? !isAssistant : isAssistant;
+
+  const pbar = pipeSteps.map((s, i) => {
+    const cls = i < aktIdx ? 'done' : (i === aktIdx ? 'current' : '');
+    const clickable = canChangeSection ? `onclick="changeStatus('${s.key}')"` : '';
+    return `<div class="pbar-step ${cls}" ${clickable} style="${!canChangeSection ? 'cursor:default' : ''}">
+      <div class="pbar-dot"></div>
+      <div class="pbar-lbl">${s.nimi}</div>
+    </div>`;
+  }).join('');
+
+  const callLog = leadCalls.length
+    ? leadCalls.slice(0, 8).map(c =>
+        `<div class="call-item">
+          <div>${c.call_result || '—'}</div>
+          ${c.call_comment ? `<div class="call-meta">${c.call_comment}</div>` : ''}
+          <div class="call-meta">${new Date(c.call_time).toLocaleDateString('et-EE')}${c.next_action_at ? ' · järgmine: ' + new Date(c.next_action_at).toLocaleDateString('et-EE') : ''}</div>
+        </div>`
+      ).join('')
+    : '<div style="font-size:11px;color:var(--tx2);padding:4px 0">Kõnede ajalugu puudub.</div>';
+
+  const contactMethodOpts = ['Kõne (väljaminev)','Kõne (sissetulev)','KV.ee sõnum','E-mail','Soovitus','Isiklik tutvus','Muu'];
+  document.getElementById('leadBody').innerHTML = `
+    <div class="pbar">${pbar}</div>
+    ${l.img_url ? `<img class="lead-img" src="${l.img_url}" onerror="this.style.display='none'">` : ''}
+
+    <div class="kv-grid">
+      <div>
+        <div class="kv-row"><span class="kv-lbl">Kontakti nimi</span><input class="kv-inp" id="lNimi" value="${l.contact_name||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Telefon</span><input class="kv-inp" id="lTel" value="${l.phone||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">E-post</span><input class="kv-inp" id="lEmail" value="${l.email||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Aadress</span><input class="kv-inp" id="lAadress" value="${l.property_address||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
+          <select class="kv-inp" id="lKontaktViis">
+            <option value="">—</option>
+            ${contactMethodOpts.map(o => `<option${l.contact_method===o?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div class="kv-row"><span class="kv-lbl">Järgmine tegevus</span><input class="kv-inp" id="lNext" type="date" value="${l.next_action_at||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Kuulutuse URL</span><input class="kv-inp" id="lUrl" placeholder="https://www.kv.ee/..." value="${l.listing_note&&l.listing_note.startsWith('http')?l.listing_note:''}"></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?l.listing_note:''}</textarea></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${l.lead_comment||''}</textarea></div>
+      </div>
+
+      <div>
+        <div class="sec-lbl" style="margin-top:0">Kõnede ajalugu</div>
+        ${callLog}
+        <button class="btn-ghost" style="width:100%;margin-top:6px;font-size:10px" onclick="toggleCallForm()">+ Lisa kõne</button>
+
+        <div id="callFormWrap" style="display:none;margin-top:10px;background:var(--cd);border-radius:8px;padding:12px">
+          <div style="display:grid;gap:7px">
+            <div>
+              <div class="set-lbl">Tulemus</div>
+              <select class="inp" id="cfResult">
+                <option value="">Vali...</option>
+                <option>Ei vastanud</option>
+                <option>Kõne toimus</option>
+                <option>Ei soovi maaklerit</option>
+                <option>Huvi olemas</option>
+                <option>Kohtumisaeg kokku lepitud</option>
+                <option>Järelkõne kokku lepitud</option>
+                <option>Juba müüdud</option>
+              </select>
+            </div>
+            <div>
+              <div class="set-lbl">Kommentaar</div>
+              <textarea class="inp" id="cfComment" rows="2" style="resize:vertical" placeholder="Mida räägiti..."></textarea>
+            </div>
+            <div>
+              <div class="set-lbl">Järgmine tegevus</div>
+              <input class="inp" id="cfNext" type="date">
+            </div>
+            <button class="btn-sm" onclick="saveCall()">Salvesta kõne</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('leadModal').classList.add('open');
+}
+
+function toggleCallForm() {
+  const w = document.getElementById('callFormWrap');
+  w.style.display = w.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveCall() {
+  if (!CURRENT) return;
+  const result  = document.getElementById('cfResult').value;
+  const comment = document.getElementById('cfComment').value.trim();
+  const nextAt  = document.getElementById('cfNext').value;
+
+  const { data, error } = await sb.from('calls').insert({
+    lead_id:        CURRENT.id,
+    call_result:    result  || null,
+    call_comment:   comment || null,
+    next_action_at: nextAt  || null,
+    caller_id:      USER?.id || null,
+  }).select().single();
+
+  if (error) { toast('❌ Viga: ' + error.message); return; }
+  CALLS.unshift(data);
+
+  if (nextAt) {
+    await sb.from('leads').update({ next_action_at: nextAt, last_call_result: result || null }).eq('id', CURRENT.id);
+    const idx = LEADS.findIndex(l => l.id === CURRENT.id);
+    if (idx >= 0) { LEADS[idx].next_action_at = nextAt; LEADS[idx].last_call_result = result; }
+  }
+
+  addXP(35);
+  toast('📞 Kõne salvestatud · +35 xp');
+  openLead(CURRENT.id);
+  render();
+}
+
+async function changeStatus(newKey) {
+  if (!CURRENT || CURRENT.status === newKey) return;
+  const { error } = await sb.from('leads').update({ status: newKey }).eq('id', CURRENT.id);
+  if (error) { toast('❌ ' + error.message); return; }
+
+  const idx = LEADS.findIndex(l => l.id === CURRENT.id);
+  if (idx >= 0) LEADS[idx].status = newKey;
+  CURRENT.status = newKey;
+
+  const st  = STAATUSED.find(s => s.key === newKey);
+  const pts = st?.xp || 0;
+  if (pts) addXP(pts);
+  toast(pts ? `✓ ${st.nimi} · +${pts} xp` : '✓ Staatus muudetud');
+
+  openLead(CURRENT.id);
+  render();
+}
+
+async function saveLead() {
+  if (!CURRENT) return;
+  const patch = {
+    contact_name:     document.getElementById('lNimi').value.trim()        || null,
+    phone:            document.getElementById('lTel').value.trim()         || null,
+    email:            document.getElementById('lEmail').value.trim()       || null,
+    property_address: document.getElementById('lAadress').value.trim()     || null,
+    price:            parseFloat(document.getElementById('lHind').value)   || null,
+    contact_method:   document.getElementById('lKontaktViis').value        || null,
+    next_action_at:   document.getElementById('lNext').value               || null,
+    listing_note:     document.getElementById('lUrl').value.trim() || document.getElementById('lMarkus').value.trim() || null,
+    lead_comment:     document.getElementById('lKommentaar').value.trim()  || null,
+  };
+  const { error } = await sb.from('leads').update(patch).eq('id', CURRENT.id);
+  if (error) { toast('❌ ' + error.message); return; }
+  Object.assign(CURRENT, patch);
+  const idx = LEADS.findIndex(l => l.id === CURRENT.id);
+  if (idx >= 0) Object.assign(LEADS[idx], patch);
+  toast('✓ Salvestatud');
+  closeModal('leadModal');
+  render();
+}
+
+async function archiveLead() {
+  if (!CURRENT || !confirm('Arhiveerid selle leadi?')) return;
+  const { error } = await sb.from('leads').update({ archived_at: new Date().toISOString() }).eq('id', CURRENT.id);
+  if (error) { toast('❌ ' + error.message); return; }
+  LEADS = LEADS.filter(l => l.id !== CURRENT.id);
+  toast('📦 Arhiveeritud');
+  closeModal('leadModal');
+  render();
+}
+
+// ============================================================
+// NEW LEAD + AUTO-FILL FROM LISTING URL
+// ============================================================
+
+function onUrlInput(val) {
+  const btn = document.getElementById('nUrlBtn');
+  const st  = document.getElementById('nUrlStatus');
+  const isListing = val && (val.includes('kv.ee/') || val.includes('kinnisvara24.ee/'));
+  btn.style.display = isListing ? '' : 'none';
+  if (!isListing) st.textContent = '';
+}
+
+async function fetchListing() {
+  const url = document.getElementById('nUrl').value.trim();
+  const st  = document.getElementById('nUrlStatus');
+  if (!url) return;
+  st.style.color = 'var(--tx2)';
+  st.textContent = 'Laen kuulutust...';
+  try {
+    const proxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+    const r = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
+    const j = await r.json();
+    const htm = j.contents || '';
+
+    // Safe meta extractor using indexOf
+    function getMeta(prop) {
+      const needle = 'property="' + prop + '"';
+      const needle2 = "property='" + prop + "'";
+      let idx = htm.indexOf(needle);
+      if (idx < 0) idx = htm.indexOf(needle2);
+      if (idx < 0) return null;
+      const chunk = htm.slice(idx, idx + 300);
+      const cm = chunk.match(/content=["']([^"'<]{1,200})["']/);
+      if (cm) return cm[1].trim();
+      // also try reverse order: content before property
+      const needle3 = 'content=';
+      const before = htm.slice(Math.max(0, idx - 300), idx);
+      const cm2 = before.match(/content=["']([^"'<]{1,200})["'][^>]*$/);
+      return cm2 ? cm2[1].trim() : null;
+    }
+
+    // Title
+    const ogTitle = getMeta('og:title') || getMeta('og:description') || '';
+
+    // Price — look for number before € sign
+    let price = null;
+    const priceM = htm.match(/(\d[\d\s]{2,8})\s*[€]/) || htm.match(/"price"\s*:\s*"?(\d+)"?/);
+    if (priceM) price = priceM[1].replace(/\s/g,'');
+
+    // Address — from breadcrumbs or og:title tail
+    let addr = null;
+    const bcM = htm.match(/<[^>]+itemprop="addressLocality"[^>]*>([^<]+)</) ||
+                htm.match(/addressLocality["']\s*:\s*["']([^"']+)["']/) ||
+                htm.match(/class="[^"]*breadcrumb[^"]*"[^>]*>[^<]*<[^>]+>([^<]{4,40})</i);
+    if (bcM) addr = bcM[1].trim();
+    if (!addr && ogTitle) {
+      const lm = ogTitle.match(/[-–,]\s*([\wõäöüÕÄÖÜ\s]{3,30}(?:linn|vald|küla))[\s,]/i);
+      if (lm) addr = lm[1].trim();
+    }
+
+    // Property type
+    let ptype = '';
+    const combined = (ogTitle + ' ' + url).toLowerCase();
+    if (/korter/.test(combined)) ptype = 'Korter';
+    else if (/maja|elamu|ridaelamu/.test(combined)) ptype = 'Maja';
+    else if (/äripind|büroo|kontor|tootmis|ladu/.test(combined)) ptype = 'Äripind';
+    else if (/krunt|maatükk|kinnistu/.test(combined)) ptype = 'Maa';
+
+    // OG Image
+    _lastFetchedImg = '';
+    const imgM = htm.match(/property="og:image"[^>]+content="([^"]+)"/) ||
+                 htm.match(/content="([^"]+)"[^>]+property="og:image"/) ||
+                 htm.match(/og:image["']\s*content=["']([^"']+)["']/);
+    if (imgM && imgM[1] && imgM[1].startsWith('http')) {
+      _lastFetchedImg = imgM[1];
+      const prev = document.getElementById('nImgPreview');
+      if (prev) { prev.style.backgroundImage = 'url(' + _lastFetchedImg + ')'; prev.style.display = 'block'; }
+    }
+
+    // Area
+    const areaM = htm.match(/(\d+[,.]?\d*)\s*m[²2]/);
+    const area = areaM ? areaM[1].replace(',','.') : null;
+
+    // Fill form
+    const filled = [];
+    if (addr)  { document.getElementById('nAadress').value = addr;  filled.push('aadress'); }
+    if (price) { document.getElementById('nHind').value = price;    filled.push('hind'); }
+    if (ptype) { document.getElementById('nTuup').value = ptype;    filled.push('tüüp'); }
+    if (area)  {
+      const mn = document.getElementById('nMarkus');
+      mn.value = (mn.value ? mn.value + '\n' : '') + 'Pindala: ' + area + ' m²';
+    }
+
+    if (filled.length) {
+      st.textContent = '✓ Täidetud: ' + filled.join(', ') + (area ? ' · ' + area + ' m²' : '');
+      st.style.color = 'var(--ac)';
+    } else {
+      st.textContent = 'Andmeid ei leitud — täida käsitsi';
+    }
+  } catch(e) {
+    st.textContent = 'Viga laadimisel — täida käsitsi';
+    st.style.color = 'var(--red)';
+  }
+}
+
+
+function openNew(defaultStatus = 'uus') {
+  ['nUrl','nNimi','nTel','nAadress','nHind','nMarkus','nKommentaar'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('nUrlBtn').style.display = 'none';
+  document.getElementById('nUrlStatus').textContent = '';
+  document.getElementById('nUrlStatus').style.color = 'var(--tx2)';
+  document.getElementById('nTuup').value = '';
+  document.getElementById('nTehing').value = '';
+  document.getElementById('nKontaktViis').value = '';
+  _lastFetchedImg = '';
+  const _prev = document.getElementById('nImgPreview');
+  if (_prev) { _prev.style.display = 'none'; _prev.style.backgroundImage = ''; }
+  document.getElementById('newModal').dataset.status = defaultStatus;
+  document.getElementById('newModal').classList.add('open');
+  setTimeout(() => document.getElementById('nNimi').focus(), 100);
+}
+
+async function saveNewLead() {
+  const nimi = document.getElementById('nNimi').value.trim();
+  if (!nimi) { toast('Kontakti nimi on kohustuslik'); return; }
+
+  const status = document.getElementById('newModal').dataset.status || 'uus';
+  const urlVal = document.getElementById('nUrl').value.trim();
+  const noteBase = document.getElementById('nMarkus').value.trim() || null;
+  const { data, error } = await sb.from('leads').insert({
+    contact_name:     nimi,
+    phone:            document.getElementById('nTel').value.trim()     || null,
+    property_address: document.getElementById('nAadress').value.trim() || null,
+    property_type:    document.getElementById('nTuup').value           || null,
+    deal_type:        document.getElementById('nTehing').value         || null,
+    price:            parseFloat(document.getElementById('nHind').value) || null,
+    listing_note:     urlVal || noteBase || null,
+    img_url:          _lastFetchedImg || null,
+    contact_method:   document.getElementById('nKontaktViis').value    || null,
+    lead_comment:     document.getElementById('nKommentaar').value.trim() || null,
+    status,
+    status_changed_at: new Date().toISOString(),
+    created_by:  USER?.id || null,
+    assigned_to: USER?.id || null,
+  }).select().single();
+
+  if (error) { toast('❌ ' + error.message); return; }
+  LEADS.unshift(data);
+  addXP(20);
+  toast('✅ Lead lisatud · +20 xp');
+  closeModal('newModal');
+  render();
+}
+
+// ============================================================
+// TASKS
+// ============================================================
+async function toggleTask(id, curStatus, e) {
+  e.stopPropagation();
+  const newStatus = curStatus === 'tehtud' ? 'tegemata' : 'tehtud';
+  const { error } = await sb.from('tasks').update({ status: newStatus }).eq('id', id);
+  if (error) return;
+  const t = TASKS.find(x => x.id === id);
+  if (t) t.status = newStatus;
+  if (newStatus === 'tehtud') addXP(25);
+  renderTasks();
+}
+
+// ============================================================
+// KANBAN CARD IMAGES (OG image from kv.ee)
+// ============================================================
+const _OGC = {}; // in-memory cache: url -> imgUrl|''
+
+// Load cached images from localStorage
+(function initImgCache() {
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('ogi_')) _OGC[k.slice(4)] = localStorage.getItem(k);
+  }
+})();
+
+async function fetchImages() {
+  const cards = document.querySelectorAll('.kard[data-kurl]');
+  const toFetch = [];
+  for (const card of cards) {
+    const url = card.dataset.kurl;
+    if (!url) continue;
+    const ck = url.slice(-20); // last 20 chars as short key
+    if (_OGC[ck] !== undefined) {
+      if (_OGC[ck]) injectImg(card.id.replace('',''), _OGC[ck], card.dataset.lid);
+      continue;
+    }
+    toFetch.push({ card, url, ck });
+  }
+
+  // Inject already-cached first
+  for (const card of cards) {
+    const url = card.dataset.kurl;
+    if (!url) continue;
+    const ck = url.slice(-20);
+    if (_OGC[ck]) {
+      const wrap = document.getElementById('kimg-' + card.dataset.lid);
+      if (wrap && !wrap.classList.contains('loaded')) injectImgWrap(wrap, _OGC[ck]);
+    }
+  }
+
+  // Fetch missing (max 15 to avoid rate-limits)
+  const batch = toFetch.slice(0, 15);
+  for (const { card, url, ck } of batch) {
+    try {
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+      const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(6000) });
+      const j = await r.json();
+      const m = j.contents && j.contents.match(/property="og:image"[^>]+content="([^"]+)"/);
+      const m2 = j.contents && j.contents.match(/content="([^"]+)"[^>]+property="og:image"/);
+      const imgUrl = (m && m[1]) || (m2 && m2[1]) || '';
+      _OGC[ck] = imgUrl;
+      localStorage.setItem('ogi_' + ck, imgUrl);
+      if (imgUrl) {
+        const wrap = document.getElementById('kimg-' + card.dataset.lid);
+        if (wrap) injectImgWrap(wrap, imgUrl);
+        // Persist to DB so card loads instantly next time
+        const lid = card.dataset.lid;
+        sb.from('leads').update({ img_url: imgUrl }).eq('id', lid).then(() => {
+          const lead = LEADS.find(l => l.id === lid);
+          if (lead) lead.img_url = imgUrl;
+        });
+      }
+    } catch(e) {
+      _OGC[ck] = '';
+    }
+    await new Promise(res => setTimeout(res, 250));
+  }
+}
+
+function injectImgWrap(wrap, imgUrl) {
+  if (!wrap || wrap.classList.contains('loaded')) return;
+  wrap.classList.add('loaded');
+  const img = document.createElement('img');
+  img.src = imgUrl;
+  img.loading = 'lazy';
+  img.onerror = () => { wrap.classList.remove('loaded'); wrap.style.height = '0'; };
+  wrap.appendChild(img);
+}
+
+// ============================================================
+// XP SYSTEM
+// ============================================================
+function addXP(pts) {
+  XP += pts;
+  localStorage.setItem('ma_xp', XP);
+  updateXP();
+}
+
+function getLevel(xp) {
+  let lvl = 0;
+  for (let i = 0; i < LEVELS.length; i++) { if (xp >= LEVELS[i]) lvl = i; }
+  return lvl;
+}
+
+function updateXP() {
+  const lvl     = getLevel(XP);
+  const nextLvl = Math.min(lvl + 1, LEVELS.length - 1);
+  const base     = LEVELS[lvl];
+  const next     = lvl === LEVELS.length - 1 ? base + 1000 : LEVELS[nextLvl];
+  const pct      = Math.min(100, Math.round(((XP - base) / (next - base)) * 100));
+
+  document.getElementById('xpFill').style.width   = pct + '%';
+  document.getElementById('xpNum').textContent     = XP + '/' + next + ' xp';
+  document.getElementById('lvlBadge').textContent  = 'Tase ' + (lvl + 1);
+  document.getElementById('setXpBig').textContent  = XP + ' xp';
+  document.getElementById('setXpSub').textContent  = 'Tase ' + (lvl + 1) + ' · ' + (LEVEL_NAMES[lvl] || '');
+
+  if (STREAK > 0) {
+    document.getElementById('xpStreak').style.display = '';
+    document.getElementById('xpStreak').textContent   = '🔥 ' + STREAK + 'p';
+  }
+}
+
+// ============================================================
+// VIEW SWITCHING
+// ============================================================
+function setView(v, el) {
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+async function loadUsers() {
+  const wrap = document.getElementById('userList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="color:var(--tx2);font-size:10px">Laen...</div>';
+  const { data: users, error } = await sb.from('profiles').select('*').order('role');
+  if (error || !users) { wrap.innerHTML = '<div style="color:var(--red);font-size:10px">Viga laadimisel</div>'; return; }
+  wrap.innerHTML = users.map(u => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:8px;background:var(--cd);border-radius:6px">
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--ac);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${(u.name||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:11px">${u.name || u.email}</div>
+        <div style="font-size:9px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.email}</div>
+      </div>
+      <select onchange="changeUserRole('${u.id}',this.value)" style="font-size:10px;padding:3px 6px;background:var(--sf);color:var(--tx);border:1px solid var(--bd);border-radius:4px;cursor:pointer">
+        <option value="assistant" ${u.role==='assistant'?'selected':''}>Assistent</option>
+        <option value="specialist" ${u.role==='specialist'?'selected':''}>Spetsialist</option>
+      </select>
+    </div>`).join('');
+}
+
+async function changeUserRole(userId, newRole) {
+  const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', userId);
+  if (error) { toast('❌ ' + error.message); return; }
+  toast('✓ Roll muudetud');
+}
+
+function toggleSet() {
+  const panel = document.getElementById('setPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    const role = localStorage.getItem('ma_role') || 'specialist';
+    if (role === 'specialist') loadUsers();
+  }
+}
+
+function savePref() {
+  const name = document.getElementById('setName').value;
+  // Assistent ei tohi rolli vahetada — roll on lukustatud DB väärtusega
+  const storedRole = localStorage.getItem('ma_role') || 'specialist';
+  const role = storedRole === 'assistant' ? 'assistant' : document.getElementById('setRole').value;
+  localStorage.setItem('ma_name', name);
+  localStorage.setItem('ma_role', role);
+  document.getElementById('userName').textContent = name;
+  document.getElementById('userAv').textContent   = initials(name);
+  render();
+}
+
+// ============================================================
+// THEME
+// ============================================================
+function setColorTheme(cls, color) {
+  document.body.classList.remove('t-blue', 't-brown', 't-grey');
+  if (cls) document.body.classList.add(cls);
+  document.getElementById('cpMain').style.background = color;
+  document.getElementById('cpDrop').classList.remove('open');
+  localStorage.setItem('ma_color',     cls);
+  localStorage.setItem('ma_color_hex', color);
+}
+
+function toggleMode() {
+  const html = document.documentElement;
+  const isD  = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isD ? 'light' : 'dark');
+  document.getElementById('modeBtn').textContent = isD ? '🌙' : '☀';
+  localStorage.setItem('ma_mode', isD ? 'light' : 'dark');
+}
+
+function togglePicker() {
+  document.getElementById('cpDrop').classList.toggle('open');
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('cpr').contains(e.target))
+    document.getElementById('cpDrop').classList.remove('open');
+});
+
+// ============================================================
+// MODALS
+// ============================================================
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape')
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+});
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+});
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ============================================================
+// RESTORE PREFS ON LOAD
+// ============================================================
+(function() {
+  const mode     = localStorage.getItem('ma_mode')      || 'dark';
+  const color    = localStorage.getItem('ma_color')     || '';
+  const colorHex = localStorage.getItem('ma_color_hex') || '#28a85e';
+
+  document.documentElement.setAttribute('data-theme', mode);
+  if (color) document.body.classList.add(color);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const mb = document.getElementById('modeBtn');
+    if (mb) mb.textContent = mode === 'light' ? '🌙' : '☀';
+    const cp = document.getElementById('cpMain');
+    if (cp) cp.style.background = colorHex;
+  });
+})();
+</script>
+</body>
+</html>
