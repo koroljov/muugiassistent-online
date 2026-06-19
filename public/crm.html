@@ -1312,10 +1312,19 @@ async function startApp() {
   document.getElementById('app').style.display = 'flex';
   document.getElementById('addBtn').style.display = '';
 
-  // Lae profiil andmebaasist — roll tuleb alati DB-st, mitte localStorage-st
-  const { data: profile } = await sb.from('profiles').select('*').eq('id', USER?.id).single();
-  const name = profile?.name || USER?.email?.split('@')[0] || 'Kasutaja';
-  const role = profile?.role || 'specialist';
+  let name = localStorage.getItem('ma_name') || USER?.email?.split('@')[0] || 'Kasutaja';
+  let role = localStorage.getItem('ma_role') || 'specialist';
+
+  // Lae profiil DB-st — vigade korral kasuta localStorage fallback
+  try {
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', USER?.id).single();
+    if (profile) {
+      name = profile.name || name;
+      role = profile.role || role;
+    }
+  } catch(e) {
+    console.warn('Profiili laadimine ebaõnnestus, kasutan localStorage:', e);
+  }
 
   localStorage.setItem('ma_name', name);
   localStorage.setItem('ma_role', role);
@@ -1327,8 +1336,10 @@ async function startApp() {
 
   // Rolli-põhine UI
   const isAssistant = role === 'assistant';
-  document.getElementById('setRoleRow').style.display      = isAssistant ? 'none' : '';
-  document.getElementById('userMgmtSection').style.display = isAssistant ? 'none' : '';
+  const roleRow  = document.getElementById('setRoleRow');
+  const userMgmt = document.getElementById('userMgmtSection');
+  if (roleRow)  roleRow.style.display      = isAssistant ? 'none' : '';
+  if (userMgmt) userMgmt.style.display = isAssistant ? 'none' : '';
 
   updateXP();
   await loadData();
