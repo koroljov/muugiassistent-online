@@ -1343,12 +1343,6 @@ async function startApp() {
 
   updateXP();
   await loadData();
-
-  // Algvaade rolli järgi
-  if (isAssistant) {
-    const tabs = document.querySelectorAll('.tab');
-    if (tabs[2]) setView('tasks', tabs[2]);
-  }
 }
 
 // ============================================================
