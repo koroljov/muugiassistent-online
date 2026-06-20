@@ -1081,6 +1081,11 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
           </select>
         </div>
 
+        <div>
+          <div class="set-lbl">Anthropic API võti <span style="font-size:9px;color:var(--tx2)">(AI tagasiside jaoks)</span></div>
+          <input class="set-inp" id="setAnthropicKey" type="password" placeholder="sk-ant-..." oninput="localStorage.setItem('anthropic_key',this.value)">
+        </div>
+
         <div class="set-sec">Punktid</div>
         <div class="xp-box">
           <div class="xp-box-big" id="setXpBig">0 xp</div>
@@ -1331,6 +1336,7 @@ async function startApp() {
 
   document.getElementById('setName').value  = name;
   document.getElementById('setRole').value  = role;
+  document.getElementById('setAnthropicKey').value = localStorage.getItem('anthropic_key') || '';
   document.getElementById('userName').textContent = name;
   document.getElementById('userAv').textContent   = initials(name);
 
@@ -1547,9 +1553,10 @@ function renderKanban() {
   setTimeout(() => {
     if (hadScroll) {
       wrap.scrollLeft = prevScroll;
-    } else {
+    } else if (!isAssistant) {
       wrap.scrollLeft = secA.offsetWidth + div.offsetWidth + 20;
     }
+    // isAssistant + first load: jääb Section A peale (scrollLeft=0)
   }, 0);
 }
 
@@ -1716,8 +1723,12 @@ function openLead(id) {
           </select>
         </div>
         <div class="kv-row"><span class="kv-lbl">Järgmine tegevus</span><input class="kv-inp" id="lNext" type="date" value="${l.next_action_at||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Kuulutuse URL</span><input class="kv-inp" id="lUrl" placeholder="https://www.kv.ee/..." value="${l.listing_note&&l.listing_note.startsWith('http')?l.listing_note:''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Kuulutuse URL</span><div style="display:flex;gap:6px;flex:1"><input class="kv-inp" id="lUrl" placeholder="https://www.kv.ee/..." value="${l.listing_note&&l.listing_note.startsWith('http')?l.listing_note:''}" style="flex:1"><button class="btn-ghost" onclick="fetchListingEdit()" style="padding:6px 10px;font-size:10px;white-space:nowrap">↓ Täida</button></div></div>
+        <div id="lUrlStatus" style="font-size:9px;color:var(--tx2);margin-bottom:4px;min-height:12px;padding-left:100px"></div>
+        <div id="lImgPreview" style="display:${l.img_url?'block':'none'};width:calc(100% - 108px);margin-left:100px;height:80px;background-size:cover;background-position:center;border-radius:6px;margin-bottom:8px;border:1px solid var(--bd);background-image:url('${l.img_url||''}')"></div>
+        <input type="hidden" id="lImgUrl" value="${l.img_url||''}">
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?l.listing_note:''}</textarea></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">AI tagasiside</span><textarea class="kv-inp" id="lAiSummary" rows="5" placeholder="Vajuta ↓ Täida AI kokkuvõtte genereerimiseks..." style="font-size:11px;line-height:1.5">${l.ai_summary||''}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${l.lead_comment||''}</textarea></div>
       </div>
 
@@ -1822,6 +1833,8 @@ async function saveLead() {
     next_action_at:   document.getElementById('lNext').value               || null,
     listing_note:     document.getElementById('lUrl').value.trim() || document.getElementById('lMarkus').value.trim() || null,
     lead_comment:     document.getElementById('lKommentaar').value.trim()  || null,
+    img_url:          document.getElementById('lImgUrl')?.value.trim()     || null,
+    ai_summary:       document.getElementById('lAiSummary')?.value.trim()  || null,
   };
   const { error } = await sb.from('leads').update(patch).eq('id', CURRENT.id);
   if (error) { toast('❌ ' + error.message); return; }
@@ -1847,6 +1860,25 @@ async function archiveLead() {
 // NEW LEAD + AUTO-FILL FROM LISTING URL
 // ============================================================
 
+// Proxy helper — proovib corsproxy.io (kiirem), fallback allorigins.win
+async function proxyFetch(url, timeoutMs = 12000) {
+  // corsproxy.io tagastab otse HTML teksti
+  try {
+    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url), {
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    if (!r.ok) throw new Error('corsproxy status ' + r.status);
+    return await r.text();
+  } catch (e) {
+    // Fallback: allorigins.win tagastab { contents: "..." }
+    const r2 = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url), {
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    const j = await r2.json();
+    return j.contents || '';
+  }
+}
+
 function onUrlInput(val) {
   const btn = document.getElementById('nUrlBtn');
   const st  = document.getElementById('nUrlStatus');
@@ -1862,10 +1894,7 @@ async function fetchListing() {
   st.style.color = 'var(--tx2)';
   st.textContent = 'Laen kuulutust...';
   try {
-    const proxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-    const r = await fetch(proxy, { signal: AbortSignal.timeout(8000) });
-    const j = await r.json();
-    const htm = j.contents || '';
+    const htm = await proxyFetch(url);
 
     // Safe meta extractor using indexOf
     function getMeta(prop) {
@@ -1945,6 +1974,127 @@ async function fetchListing() {
   } catch(e) {
     st.textContent = 'Viga laadimisel — täida käsitsi';
     st.style.color = 'var(--red)';
+  }
+}
+
+// ============================================================
+// EDIT MODAL: AUTO-FILL + AI SUMMARY FROM LISTING URL
+// ============================================================
+async function fetchListingEdit() {
+  const urlEl = document.getElementById('lUrl');
+  const st    = document.getElementById('lUrlStatus');
+  const url   = urlEl?.value.trim();
+  if (!url) { if (st) st.textContent = 'Lisa URL esmalt'; return; }
+  if (st) { st.style.color = 'var(--tx2)'; st.textContent = 'Laen kuulutust...'; }
+
+  try {
+    const htm = await proxyFetch(url);
+
+    function getMeta(prop) {
+      const needle = 'property="' + prop + '"';
+      let idx = htm.indexOf(needle);
+      if (idx < 0) idx = htm.indexOf("property='" + prop + "'");
+      if (idx < 0) return null;
+      const chunk = htm.slice(idx, idx + 400);
+      const cm = chunk.match(/content=["']([^"'<]{1,300})["']/);
+      if (cm) return cm[1].trim();
+      const before = htm.slice(Math.max(0, idx - 400), idx);
+      const cm2 = before.match(/content=["']([^"'<]{1,300})["'][^>]*$/);
+      return cm2 ? cm2[1].trim() : null;
+    }
+
+    const ogTitle = getMeta('og:title') || '';
+    const ogDesc  = getMeta('og:description') || '';
+
+    // Price
+    let price = null;
+    const priceM = htm.match(/(\d[\d\s]{2,8})\s*[€]/) || htm.match(/"price"\s*:\s*"?(\d+)"?/);
+    if (priceM) price = priceM[1].replace(/\s/g, '');
+
+    // Address
+    let addr = null;
+    const bcM = htm.match(/<[^>]+itemprop="addressLocality"[^>]*>([^<]+)</) ||
+                htm.match(/addressLocality["']\s*:\s*["']([^"']+)["']/) ||
+                htm.match(/class="[^"]*breadcrumb[^"]*"[^>]*>[^<]*<[^>]+>([^<]{4,40})</i);
+    if (bcM) addr = bcM[1].trim();
+    if (!addr && ogTitle) {
+      const lm = ogTitle.match(/[-–,]\s*([\wõäöüÕÄÖÜ\s]{3,30}(?:linn|vald|küla))[\s,]/i);
+      if (lm) addr = lm[1].trim();
+    }
+
+    // Area
+    const areaM = htm.match(/(\d+[,.]?\d*)\s*m[²2]/);
+    const area = areaM ? areaM[1].replace(',', '.') : null;
+
+    // OG Image
+    const imgM = htm.match(/property="og:image"[^>]+content="([^"]+)"/) ||
+                 htm.match(/content="([^"]+)"[^>]+property="og:image"/) ||
+                 htm.match(/og:image["']\s*content=["']([^"']+)["']/);
+    if (imgM && imgM[1] && imgM[1].startsWith('http')) {
+      const prev   = document.getElementById('lImgPreview');
+      const hidUrl = document.getElementById('lImgUrl');
+      if (prev)   { prev.style.backgroundImage = 'url(' + imgM[1] + ')'; prev.style.display = 'block'; }
+      if (hidUrl) { hidUrl.value = imgM[1]; }
+    }
+
+    // Fill form fields (only if currently empty)
+    const filled = [];
+    const aEl = document.getElementById('lAadress');
+    const hEl = document.getElementById('lHind');
+    if (addr  && aEl && !aEl.value.trim()) { aEl.value = addr;  filled.push('aadress'); }
+    if (price && hEl && !hEl.value.trim()) { hEl.value = price; filled.push('hind'); }
+
+    // AI summary
+    const apiKey = localStorage.getItem('anthropic_key') || '';
+    if (apiKey) {
+      if (st) {
+        st.textContent = (filled.length ? '✓ ' + filled.join(', ') + ' · ' : '✓ Pilt laetud · ') + 'Genereerin AI kokkuvõtet...';
+        st.style.color = 'var(--ac)';
+      }
+      const context = [
+        ogTitle && ('Pealkiri: ' + ogTitle),
+        ogDesc  && ('Kirjeldus: ' + ogDesc),
+        price   && ('Hind: ' + price + ' €'),
+        addr    && ('Asukoht: ' + addr),
+        area    && ('Pindala: ' + area + ' m²'),
+        'URL: ' + url
+      ].filter(Boolean).join('\n');
+      try {
+        const aiR = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5',
+            max_tokens: 500,
+            messages: [{
+              role: 'user',
+              content: 'Oled Uus Maa kinnisvarabüroo müügiassistent. Sinu ülesanne on helistada selle kuulutuse omanikule ja pakkuda müügiteenust.\n\nKuulutuse andmed:\n' + context + '\n\nKoosta lühike (max 150 sõna) kõne ettevalmistuse kokkuvõte punktidena eesti keeles. Sisalda: kinnisvara tüüp ja põhiandmed, mida küsida omanikult, müügiargument miks Uus Maa.'
+            }]
+          }),
+          signal: AbortSignal.timeout(20000)
+        });
+        const aiJ = await aiR.json();
+        const summary = aiJ.content?.[0]?.text || '';
+        const aiEl = document.getElementById('lAiSummary');
+        if (aiEl && summary) aiEl.value = summary;
+        if (st) { st.textContent = '✓ Kõik valmis · AI kokkuvõte genereeritud'; st.style.color = 'var(--ac)'; }
+      } catch (aiErr) {
+        if (st) { st.textContent = '✓ Andmed laetud · AI viga: ' + aiErr.message; }
+      }
+    } else {
+      if (st) {
+        st.textContent = (filled.length ? '✓ Täidetud: ' + filled.join(', ') : '✓ Pilt laetud') +
+          ' · AI jaoks lisa Anthropic API võti Seadetes';
+        st.style.color = 'var(--ac)';
+      }
+    }
+  } catch (e) {
+    if (st) { st.textContent = '❌ Viga: ' + (e.message || 'proxy ei vasta'); st.style.color = 'var(--red)'; }
   }
 }
 
