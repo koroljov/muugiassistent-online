@@ -977,7 +977,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 /* KÕNEABI */
 .kabi-back{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:401;display:none}
 .kabi-back.open{display:block}
-.kabi-panel{position:fixed;top:0;right:0;width:430px;max-width:96vw;height:100%;background:var(--sf);border-left:1px solid var(--bd);z-index:402;display:none;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,0.28)}
+.kabi-panel{position:fixed;top:0;right:0;width:430px;max-width:96vw;height:100%;background:var(--sf);border:1px solid var(--bd);z-index:402;display:none;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,0.28);resize:both;overflow:hidden;min-width:320px;min-height:320px}
 .kabi-panel.open{display:flex}
 .kabi-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--bd);background:var(--bg)}
 .kabi-grip{color:var(--tx2);font-size:13px;cursor:grab;font-style:normal;letter-spacing:-2px}
@@ -985,7 +985,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .kabi-sub{font-size:11px;color:var(--tx2)}
 .kabi-x{margin-left:auto;background:none;border:none;color:var(--tx2);font-size:20px;cursor:pointer;line-height:1}
 .kabi-x:hover{color:var(--tx)}
-.kabi-body{flex:1;overflow-y:auto}
+.kabi-body{flex:1;min-height:0;overflow-y:auto}
 .kabi-sec{padding:12px 14px;border-bottom:1px solid var(--bd)}
 .kabi-sec-lbl{font-size:11px;color:var(--tx2);margin-bottom:6px}
 .kabi-todo{font-size:11px;color:var(--tx2);font-style:italic}
@@ -1149,6 +1149,11 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
         <div>
           <div class="set-lbl">Anthropic API võti <span style="font-size:9px;color:var(--tx2)">(AI tagasiside jaoks)</span></div>
           <input class="set-inp" id="setAnthropicKey" type="password" placeholder="sk-ant-..." oninput="localStorage.setItem('anthropic_key',this.value)">
+        </div>
+
+        <div>
+          <div class="set-lbl">Kõneabi avalöök (sinu skript)</div>
+          <textarea class="set-inp" id="setScript" rows="4" style="resize:vertical;font-family:inherit;line-height:1.4" oninput="saveScript()" placeholder="Sinu avalöögi tekst..."></textarea>
         </div>
 
         <div class="set-sec">Punktid</div>
@@ -1404,6 +1409,7 @@ async function startApp() {
   document.getElementById('setName').value  = name;
   document.getElementById('setRole').value  = role;
   document.getElementById('setAnthropicKey').value = localStorage.getItem('anthropic_key') || '';
+  loadUserScript();
   document.getElementById('userName').textContent = name;
   document.getElementById('userAv').textContent   = initials(name);
 
@@ -2596,8 +2602,14 @@ function openKabi(){
   var kh = document.getElementById('kabiHint'); if(kh){ kh.style.display='none'; kh.textContent=''; }
   var kq = document.getElementById('kabiQuote'); if(kq) kq.value='';
   var ksb = document.getElementById('kabiSaveBtn'); if(ksb) ksb.disabled=false;
+  var ks = document.getElementById('kabiScript'); if(ks) ks.textContent = USER_SCRIPT || DEFAULT_SCRIPT;
   document.getElementById('kabiBack').classList.add('open');
   document.getElementById('kabiPanel').classList.add('open');
+  kabiRestoreBox();
+  if(!window.KABI_RO && window.ResizeObserver){
+    window.KABI_RO = new ResizeObserver(function(){ var p=document.getElementById('kabiPanel'); if(p && p.classList.contains('open')) kabiSaveBox(); });
+    window.KABI_RO.observe(document.getElementById('kabiPanel'));
+  }
 }
 function closeKabi(){
   document.getElementById('kabiBack').classList.remove('open');
@@ -2745,6 +2757,52 @@ async function kabiTask(type){
   if(res.error){ toast('❌ ' + res.error.message); return; }
   toast(type + ' lisatud');
 }
+
+var DEFAULT_SCRIPT = '"Tere! Olen [Nimi], müügiassistent Uus Maa Arenas. Nägin teie kuulutust ja teen kaardistust omanike seas — kuidas müük turul päriselt liigub ja mis täna takistab. Kas teil on 1–2 minutit?"';
+var USER_SCRIPT = '';
+async function loadUserScript(){
+  try{
+    if(typeof USER==='undefined' || !USER) return;
+    var res = await sb.from('user_preferences').select('call_script').eq('user_id', USER.id).single();
+    if(res.data && res.data.call_script){ USER_SCRIPT = res.data.call_script; }
+    var t = document.getElementById('setScript'); if(t) t.value = USER_SCRIPT || '';
+  }catch(e){}
+}
+async function saveScript(){
+  var t = document.getElementById('setScript'); if(!t) return;
+  USER_SCRIPT = t.value;
+  if(typeof USER==='undefined' || !USER) return;
+  try{ await sb.from('user_preferences').upsert({ user_id: USER.id, call_script: t.value }, { onConflict:'user_id' }); }catch(e){}
+}
+
+function kabiSaveBox(){
+  var p=document.getElementById('kabiPanel'); if(!p) return;
+  var r=p.getBoundingClientRect();
+  try{ localStorage.setItem('kabi_box', JSON.stringify({left:Math.round(r.left),top:Math.round(r.top),width:p.offsetWidth,height:p.offsetHeight})); }catch(e){}
+}
+function kabiRestoreBox(){
+  var p=document.getElementById('kabiPanel'); if(!p) return;
+  try{
+    var b=JSON.parse(localStorage.getItem('kabi_box')||'null');
+    if(b){ p.style.right='auto'; p.style.left=b.left+'px'; p.style.top=b.top+'px'; p.style.width=b.width+'px'; p.style.height=b.height+'px'; }
+  }catch(e){}
+}
+(function(){
+  var dragging=false, sx, sy, sl, st;
+  document.addEventListener('mousedown', function(e){
+    var g=e.target.closest && e.target.closest('.kabi-grip'); if(!g) return;
+    var p=document.getElementById('kabiPanel'); var r=p.getBoundingClientRect();
+    p.style.right='auto'; p.style.left=r.left+'px'; p.style.top=r.top+'px';
+    dragging=true; sx=e.clientX; sy=e.clientY; sl=r.left; st=r.top; e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e){
+    if(!dragging) return;
+    var p=document.getElementById('kabiPanel');
+    p.style.left=(sl+e.clientX-sx)+'px';
+    p.style.top=Math.max(0,(st+e.clientY-sy))+'px';
+  });
+  document.addEventListener('mouseup', function(){ if(dragging){ dragging=false; kabiSaveBox(); } });
+})();
 </script>
 
 <!-- MELL ASSISTENT PANEEL -->
@@ -2770,7 +2828,7 @@ async function kabiTask(type){
 <div class="kabi-back" id="kabiBack" onclick="closeKabi()"></div>
 <div class="kabi-panel" id="kabiPanel">
   <div class="kabi-head">
-    <i class="kabi-grip" title="Liiguta (tuleb hiljem)">⋮⋮</i>
+    <i class="kabi-grip" title="Lohista, et liigutada · nurgast muuda suurust">⋮⋮</i>
     <div>
       <div class="kabi-title">Kõneabi</div>
       <div class="kabi-sub" id="kabiSub">Lead</div>
@@ -2780,7 +2838,7 @@ async function kabiTask(type){
   <div class="kabi-body" id="kabiBody">
     <div class="kabi-sec">
       <div class="kabi-sec-lbl">1 · Avalöök</div>
-      <div class="kabi-script">"Tere! Olen [Nimi], müügiassistent Uus Maa Arenas. Nägin teie kuulutust ja teen kaardistust omanike seas — kuidas müük turul päriselt liigub ja mis täna takistab. Kas teil on 1–2 minutit?"</div>
+      <div class="kabi-script" id="kabiScript">"Tere! Olen [Nimi], müügiassistent Uus Maa Arenas. Nägin teie kuulutust ja teen kaardistust omanike seas — kuidas müük turul päriselt liigub ja mis täna takistab. Kas teil on 1–2 minutit?"</div>
       <div class="kabi-mini">Kui paneb vastu:</div>
       <div class="kabi-chips">
         <span class="kabi-rz" onclick="kabiRz(this)" data-r="Saan aru, neid kõnesid tuleb iga päev. Ma ei paku midagi, üks küsimus ainult.">ei taha maaklerit</span>
