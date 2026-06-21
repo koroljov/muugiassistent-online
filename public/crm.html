@@ -1965,23 +1965,19 @@ async function archiveLead() {
 // NEW LEAD + AUTO-FILL FROM LISTING URL
 // ============================================================
 
-// Proxy helper — proovib corsproxy.io (kiirem), fallback allorigins.win
-async function proxyFetch(url, timeoutMs = 12000) {
-  // corsproxy.io tagastab otse HTML teksti
-  try {
-    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url), {
-      signal: AbortSignal.timeout(timeoutMs)
-    });
-    if (!r.ok) throw new Error('corsproxy status ' + r.status);
-    return await r.text();
-  } catch (e) {
-    // Fallback: allorigins.win tagastab { contents: "..." }
-    const r2 = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url), {
-      signal: AbortSignal.timeout(timeoutMs)
-    });
-    const j = await r2.json();
-    return j.contents || '';
-  }
+// Proxy helper — tõmbab lehe serveripoolse /api/fetch-listing kaudu (usaldusväärne, ei CORS-i)
+async function proxyFetch(url, timeoutMs = 15000) {
+  const sess = await sb.auth.getSession();
+  const token = (sess.data && sess.data.session) ? sess.data.session.access_token : '';
+  const r = await fetch('/api/fetch-listing', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + token },
+    body: JSON.stringify({ url: url }),
+    signal: AbortSignal.timeout(timeoutMs + 4000)
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || ('status ' + r.status));
+  return j.html || '';
 }
 
 function onUrlInput(val) {
@@ -2281,12 +2277,11 @@ async function fetchImages() {
   const batch = toFetch.slice(0, 15);
   for (const { card, url, ck } of batch) {
     try {
-      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
-      const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(6000) });
+      const sess = await sb.auth.getSession();
+      const token = (sess.data && sess.data.session) ? sess.data.session.access_token : '';
+      const r = await fetch('/api/fetch-listing', { method: 'POST', headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + token }, body: JSON.stringify({ url: url, ogImageOnly: true }), signal: AbortSignal.timeout(15000) });
       const j = await r.json();
-      const m = j.contents && j.contents.match(/property="og:image"[^>]+content="([^"]+)"/);
-      const m2 = j.contents && j.contents.match(/content="([^"]+)"[^>]+property="og:image"/);
-      const imgUrl = (m && m[1]) || (m2 && m2[1]) || '';
+      const imgUrl = j.ogImage || '';
       _OGC[ck] = imgUrl;
       localStorage.setItem('ogi_' + ck, imgUrl);
       if (imgUrl) {
