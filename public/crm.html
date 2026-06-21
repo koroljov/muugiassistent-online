@@ -1010,6 +1010,9 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .kabi-chip{font-size:11px;padding:4px 9px;border-radius:14px;cursor:pointer;border:1px solid var(--bd);color:var(--tx2)}
 .kabi-chip:hover{border-color:var(--ac)}
 .kabi-chip.sel{background:var(--acb);border-color:var(--ac);color:var(--ac)}
+.kabi-quote{width:100%;box-sizing:border-box;background:var(--cd);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-size:12px;padding:8px;resize:vertical;font-family:inherit;line-height:1.4}
+.kabi-quote:focus{outline:none;border-color:var(--ac)}
+.kabi-foot{padding:10px 14px;border-top:1px solid var(--bd);background:var(--bg)}
 </style>
 </head>
 <body>
@@ -2590,6 +2593,8 @@ function openKabi(){
   var tip = document.getElementById('kabiTip'); if(tip) tip.textContent='';
   kabiRenderGrid();
   var kh = document.getElementById('kabiHint'); if(kh){ kh.style.display='none'; kh.textContent=''; }
+  var kq = document.getElementById('kabiQuote'); if(kq) kq.value='';
+  var ksb = document.getElementById('kabiSaveBtn'); if(ksb) ksb.disabled=false;
   document.getElementById('kabiBack').classList.add('open');
   document.getElementById('kabiPanel').classList.add('open');
 }
@@ -2655,6 +2660,24 @@ function kabiChip(el){
   grpEl.querySelectorAll('.kabi-chip.sel').forEach(function(x){ vals.push(x.getAttribute('data-v')); });
   KABI[cfg.f] = vals.length ? vals.join(', ') : null;
   var hint = document.getElementById('kabiHint'); if(hint){ hint.style.display='block'; hint.textContent = KABI_GHINTS[cfg.g] || ''; }
+}
+
+async function saveKabiCall(){
+  if(!CURRENT) return;
+  var rec = Object.assign({}, KABI);
+  rec.lead_id = CURRENT.id;
+  rec.caller_id = (typeof USER !== 'undefined' && USER) ? USER.id : null;
+  var q = document.getElementById('kabiQuote');
+  if(q && q.value.trim()) rec.important_quote = q.value.trim();
+  var btn = document.getElementById('kabiSaveBtn'); if(btn) btn.disabled = true;
+  var res = await sb.from('calls').insert(rec).select().single();
+  if(res.error){ toast('❌ Viga: ' + res.error.message); if(btn) btn.disabled = false; return; }
+  if(typeof CALLS !== 'undefined' && CALLS && CALLS.unshift) CALLS.unshift(res.data);
+  if(typeof addXP === 'function') addXP(35);
+  toast('📞 Kõne salvestatud · +35 xp');
+  closeKabi();
+  openLead(CURRENT.id);
+  if(typeof render === 'function') render();
 }
 </script>
 
@@ -2723,8 +2746,15 @@ function kabiChip(el){
       <div id="kabiHint" class="kabi-hint" style="display:none"></div>
       <div id="kabiGrid"></div>
     </div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl">Eriline vastus / tsitaat</div>
+      <textarea id="kabiQuote" class="kabi-quote" rows="2" placeholder="Kui klient ütleb midagi erilist..."></textarea>
+    </div>
     <div class="kabi-sec"><div class="kabi-sec-lbl">4 · Koostöö-pakkumine</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
     <div class="kabi-sec"><div class="kabi-sec-lbl">5 · Järeltegevus</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
+  </div>
+  <div class="kabi-foot">
+    <button class="btn-sm" id="kabiSaveBtn" onclick="saveKabiCall()" style="width:100%">Salvesta kõne</button>
   </div>
 </div>
 </body>
