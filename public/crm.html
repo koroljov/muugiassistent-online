@@ -1029,6 +1029,19 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .stat-lbl{position:relative;z-index:1}
 .stat-val{position:relative;z-index:1;color:var(--tx2);font-size:11px;white-space:nowrap}
 .stat-empty{font-size:11px;color:var(--tx2);padding:2px 0}
+.ob-back{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.ob-back.open{display:flex}
+.ob-card{background:var(--sf);border:1px solid var(--bd);border-radius:16px;max-width:380px;width:100%;padding:26px 24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.45)}
+.ob-emoji{font-size:40px;margin-bottom:10px;line-height:1}
+.ob-title{font-size:18px;font-weight:600;margin-bottom:8px;color:var(--tx)}
+.ob-text{font-size:13px;line-height:1.6;color:var(--tx2);margin-bottom:18px}
+.ob-dots{display:flex;gap:6px;justify-content:center;margin-bottom:18px;min-height:7px}
+.ob-dot{width:7px;height:7px;border-radius:50%;background:var(--bd)}
+.ob-dot.on{background:var(--ac)}
+.ob-actions{display:flex;gap:8px;justify-content:center}
+.ob-btn{font-size:13px;padding:9px 16px;border-radius:10px;cursor:pointer;border:1px solid var(--bd);background:transparent;color:var(--tx)}
+.ob-btn.primary{background:var(--ac);border-color:var(--ac);color:#fff}
+.ob-btn:hover{opacity:0.9}
 </style>
 </head>
 <body>
@@ -1104,7 +1117,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
   <!-- TABS -->
   <div id="tabs">
-    <div class="tab active" onclick="setView('kanban',this)">📋 Kanban</div>
+    <div class="tab active" onclick="setView('kanban',this)">📋 Töövoog</div>
     <div class="tab" onclick="setView('list',this)">☰ Nimekiri</div>
     <div class="tab" onclick="setView('tasks',this)">✓ Ülesanded</div>
     <div class="tab" onclick="setView('stats',this)">📊 Statistika</div>
@@ -1176,6 +1189,11 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
         <div>
           <div class="set-lbl">Kõneabi avalöök (sinu skript)</div>
           <textarea class="set-inp" id="setScript" rows="4" style="resize:vertical;font-family:inherit;line-height:1.4" oninput="saveScript()" placeholder="Sinu avalöögi tekst..."></textarea>
+        </div>
+
+        <div class="set-sec">Abi</div>
+        <div>
+          <button class="btn-ghost" style="width:100%;font-size:11px" onclick="showOnboardingFromSettings()">Näita tutvustust uuesti</button>
         </div>
 
         <div class="set-sec">Punktid</div>
@@ -1451,6 +1469,7 @@ async function startApp() {
   document.getElementById('setName').value  = name;
   document.getElementById('setRole').value  = role;
   loadUserScript();
+  setTimeout(maybeShowOnboarding, 600);
   document.getElementById('userName').textContent = name;
   document.getElementById('userAv').textContent   = initials(name);
 
@@ -2843,6 +2862,48 @@ async function saveScript(){
   try{ await sb.from('user_preferences').upsert({ user_id: USER.id, call_script: t.value }, { onConflict:'user_id' }); }catch(e){}
 }
 
+// ============================================================
+// ESMANE TUTVUSTUS (onboarding)
+// ============================================================
+var OB_TOUR = [
+  {emoji:'📋', title:'Töövoog', text:'Leadid liiguvad etappide kaupa. Lohista kaarte või ava lead, et näha detaile ja ajalugu.'},
+  {emoji:'📞', title:'Kõneabi', text:'Kõne ajal tugi: avalöök, inimtüüp ja andmekorje klõpsuga. Iga kõne kogub turuinfot.'},
+  {emoji:'💬', title:'Mell', text:'AI-assistent. Küsi leadi kohta või palu valmis sõnum — vastab sinu andmete põhjal.'},
+  {emoji:'📊', title:'Statistika', text:'Kogutud kõneandmed muutuvad pildiks: miks omanikud ise müüvad, mis takistab, mis paneks meelt muutma.'}
+];
+var obStep = 0;
+function maybeShowOnboarding(){
+  try{
+    if(localStorage.getItem('ob_done')) return;
+    var n = parseInt(localStorage.getItem('ob_count')||'0',10) + 1;
+    localStorage.setItem('ob_count', String(n));
+    if(n > 3) return;
+    showOnboarding();
+  }catch(e){}
+}
+function showOnboarding(){ obStep = 0; obRender(); var b=document.getElementById('obBack'); if(b) b.classList.add('open'); }
+function obClose(){ var b=document.getElementById('obBack'); if(b) b.classList.remove('open'); }
+function obDecline(){ try{ localStorage.setItem('ob_done','1'); }catch(e){} obClose(); }
+function obStart(){ obStep = 1; obRender(); }
+function obNext(){ if(obStep >= OB_TOUR.length){ try{ localStorage.setItem('ob_done','1'); }catch(e){} obClose(); } else { obStep++; obRender(); } }
+function showOnboardingFromSettings(){ try{ localStorage.removeItem('ob_done'); localStorage.removeItem('ob_count'); }catch(e){} showOnboarding(); }
+function obRender(){
+  var emoji=document.getElementById('obEmoji'), title=document.getElementById('obTitle'), text=document.getElementById('obText'), dots=document.getElementById('obDots'), actions=document.getElementById('obActions');
+  if(!emoji) return;
+  if(obStep === 0){
+    emoji.textContent='👋'; title.textContent='Tere tulemast';
+    text.textContent='Soovid lühikest tutvustust? Näitan põhiosad ühe minutiga. Saad selle alati Seadetest uuesti avada.';
+    dots.innerHTML='';
+    actions.innerHTML='<button class="ob-btn" onclick="obDecline()">Ei, aitäh</button><button class="ob-btn primary" onclick="obStart()">Jah, näita</button>';
+  } else {
+    var s = OB_TOUR[obStep-1];
+    emoji.textContent=s.emoji; title.textContent=s.title; text.textContent=s.text;
+    dots.innerHTML = OB_TOUR.map(function(_,i){ return '<div class="ob-dot'+(i===obStep-1?' on':'')+'"></div>'; }).join('');
+    var last = obStep >= OB_TOUR.length;
+    actions.innerHTML = '<button class="ob-btn" onclick="obDecline()">Jäta vahele</button><button class="ob-btn primary" onclick="obNext()">'+(last?'Valmis':'Edasi')+'</button>';
+  }
+}
+
 function kabiSaveBox(){
   var p=document.getElementById('kabiPanel'); if(!p) return;
   var r=p.getBoundingClientRect();
@@ -2983,6 +3044,16 @@ function kabiRestoreBox(){
   </div>
   <div class="kabi-foot">
     <button class="btn-sm" id="kabiSaveBtn" onclick="saveKabiCall()" style="width:100%">Salvesta kõne</button>
+  </div>
+</div>
+<!-- ESMANE TUTVUSTUS -->
+<div class="ob-back" id="obBack">
+  <div class="ob-card">
+    <div class="ob-emoji" id="obEmoji">👋</div>
+    <div class="ob-title" id="obTitle">Tere tulemast</div>
+    <div class="ob-text" id="obText"></div>
+    <div class="ob-dots" id="obDots"></div>
+    <div class="ob-actions" id="obActions"></div>
   </div>
 </div>
 </body>
