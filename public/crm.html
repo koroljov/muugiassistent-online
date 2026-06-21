@@ -2728,7 +2728,7 @@ function kabiContext(){
   var labels = {still_listed:'Veel müügis',time_on_market:'Aeg turul',inquiries_count:'Huvilisi/vaatamisi',offers:'Pakkumised',price_change:'Hind',buyer_feedback:'Ostja tagasiside',no_broker_reason:'Miks ise müüb',change_mind_reason:'Mis paneks meelt muutma',personality_type:'Inimtüüp'};
   Object.keys(labels).forEach(function(k){ if(KABI[k]) lines.push(labels[k]+': '+KABI[k]); });
   var q = document.getElementById('kabiQuote'); if(q && q.value.trim()) lines.push('Tsitaat: '+q.value.trim());
-  return lines.filter(Boolean).join('\n');
+  return 'Olukord: kinnisvaraomanik müüb ise, ilma maaklerita. Uus Maa pole veel kaasatud — müügiassistent helistas infot koguma ja abi pakkuma. Hinda või muud on muutnud omanik ise, mitte Uus Maa.\n' + lines.filter(Boolean).join('\n');
 }
 
 function kabiShowOut(title, text){
@@ -2747,7 +2747,7 @@ async function kabiGen(kind){
   var sys, title;
   if(kind==='summary'){ title='Kõne kokkuvõte'; sys='Oled Uus Maa müügiassistent. Tee selle kõne lühike struktureeritud kokkuvõte eesti keeles. Kasuta AINULT antud andmeid, ära midagi juurde mõtle. Lõpus üks konkreetne järgmine samm.'; }
   else if(kind==='listing'){ title='Kuulutuse tagasiside'; sys='Oled Uus Maa müügiassistent. Anna lühike aus professionaalne tagasiside selle kuulutuse kohta — mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel, ära väida fakte mida pole. Ilma hämata. Eesti keeles, kuiv ja konkreetne.'; }
-  else if(kind==='letter'){ title='Kiri kliendile'; sys='Oled Uus Maa müügiassistent. Koosta kliendile saadetav lühike viisakas kiri eesti keeles: tänu kõne eest, lühike kokkuvõte, aus tagasiside kuulutuse kohta, ja sujuv suunamine müügispetsialist Meelisele ning paindlikule koostööle ja tasustamisele. Alusta tervitusega "Tere [eesnimi]", mitte "Kallim". Põhine AINULT antud andmetel, ära midagi välja mõtle. Ilma emojideta, kohe saadetav.'; }
+  else if(kind==='letter'){ title='Kiri kliendile'; sys='Oled Uus Maa müügiassistent. Koosta kliendile saadetav lühike viisakas kiri eesti keeles: tänu kõne eest, lühike kokkuvõte, aus tagasiside kuulutuse kohta, ja sujuv suunamine müügispetsialist Meelisele ning paindlikule koostööle ja tasustamisele. Alusta tervitusega "Tere [eesnimi]", mitte "Kallim". Omanik müüb ise — ära väida, et Uus Maa on midagi teinud (nt hinda muutnud). Ära ole pealetükkiv ega survesta. Põhine AINULT antud andmetel, ära midagi välja mõtle. Ilma emojideta, kohe saadetav.'; }
   else { title='AI soovitus'; sys='Oled Uus Maa müügiassistent. Anna selle kõne andmete põhjal üks lühike konkreetne soovitus, mida järgmisena teha. 2-3 lauset, eesti keeles, otsekohe.'; }
   sys += AI_STIIL;
   kabiShowOut(title, 'Genereerin...');
