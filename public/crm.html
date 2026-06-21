@@ -1013,6 +1013,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .kabi-quote{width:100%;box-sizing:border-box;background:var(--cd);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-size:12px;padding:8px;resize:vertical;font-family:inherit;line-height:1.4}
 .kabi-quote:focus{outline:none;border-color:var(--ac)}
 .kabi-foot{padding:10px 14px;border-top:1px solid var(--bd);background:var(--bg)}
+.kabi-out{margin-top:10px;background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:10px}
 </style>
 </head>
 <body>
@@ -2679,6 +2680,71 @@ async function saveKabiCall(){
   openLead(CURRENT.id);
   if(typeof render === 'function') render();
 }
+
+async function kabiAI(system, user){
+  var apiKey = localStorage.getItem('anthropic_key') || '';
+  if(!apiKey){ toast('Lisa Anthropic API võti Seadetes.'); return null; }
+  try{
+    var r = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','content-type':'application/json'},
+      body: JSON.stringify({ model:'claude-haiku-4-5', max_tokens:700, system:system, messages:[{role:'user',content:user}] }),
+      signal: AbortSignal.timeout(30000)
+    });
+    var j = await r.json();
+    return j.content && j.content[0] ? j.content[0].text : (j.error && j.error.message ? ('Viga: '+j.error.message) : 'Vastust ei saadud.');
+  }catch(e){ return 'Viga: ' + e.message; }
+}
+
+function kabiContext(){
+  var l = CURRENT || {};
+  var lines = [
+    l.property_address && ('Aadress: '+l.property_address),
+    l.property_type && ('Tüüp: '+l.property_type),
+    l.deal_type && ('Tehing: '+l.deal_type),
+    (l.price!=null) && ('Hind: '+l.price+' €'),
+    (l.area!=null) && ('Pindala: '+l.area+' m²'),
+    l.region && ('Piirkond: '+l.region),
+    l.contact_name && ('Kontakt: '+l.contact_name),
+    l.listing_note && ('Kuulutuse märkus: '+l.listing_note)
+  ];
+  var labels = {still_listed:'Veel müügis',time_on_market:'Aeg turul',inquiries_count:'Huvilisi/vaatamisi',offers:'Pakkumised',price_change:'Hind',buyer_feedback:'Ostja tagasiside',no_broker_reason:'Miks ise müüb',change_mind_reason:'Mis paneks meelt muutma',personality_type:'Inimtüüp'};
+  Object.keys(labels).forEach(function(k){ if(KABI[k]) lines.push(labels[k]+': '+KABI[k]); });
+  var q = document.getElementById('kabiQuote'); if(q && q.value.trim()) lines.push('Tsitaat: '+q.value.trim());
+  return lines.filter(Boolean).join('\n');
+}
+
+function kabiShowOut(title, text){
+  var o = document.getElementById('kabiOut'); if(!o) return;
+  o.style.display = 'block';
+  o.innerHTML = '<div style="font-size:11px;color:var(--tx2);margin-bottom:4px">'+kabiEsc(title)+'</div>'
+    + '<div style="font-size:12px;line-height:1.55;color:var(--tx);white-space:pre-wrap">'+kabiEsc(text)+'</div>'
+    + '<button class="btn-ghost" style="margin-top:6px;font-size:10px" onclick="kabiCopy(this)">Kopeeri</button>';
+}
+function kabiCopy(btn){
+  var t = btn.previousElementSibling.textContent;
+  if(navigator.clipboard){ navigator.clipboard.writeText(t); toast('Kopeeritud'); }
+}
+
+async function kabiGen(kind){
+  var sys, title;
+  if(kind==='summary'){ title='Kõne kokkuvõte'; sys='Oled Uus Maa müügiassistent. Tee selle kõne lühike struktureeritud kokkuvõte eesti keeles. Kasuta AINULT antud andmeid, ära midagi juurde mõtle. Lõpus üks konkreetne järgmine samm.'; }
+  else if(kind==='listing'){ title='Kuulutuse tagasiside'; sys='Oled Uus Maa müügiassistent. Anna lühike aus professionaalne tagasiside selle kuulutuse kohta — mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel, ära väida fakte mida pole. Ilma hämata. Eesti keeles, kuiv ja konkreetne.'; }
+  else if(kind==='letter'){ title='Kiri kliendile'; sys='Oled Uus Maa müügiassistent. Koosta kliendile saadetav lühike viisakas kiri eesti keeles: tänu kõne eest, lühike kokkuvõte, aus tagasiside kuulutuse kohta, ja sujuv suunamine müügispetsialist Meelisele ning paindlikule koostööle ja tasustamisele. Põhine AINULT antud andmetel, ära midagi välja mõtle. Ilma emojideta, kohe saadetav.'; }
+  else { title='AI soovitus'; sys='Oled Uus Maa müügiassistent. Anna selle kõne andmete põhjal üks lühike konkreetne soovitus, mida järgmisena teha. 2-3 lauset, eesti keeles, otsekohe.'; }
+  kabiShowOut(title, 'Genereerin...');
+  var out = await kabiAI(sys, 'Andmed:\n' + kabiContext());
+  if(out!==null) kabiShowOut(title, out);
+}
+
+async function kabiTask(type){
+  if(!CURRENT) return;
+  var c = prompt(type + ' — lisa kommentaar (valikuline):', '');
+  if(c===null) return;
+  var res = await sb.from('tasks').insert({ lead_id:CURRENT.id, assigned_to:(typeof USER!=='undefined'&&USER)?USER.id:null, type:type, status:'tegemata', comment:c||null }).select().single();
+  if(res.error){ toast('❌ ' + res.error.message); return; }
+  toast(type + ' lisatud');
+}
 </script>
 
 <!-- MELL ASSISTENT PANEEL -->
@@ -2750,8 +2816,28 @@ async function saveKabiCall(){
       <div class="kabi-sec-lbl">Eriline vastus / tsitaat</div>
       <textarea id="kabiQuote" class="kabi-quote" rows="2" placeholder="Kui klient ütleb midagi erilist..."></textarea>
     </div>
-    <div class="kabi-sec"><div class="kabi-sec-lbl">4 · Koostöö-pakkumine</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
-    <div class="kabi-sec"><div class="kabi-sec-lbl">5 · Järeltegevus</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl">4 · Koostöö-pakkumine (lõpus)</div>
+      <div class="kabi-script">"Selle põhjal, mida rääkisite, näen paari kohta, mida saaks paremaks teha. Kas oleksite valmis seda müügispetsialistiga arutama? Ilma kohustusteta."</div>
+    </div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl">5 · Järeltegevus</div>
+      <button class="btn-sm" style="width:100%;margin-bottom:8px" onclick="kabiGen('letter')">Saada kliendile (AI koostab)</button>
+      <div class="kabi-mini">Kõnejärgsed tegevused:</div>
+      <div class="kabi-chips" style="margin-bottom:8px">
+        <span class="kabi-rz" onclick="kabiTask('Järelkõne')">Järelkõne</span>
+        <span class="kabi-rz" onclick="kabiTask('Kohtumine')">Kohtumine</span>
+        <span class="kabi-rz" onclick="kabiTask('Ülesanne')">Ülesanne</span>
+        <span class="kabi-rz" onclick="kabiTask('Kommentaar')">Kommentaar</span>
+      </div>
+      <div class="kabi-mini">AI genereerib:</div>
+      <div class="kabi-chips">
+        <span class="kabi-rz" onclick="kabiGen('summary')">Kõne kokkuvõte</span>
+        <span class="kabi-rz" onclick="kabiGen('listing')">Kuulutuse tagasiside</span>
+        <span class="kabi-rz" onclick="kabiGen('advice')">AI soovitus</span>
+      </div>
+      <div id="kabiOut" class="kabi-out" style="display:none"></div>
+    </div>
   </div>
   <div class="kabi-foot">
     <button class="btn-sm" id="kabiSaveBtn" onclick="saveKabiCall()" style="width:100%">Salvesta kõne</button>
