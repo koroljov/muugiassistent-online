@@ -2784,7 +2784,13 @@ function kabiRestoreBox(){
   var p=document.getElementById('kabiPanel'); if(!p) return;
   try{
     var b=JSON.parse(localStorage.getItem('kabi_box')||'null');
-    if(b){ p.style.right='auto'; p.style.left=b.left+'px'; p.style.top=b.top+'px'; p.style.width=b.width+'px'; p.style.height=b.height+'px'; }
+    if(!b) return;
+    var vw=window.innerWidth, vh=window.innerHeight;
+    var w=Math.min(Math.max(b.width||430,320), vw);
+    var h=Math.min(Math.max(b.height||vh,300), vh);
+    var left=Math.min(Math.max(b.left||0, 0), Math.max(0, vw-w));
+    var top=Math.min(Math.max(b.top||0, 0), Math.max(0, vh-h));
+    p.style.right='auto'; p.style.left=left+'px'; p.style.top=top+'px'; p.style.width=w+'px'; p.style.height=h+'px';
   }catch(e){}
 }
 (function(){
@@ -2798,8 +2804,10 @@ function kabiRestoreBox(){
   document.addEventListener('mousemove', function(e){
     if(!dragging) return;
     var p=document.getElementById('kabiPanel');
-    p.style.left=(sl+e.clientX-sx)+'px';
-    p.style.top=Math.max(0,(st+e.clientY-sy))+'px';
+    var w=p.offsetWidth, h=p.offsetHeight;
+    var nl=Math.min(Math.max(sl+e.clientX-sx, 0), Math.max(0, window.innerWidth-w));
+    var nt=Math.min(Math.max(st+e.clientY-sy, 0), Math.max(0, window.innerHeight-h));
+    p.style.left=nl+'px'; p.style.top=nt+'px';
   });
   document.addEventListener('mouseup', function(){ if(dragging){ dragging=false; kabiSaveBox(); } });
 })();
