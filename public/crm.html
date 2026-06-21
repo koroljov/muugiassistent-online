@@ -1850,72 +1850,11 @@ function openLead(id) {
       <div>
         <div class="sec-lbl" style="margin-top:0">Ajalugu</div>
         ${timeline}
-        <button class="btn-ghost" style="width:100%;margin-top:6px;font-size:10px" onclick="toggleCallForm()">+ Lisa kõne</button>
-
-        <div id="callFormWrap" style="display:none;margin-top:10px;background:var(--cd);border-radius:8px;padding:12px">
-          <div style="display:grid;gap:7px">
-            <div>
-              <div class="set-lbl">Tulemus</div>
-              <select class="inp" id="cfResult">
-                <option value="">Vali...</option>
-                <option>Ei vastanud</option>
-                <option>Kõne toimus</option>
-                <option>Ei soovi maaklerit</option>
-                <option>Huvi olemas</option>
-                <option>Kohtumisaeg kokku lepitud</option>
-                <option>Järelkõne kokku lepitud</option>
-                <option>Juba müüdud</option>
-              </select>
-            </div>
-            <div>
-              <div class="set-lbl">Kommentaar</div>
-              <textarea class="inp" id="cfComment" rows="2" style="resize:vertical" placeholder="Mida räägiti..."></textarea>
-            </div>
-            <div>
-              <div class="set-lbl">Järgmine tegevus</div>
-              <input class="inp" id="cfNext" type="date">
-            </div>
-            <button class="btn-sm" onclick="saveCall()">Salvesta kõne</button>
-          </div>
-        </div>
+        <button class="btn-ghost" style="width:100%;margin-top:6px;font-size:10px" onclick="openKabi()">+ Lisa kõne (Kõneabi)</button>
       </div>
     </div>`;
 
   document.getElementById('leadModal').classList.add('open');
-}
-
-function toggleCallForm() {
-  const w = document.getElementById('callFormWrap');
-  w.style.display = w.style.display === 'none' ? 'block' : 'none';
-}
-
-async function saveCall() {
-  if (!CURRENT) return;
-  const result  = document.getElementById('cfResult').value;
-  const comment = document.getElementById('cfComment').value.trim();
-  const nextAt  = document.getElementById('cfNext').value;
-
-  const { data, error } = await sb.from('calls').insert({
-    lead_id:        CURRENT.id,
-    call_result:    result  || null,
-    call_comment:   comment || null,
-    next_action_at: nextAt  || null,
-    caller_id:      USER?.id || null,
-  }).select().single();
-
-  if (error) { toast('❌ Viga: ' + error.message); return; }
-  CALLS.unshift(data);
-
-  if (nextAt) {
-    await sb.from('leads').update({ next_action_at: nextAt, last_call_result: result || null }).eq('id', CURRENT.id);
-    const idx = LEADS.findIndex(l => l.id === CURRENT.id);
-    if (idx >= 0) { LEADS[idx].next_action_at = nextAt; LEADS[idx].last_call_result = result; }
-  }
-
-  addXP(35);
-  toast('📞 Kõne salvestatud · +35 xp');
-  openLead(CURRENT.id);
-  render();
 }
 
 async function changeStatus(newKey) {
