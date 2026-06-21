@@ -1307,6 +1307,8 @@ const SB_URL = 'https://iawvsfylguajkoikbdaf.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+var AI_STIIL = ' Kirjuta puhta tekstina ilma vorminduseta — ära kasuta märke *, # ega nummerdatud loendeid. Kuiv, lühike, eestipärane, ilma ameerikaliku tooni ja täiteta.';
+
 // ============================================================
 // STAATUSED
 // ============================================================
@@ -2147,7 +2149,7 @@ async function fetchListingEdit() {
             max_tokens: 500,
             messages: [{
               role: 'user',
-              content: 'Oled Uus Maa kinnisvarabüroo müügiassistent. Sinu ülesanne on helistada selle kuulutuse omanikule ja pakkuda müügiteenust.\n\nKuulutuse andmed:\n' + context + '\n\nKoosta lühike (max 150 sõna) kõne ettevalmistuse kokkuvõte punktidena eesti keeles. Sisalda: kinnisvara tüüp ja põhiandmed, mida küsida omanikult, müügiargument miks Uus Maa.'
+              content: 'Oled Uus Maa kinnisvarabüroo müügiassistent. Sinu ülesanne on helistada selle kuulutuse omanikule ja pakkuda müügiteenust.\n\nKuulutuse andmed:\n' + context + '\n\nKoosta lühike (max 150 sõna) kõne ettevalmistuse kokkuvõte eesti keeles. Sisalda: kinnisvara tüüp ja põhiandmed, mida küsida omanikult, müügiargument miks Uus Maa.' + AI_STIIL
             }]
           }),
           signal: AbortSignal.timeout(20000)
@@ -2558,7 +2560,7 @@ async function sendMell(){
   const btn = document.getElementById('mellSend'); btn.disabled = true;
   const thinking = mellAddMsg('a', '...');
   MELL_HISTORY.push({ role:'user', content:q });
-  const system = 'Oled "Mell", Uus Maa kinnisvarabüroo müügiassistent. Vastad eesti keeles, otsekohe, lühidalt ja praktiliselt. Aitad müügispetsialisti selle konkreetse leadiga: anna konkreetne järgmine samm, mitte üldine jutt. Kui kasutaja palub sõnumi, anna valmis, kohe saadetav tekst ilma emojideta.\n\nLEADI ANDMED:\n' + mellLeadContext();
+  const system = 'Oled "Mell", Uus Maa kinnisvarabüroo müügiassistent. Vastad eesti keeles, otsekohe, lühidalt ja praktiliselt. Aitad müügispetsialisti selle konkreetse leadiga: anna konkreetne järgmine samm, mitte üldine jutt. Kui kasutaja palub sõnumi, anna valmis, kohe saadetav tekst ilma emojideta.' + AI_STIIL + '\n\nLEADI ANDMED:\n' + mellLeadContext();
   try{
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -2745,8 +2747,9 @@ async function kabiGen(kind){
   var sys, title;
   if(kind==='summary'){ title='Kõne kokkuvõte'; sys='Oled Uus Maa müügiassistent. Tee selle kõne lühike struktureeritud kokkuvõte eesti keeles. Kasuta AINULT antud andmeid, ära midagi juurde mõtle. Lõpus üks konkreetne järgmine samm.'; }
   else if(kind==='listing'){ title='Kuulutuse tagasiside'; sys='Oled Uus Maa müügiassistent. Anna lühike aus professionaalne tagasiside selle kuulutuse kohta — mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel, ära väida fakte mida pole. Ilma hämata. Eesti keeles, kuiv ja konkreetne.'; }
-  else if(kind==='letter'){ title='Kiri kliendile'; sys='Oled Uus Maa müügiassistent. Koosta kliendile saadetav lühike viisakas kiri eesti keeles: tänu kõne eest, lühike kokkuvõte, aus tagasiside kuulutuse kohta, ja sujuv suunamine müügispetsialist Meelisele ning paindlikule koostööle ja tasustamisele. Põhine AINULT antud andmetel, ära midagi välja mõtle. Ilma emojideta, kohe saadetav.'; }
+  else if(kind==='letter'){ title='Kiri kliendile'; sys='Oled Uus Maa müügiassistent. Koosta kliendile saadetav lühike viisakas kiri eesti keeles: tänu kõne eest, lühike kokkuvõte, aus tagasiside kuulutuse kohta, ja sujuv suunamine müügispetsialist Meelisele ning paindlikule koostööle ja tasustamisele. Alusta tervitusega "Tere [eesnimi]", mitte "Kallim". Põhine AINULT antud andmetel, ära midagi välja mõtle. Ilma emojideta, kohe saadetav.'; }
   else { title='AI soovitus'; sys='Oled Uus Maa müügiassistent. Anna selle kõne andmete põhjal üks lühike konkreetne soovitus, mida järgmisena teha. 2-3 lauset, eesti keeles, otsekohe.'; }
+  sys += AI_STIIL;
   kabiShowOut(title, 'Genereerin...');
   var out = await kabiAI(sys, 'Andmed:\n' + kabiContext());
   if(out!==null) kabiShowOut(title, out);
