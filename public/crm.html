@@ -973,6 +973,22 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .mell-inp:focus{outline:none;border-color:var(--ac)}
 .mell-send{background:var(--ac);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
 .mell-send:disabled{opacity:0.5;cursor:default}
+
+/* KÕNEABI */
+.kabi-back{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:401;display:none}
+.kabi-back.open{display:block}
+.kabi-panel{position:fixed;top:0;right:0;width:430px;max-width:96vw;height:100%;background:var(--sf);border-left:1px solid var(--bd);z-index:402;display:none;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,0.28)}
+.kabi-panel.open{display:flex}
+.kabi-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--bd);background:var(--bg)}
+.kabi-grip{color:var(--tx2);font-size:13px;cursor:grab;font-style:normal;letter-spacing:-2px}
+.kabi-title{font-size:13px;font-weight:600;line-height:1.2}
+.kabi-sub{font-size:11px;color:var(--tx2)}
+.kabi-x{margin-left:auto;background:none;border:none;color:var(--tx2);font-size:20px;cursor:pointer;line-height:1}
+.kabi-x:hover{color:var(--tx)}
+.kabi-body{flex:1;overflow-y:auto}
+.kabi-sec{padding:12px 14px;border-bottom:1px solid var(--bd)}
+.kabi-sec-lbl{font-size:11px;color:var(--tx2);margin-bottom:6px}
+.kabi-todo{font-size:11px;color:var(--tx2);font-style:italic}
 </style>
 </head>
 <body>
@@ -1159,6 +1175,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     <div class="modal-foot">
       <button class="btn-danger" onclick="archiveLead()">Arhiveeri</button>
       <button class="btn-ghost" onclick="openMell()">Küsi Mellilt</button>
+      <button class="btn-ghost" onclick="openKabi()">Kõneabi</button>
       <button class="btn-ghost" onclick="closeModal('leadModal')">Sulge</button>
       <button class="btn-sm" onclick="saveLead()">Salvesta</button>
     </div>
@@ -2535,6 +2552,20 @@ async function sendMell(){
     btn.disabled = false;
   }
 }
+
+// ============================================================
+// KÕNEABI — PANEELI SKELETT (faas 2)
+// ============================================================
+function openKabi(){
+  if(!CURRENT){ alert('Ava esmalt lead.'); return; }
+  document.getElementById('kabiSub').textContent = CURRENT.property_address || 'Lead';
+  document.getElementById('kabiBack').classList.add('open');
+  document.getElementById('kabiPanel').classList.add('open');
+}
+function closeKabi(){
+  document.getElementById('kabiBack').classList.remove('open');
+  document.getElementById('kabiPanel').classList.remove('open');
+}
 </script>
 
 <!-- MELL ASSISTENT PANEEL -->
@@ -2553,6 +2584,26 @@ async function sendMell(){
   <div class="mell-foot">
     <textarea class="mell-inp" id="mellInp" rows="1" placeholder="Küsi Mellilt..." onkeydown="mellKey(event)" oninput="mellGrow(this)"></textarea>
     <button class="mell-send" id="mellSend" onclick="sendMell()">Saada</button>
+  </div>
+</div>
+
+<!-- KÕNEABI PANEEL (skelett) -->
+<div class="kabi-back" id="kabiBack" onclick="closeKabi()"></div>
+<div class="kabi-panel" id="kabiPanel">
+  <div class="kabi-head">
+    <i class="kabi-grip" title="Liiguta (tuleb hiljem)">⋮⋮</i>
+    <div>
+      <div class="kabi-title">Kõneabi</div>
+      <div class="kabi-sub" id="kabiSub">Lead</div>
+    </div>
+    <button class="kabi-x" onclick="closeKabi()">×</button>
+  </div>
+  <div class="kabi-body" id="kabiBody">
+    <div class="kabi-sec"><div class="kabi-sec-lbl">1 · Avalöök</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
+    <div class="kabi-sec"><div class="kabi-sec-lbl">2 · Inimtüüp</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
+    <div class="kabi-sec"><div class="kabi-sec-lbl">3 · Andmekorje</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
+    <div class="kabi-sec"><div class="kabi-sec-lbl">4 · Koostöö-pakkumine</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
+    <div class="kabi-sec"><div class="kabi-sec-lbl">5 · Järeltegevus</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
   </div>
 </div>
 </body>
