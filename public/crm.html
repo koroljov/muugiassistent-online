@@ -1020,6 +1020,15 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .hist-head:hover{background:var(--bd)}
 .hist-detail{padding:6px 10px 8px;border-top:1px solid var(--bd)}
 .hist-detail b{color:var(--tx2);font-weight:600}
+.stat-summary{font-size:12px;color:var(--tx);margin:4px 0 16px}
+.stat-summary b{color:var(--ac)}
+.stat-block{margin-bottom:18px}
+.stat-title{font-size:12px;color:var(--tx2);margin-bottom:8px;font-weight:600}
+.stat-row{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;margin-bottom:4px;border-radius:6px;background:var(--cd);overflow:hidden;font-size:12px}
+.stat-bar{position:absolute;left:0;top:0;bottom:0;background:var(--acb);z-index:0}
+.stat-lbl{position:relative;z-index:1}
+.stat-val{position:relative;z-index:1;color:var(--tx2);font-size:11px;white-space:nowrap}
+.stat-empty{font-size:11px;color:var(--tx2);padding:2px 0}
 </style>
 </head>
 <body>
@@ -1098,6 +1107,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     <div class="tab active" onclick="setView('kanban',this)">📋 Kanban</div>
     <div class="tab" onclick="setView('list',this)">☰ Nimekiri</div>
     <div class="tab" onclick="setView('tasks',this)">✓ Ülesanded</div>
+    <div class="tab" onclick="setView('stats',this)">📊 Statistika</div>
   </div>
 
   <!-- PIPELINE BAR -->
@@ -1130,6 +1140,11 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     <!-- TASKS -->
     <div class="view" id="view-tasks">
       <div id="tasksWrap"></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="view" id="view-stats">
+      <div id="statsWrap" style="padding:8px 4px"></div>
     </div>
 
     <!-- SETTINGS PANEL -->
@@ -2329,11 +2344,46 @@ function updateXP() {
 // ============================================================
 // VIEW SWITCHING
 // ============================================================
+function statsCount(field, multi){
+  var counts = {};
+  CALLS.forEach(function(c){
+    var v = c[field];
+    if(!v) return;
+    var parts = multi ? String(v).split(',') : [String(v)];
+    parts.forEach(function(p){ p = p.trim(); if(p) counts[p] = (counts[p]||0) + 1; });
+  });
+  return counts;
+}
+function statsBlock(title, counts){
+  var entries = Object.keys(counts).map(function(k){ return [k, counts[k]]; }).sort(function(a,b){ return b[1]-a[1]; });
+  var total = CALLS.length || 1;
+  var rows = entries.map(function(e){
+    var pct = Math.round(e[1]/total*100);
+    return '<div class="stat-row"><div class="stat-bar" style="width:'+pct+'%"></div><span class="stat-lbl">'+kabiEsc(e[0])+'</span><span class="stat-val">'+e[1]+' · '+pct+'%</span></div>';
+  }).join('');
+  if(!rows) rows = '<div class="stat-empty">Andmeid pole.</div>';
+  return '<div class="stat-block"><div class="stat-title">'+kabiEsc(title)+'</div>'+rows+'</div>';
+}
+function renderStats(){
+  var w = document.getElementById('statsWrap'); if(!w) return;
+  var n = CALLS.length;
+  var objN = new Set(CALLS.map(function(c){ return c.lead_id; })).size;
+  var html = '<div class="stat-summary">Kõnesid kokku: <b>'+n+'</b> · objekte: <b>'+objN+'</b></div>';
+  html += statsBlock('Veel müügis', statsCount('still_listed', false));
+  html += statsBlock('Aeg turul', statsCount('time_on_market', false));
+  html += statsBlock('Miks omanikud ise müüvad', statsCount('no_broker_reason', true));
+  html += statsBlock('Takistused (ostja tagasiside)', statsCount('buyer_feedback', true));
+  html += statsBlock('Mis paneks meelt muutma', statsCount('change_mind_reason', true));
+  html += statsBlock('Inimtüübid', statsCount('personality_type', false));
+  w.innerHTML = html;
+}
+
 function setView(v, el) {
   document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
   document.getElementById('view-' + v).classList.add('active');
   document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
   if (el) el.classList.add('active');
+  if (v === 'stats') renderStats();
 }
 
 // ============================================================
