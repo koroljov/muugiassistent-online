@@ -15,6 +15,14 @@ export async function POST(request: Request) {
   const ogImageOnly = !!body?.ogImageOnly;
   if (!/^https?:\/\//i.test(url)) return NextResponse.json({ error: "Vigane URL" }, { status: 400 });
 
+  // SSRF kaitse: luba ainult kinnisvaraportaalid
+  let host = "";
+  try { host = new URL(url).hostname.toLowerCase(); } catch { return NextResponse.json({ error: "Vigane URL" }, { status: 400 }); }
+  const ALLOWED = ["kv.ee", "kinnisvara24.ee", "city24.ee"];
+  if (!ALLOWED.some((d) => host === d || host.endsWith("." + d))) {
+    return NextResponse.json({ error: "Lubatud ainult kinnisvaraportaalid (kv.ee, kinnisvara24, city24)" }, { status: 400 });
+  }
+
   try {
     const r = await fetch(url, {
       headers: {
