@@ -1134,7 +1134,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
         <span onclick="toggleSet()" style="cursor:pointer;font-size:20px;line-height:1;color:var(--tx2)">×</span>
       </div>
       <div class="set-body">
-        <div class="set-sec">Üldine</div>
+        <div class="set-sec">Profiil</div>
         <div>
           <div class="set-lbl">Nimi</div>
           <input class="set-inp" id="setName" value="Meelis" oninput="savePref()">
@@ -1147,6 +1147,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
           </select>
         </div>
 
+        <div class="set-sec">AI ja kõneabi</div>
         <div>
           <div class="set-lbl">Anthropic API võti <span style="font-size:9px;color:var(--tx2)">(AI tagasiside jaoks)</span></div>
           <input class="set-inp" id="setAnthropicKey" type="password" placeholder="sk-ant-..." oninput="localStorage.setItem('anthropic_key',this.value)">
