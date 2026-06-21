@@ -989,6 +989,19 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .kabi-sec{padding:12px 14px;border-bottom:1px solid var(--bd)}
 .kabi-sec-lbl{font-size:11px;color:var(--tx2);margin-bottom:6px}
 .kabi-todo{font-size:11px;color:var(--tx2);font-style:italic}
+.kabi-script{font-size:12px;line-height:1.55;color:var(--tx);font-style:italic}
+.kabi-mini{font-size:11px;color:var(--tx2);margin:8px 0 4px}
+.kabi-chips{display:flex;flex-wrap:wrap;gap:5px}
+.kabi-rz{font-size:11px;padding:4px 9px;border-radius:14px;cursor:pointer;border:1px solid var(--bd);color:var(--tx2)}
+.kabi-rz:hover{border-color:var(--ac);color:var(--ac)}
+.kabi-rzout{margin-top:7px;font-size:12px;line-height:1.5;color:var(--tx);background:var(--cd);padding:8px 10px;border-radius:8px}
+.kabi-info{color:var(--ac);cursor:pointer;font-style:normal}
+.kabi-guide{font-size:12px;line-height:1.6;color:var(--tx2);background:var(--cd);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+.kabi-guide b{color:var(--ac);font-weight:600}
+.kabi-types{display:flex;gap:6px}
+.kabi-ty{flex:1;font-size:11px;padding:6px 4px;background:transparent;border:1px solid var(--bd);border-radius:8px;color:var(--tx2);cursor:pointer}
+.kabi-ty.sel{background:var(--acb);border-color:var(--ac);color:var(--ac)}
+.kabi-tip{margin-top:8px;font-size:12px;line-height:1.5;color:var(--tx2)}
 </style>
 </head>
 <body>
@@ -2556,15 +2569,41 @@ async function sendMell(){
 // ============================================================
 // KÕNEABI — PANEELI SKELETT (faas 2)
 // ============================================================
+let KABI = {};
+var KABI_TIPS = {"Juht":"Otse asjasse. Numbrid. Austa aega. Ära lobise.","Analüütik":"Anna fakte ja võrdlus. Ära survesta. Paku materjali.","Sõbralik":"Soe toon. Ära kiirusta. Ehita usaldust.","Energiline":"Kuula ja peegelda. Lase rääkida. Loo suhe."};
+
 function openKabi(){
   if(!CURRENT){ alert('Ava esmalt lead.'); return; }
+  KABI = { lead_id: CURRENT.id };
   document.getElementById('kabiSub').textContent = CURRENT.property_address || 'Lead';
+  var rz = document.getElementById('kabiRzOut'); if(rz){ rz.style.display='none'; rz.innerHTML=''; }
+  var g = document.getElementById('kabiGuide'); if(g) g.style.display='none';
+  document.querySelectorAll('.kabi-ty').forEach(function(b){ b.classList.remove('sel'); });
+  var tip = document.getElementById('kabiTip'); if(tip) tip.textContent='';
   document.getElementById('kabiBack').classList.add('open');
   document.getElementById('kabiPanel').classList.add('open');
 }
 function closeKabi(){
   document.getElementById('kabiBack').classList.remove('open');
   document.getElementById('kabiPanel').classList.remove('open');
+}
+function kabiRz(el){
+  var o = document.getElementById('kabiRzOut'); o.style.display='block';
+  if(el.getAttribute('data-cal')){
+    o.innerHTML = '<div style="margin-bottom:6px">' + el.getAttribute('data-r') + '</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="date" class="inp" style="width:auto;font-size:11px"><input type="time" class="inp" style="width:auto;font-size:11px"><button class="btn-sm" onclick="toast(\'Kalendrisse salvestus tuleb faasis 7\')">Kalendrisse</button></div>';
+  } else {
+    o.textContent = el.getAttribute('data-r');
+  }
+}
+function kabiType(el, t){
+  document.querySelectorAll('.kabi-ty').forEach(function(b){ b.classList.remove('sel'); });
+  el.classList.add('sel');
+  KABI.personality_type = t;
+  document.getElementById('kabiTip').textContent = KABI_TIPS[t] || '';
+}
+function kabiToggleGuide(){
+  var g = document.getElementById('kabiGuide');
+  g.style.display = g.style.display === 'none' ? 'block' : 'none';
 }
 </script>
 
@@ -2599,8 +2638,35 @@ function closeKabi(){
     <button class="kabi-x" onclick="closeKabi()">×</button>
   </div>
   <div class="kabi-body" id="kabiBody">
-    <div class="kabi-sec"><div class="kabi-sec-lbl">1 · Avalöök</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
-    <div class="kabi-sec"><div class="kabi-sec-lbl">2 · Inimtüüp</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl">1 · Avalöök</div>
+      <div class="kabi-script">"Tere! Olen [Nimi], müügiassistent Uus Maa Arenas. Nägin teie kuulutust ja teen kaardistust omanike seas — kuidas müük turul päriselt liigub ja mis täna takistab. Kas teil on 1–2 minutit?"</div>
+      <div class="kabi-mini">Kui paneb vastu:</div>
+      <div class="kabi-chips">
+        <span class="kabi-rz" onclick="kabiRz(this)" data-r="Saan aru, neid kõnesid tuleb iga päev. Ma ei paku midagi, üks küsimus ainult.">ei taha maaklerit</span>
+        <span class="kabi-rz" onclick="kabiRz(this)" data-cal="1" data-r="Selge. Millal sobiks tagasi helistada?">ei saa hetkel rääkida</span>
+        <span class="kabi-rz" onclick="kabiRz(this)" data-r="Selge. Tohib üks lühike küsimus, enne kui lõpetame?">ei ole huvitatud</span>
+        <span class="kabi-rz" onclick="kabiRz(this)" data-cal="1" data-r="Hea meelega. Mis aeg sobiks?">helista hiljem tagasi</span>
+      </div>
+      <div id="kabiRzOut" class="kabi-rzout" style="display:none"></div>
+    </div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl" style="display:flex;align-items:center;gap:6px">2 · Inimtüüp <span class="kabi-info" onclick="kabiToggleGuide()" title="Kuidas tüüpi ära tunda">ⓘ</span></div>
+      <div id="kabiGuide" class="kabi-guide" style="display:none">
+        <div><b>Juht:</b> kiire, otsustav, vähe juttu. Otse asjasse.</div>
+        <div><b>Analüütik:</b> küsib detaile, ettevaatlik. Fakte, ära survesta.</div>
+        <div><b>Sõbralik:</b> rahulik, väldib survet. Usaldus, ära pressi.</div>
+        <div><b>Energiline:</b> jutukas, emotsionaalne. Kuula, suuna pehmelt.</div>
+        <div style="margin-top:3px;color:var(--tx2)">Tempo + toon: kiire/asjalik=Juht, rahulik/asjalik=Analüütik, rahulik/soe=Sõbralik, kiire/soe=Energiline.</div>
+      </div>
+      <div class="kabi-types">
+        <button class="kabi-ty" onclick="kabiType(this,'Juht')">Juht</button>
+        <button class="kabi-ty" onclick="kabiType(this,'Analüütik')">Analüütik</button>
+        <button class="kabi-ty" onclick="kabiType(this,'Sõbralik')">Sõbralik</button>
+        <button class="kabi-ty" onclick="kabiType(this,'Energiline')">Energiline</button>
+      </div>
+      <div id="kabiTip" class="kabi-tip"></div>
+    </div>
     <div class="kabi-sec"><div class="kabi-sec-lbl">3 · Andmekorje</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
     <div class="kabi-sec"><div class="kabi-sec-lbl">4 · Koostöö-pakkumine</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
     <div class="kabi-sec"><div class="kabi-sec-lbl">5 · Järeltegevus</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
