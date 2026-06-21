@@ -2377,7 +2377,7 @@ function renderStats(){
   var w = document.getElementById('statsWrap'); if(!w) return;
   var n = CALLS.length;
   var objN = new Set(CALLS.map(function(c){ return c.lead_id; })).size;
-  var html = '<div class="stat-summary">Kõnesid kokku: <b>'+n+'</b> · objekte: <b>'+objN+'</b></div>';
+  var html = '<button class="btn-sm" style="width:100%;margin-bottom:12px" onclick="statsAnalyze()">AI turuanalüüs</button><div id="statsAiOut" style="display:none;margin-bottom:14px;background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:12px"></div><div class="stat-summary">Kõnesid kokku: <b>'+n+'</b> · objekte: <b>'+objN+'</b></div>';
   html += statsBlock('Veel müügis', statsCount('still_listed', false));
   html += statsBlock('Aeg turul', statsCount('time_on_market', false));
   html += statsBlock('Miks omanikud ise müüvad', statsCount('no_broker_reason', true));
@@ -2385,6 +2385,24 @@ function renderStats(){
   html += statsBlock('Mis paneks meelt muutma', statsCount('change_mind_reason', true));
   html += statsBlock('Inimtüübid', statsCount('personality_type', false));
   w.innerHTML = html;
+}
+
+async function statsAnalyze(){
+  var out = document.getElementById('statsAiOut'); if(!out) return;
+  out.style.display = 'block';
+  var n = CALLS.length;
+  if(n === 0){ out.innerHTML = '<div style="color:var(--tx2);font-size:12px">Andmeid pole veel. Tee mõned kõned.</div>'; return; }
+  out.innerHTML = '<div style="color:var(--tx2);font-size:12px">Analüüsin... (võib kesta kümmekond sekundit)</div>';
+  var fields = [['still_listed','Veel müügis',false],['time_on_market','Aeg turul',false],['inquiries_count','Huvilisi/vaatamisi',false],['offers','Pakkumised',false],['price_change','Hind',false],['talk_reason','Müügimotiiv',false],['urgency','Kiirus',false],['obstacle','Takistus',true],['buyer_feedback','Ostja tagasiside',true],['no_broker_reason','Miks ise müüb',true],['change_mind_reason','Mis paneks meelt muutma',true],['attitude','Suhtumine',false]];
+  var lines = ['Kõnesid kokku: ' + n + ', objekte: ' + (new Set(CALLS.map(function(c){return c.lead_id;})).size)];
+  fields.forEach(function(f){
+    var c = statsCount(f[0], f[2]);
+    var parts = Object.keys(c).sort(function(a,b){ return c[b]-c[a]; }).map(function(k){ return k + ' (' + c[k] + ')'; });
+    if(parts.length) lines.push(f[1] + ': ' + parts.join(', '));
+  });
+  var sys = 'Oled Uus Maa kinnisvaramüügi analüütik. Analüüsi allolevat koondandmestikku ise-müüvate omanike kõnedest. Ole realistlik: kui valim on väike (alla 15 kõne), ütle et järeldused on esialgsed ja ära üle-üldista. Anna kolm selget osa: 1) Turu reaalsus — mida andmed näitavad, miks omanikud ise müüvad ja mis müüki takistab. 2) Müük — mida järgmistel kõnedel teha, et tulemus paraneks. 3) Turundus ja kuulutus — mida parandada. Konkreetne ja faktipõhine, ainult nende andmete põhjal.' + AI_STIIL;
+  var res = await aiFetch({ system: sys, messages:[{ role:'user', content:'Andmed:\n' + lines.join('\n') }], max_tokens:1000, model:'claude-opus-4-8' });
+  out.innerHTML = '<div style="font-size:11px;color:var(--tx2);margin-bottom:6px">AI turuanalüüs (' + n + ' kõne põhjal)</div><div style="font-size:12px;line-height:1.65;white-space:pre-wrap;color:var(--tx)">' + kabiEsc(res) + '</div>';
 }
 
 function setView(v, el) {
