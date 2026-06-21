@@ -1169,8 +1169,8 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
         <div class="set-sec">AI ja kõneabi</div>
         <div>
-          <div class="set-lbl">Anthropic API võti <span style="font-size:9px;color:var(--tx2)">(AI tagasiside jaoks)</span></div>
-          <input class="set-inp" id="setAnthropicKey" type="password" placeholder="sk-ant-..." oninput="localStorage.setItem('anthropic_key',this.value)">
+          <div class="set-lbl">Anthropic API võti</div>
+          <div style="font-size:11px;color:var(--tx2);line-height:1.4">Võti on serveris (Vercel), turvaliselt. Brauseris seda ei hoita.</div>
         </div>
 
         <div>
@@ -1327,6 +1327,22 @@ const SB_URL = 'https://iawvsfylguajkoikbdaf.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+async function aiFetch(payload){
+  try{
+    var sess = await sb.auth.getSession();
+    var token = (sess.data && sess.data.session) ? sess.data.session.access_token : '';
+    var r = await fetch('/api/ai', {
+      method:'POST',
+      headers:{'content-type':'application/json','authorization':'Bearer '+token},
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000)
+    });
+    var j = await r.json();
+    if(!r.ok) return 'Viga: ' + (j.error || r.status);
+    return j.text || '';
+  }catch(e){ return 'Viga: ' + e.message; }
+}
+
 var AI_STIIL = '\n\nSTIIL: Kirjuta eesti kirjakeeles, lihtsate selgete lausetega. Väldi ilukõnet, müügijuttu, emotsionaalsust, klišeesid ja korporatiivset keelt. Keskendu faktidele, loogikale ja reaalsele olukorrale. Ära kirjuta pikemalt kui vaja — iga lause peab andma väärtust. Kui midagi on ebaloogiline või teadmata, ütle see otse. Toon: rahulik, professionaalne, usaldusväärne, otsekohene, lugupidav, kindel aga mitte pealetükkiv. Ülesehitus: alusta kõige olulisemast, siis põhjendus, lõpeta konkreetse järelduse või järgmise sammuga; keeruline jaga punktideks; väldi pikki lõike. Ära kasuta hüüumärke ega emojisid. Ära kasuta vorminduse märke (*, #, nummerdatud loendid) — puhas tekst. Kliendikirjas räägi kui professionaalne nõustaja, mitte müüja: selgita olukorda nii nagu see on, näita võimalusi ja tagajärgi, ära suru otsust peale. Kinnisvaratekstis keskendu sellele, mis mõjutab ostja otsust, ja selgita miks; väldi sõnu unikaalne, suurepärane, ideaalne, fantastiline, eksklusiivne, luksuslik, kui puudub objektiivne põhjus. Tagasisides too välja tugevused ja probleemid, selgita mõju, anna soovitus. Ole kohe kasutatav ilma ümberkirjutamiseta; väldi pikki sissejuhatusi, moraalilugemist, liigseid hoiatusi ja sama mõtte kordamist.';
 
 // ============================================================
@@ -1432,7 +1448,6 @@ async function startApp() {
 
   document.getElementById('setName').value  = name;
   document.getElementById('setRole').value  = role;
-  document.getElementById('setAnthropicKey').value = localStorage.getItem('anthropic_key') || '';
   loadUserScript();
   document.getElementById('userName').textContent = name;
   document.getElementById('userAv').textContent   = initials(name);
@@ -2114,53 +2129,26 @@ async function fetchListingEdit() {
     if (price && hEl && !hEl.value.trim()) { hEl.value = price; filled.push('hind'); }
 
     // AI summary
-    const apiKey = localStorage.getItem('anthropic_key') || '';
-    if (apiKey) {
-      if (st) {
-        st.textContent = (filled.length ? '✓ ' + filled.join(', ') + ' · ' : '✓ Pilt laetud · ') + 'Genereerin AI kokkuvõtet...';
-        st.style.color = 'var(--ac)';
-      }
-      const context = [
-        ogTitle && ('Pealkiri: ' + ogTitle),
-        ogDesc  && ('Kirjeldus: ' + ogDesc),
-        price   && ('Hind: ' + price + ' €'),
-        addr    && ('Asukoht: ' + addr),
-        area    && ('Pindala: ' + area + ' m²'),
-        'URL: ' + url
-      ].filter(Boolean).join('\n');
-      try {
-        const aiR = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-            'content-type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'claude-haiku-4-5',
-            max_tokens: 500,
-            messages: [{
-              role: 'user',
-              content: 'Oled Uus Maa kinnisvarabüroo müügiassistent. Sinu ülesanne on helistada selle kuulutuse omanikule ja pakkuda müügiteenust.\n\nKuulutuse andmed:\n' + context + '\n\nKoosta lühike (max 150 sõna) kõne ettevalmistuse kokkuvõte eesti keeles. Sisalda: kinnisvara tüüp ja põhiandmed, mida küsida omanikult, müügiargument miks Uus Maa.' + AI_STIIL
-            }]
-          }),
-          signal: AbortSignal.timeout(20000)
-        });
-        const aiJ = await aiR.json();
-        const summary = aiJ.content?.[0]?.text || '';
-        const aiEl = document.getElementById('lAiSummary');
-        if (aiEl && summary) aiEl.value = summary;
-        if (st) { st.textContent = '✓ Kõik valmis · AI kokkuvõte genereeritud'; st.style.color = 'var(--ac)'; }
-      } catch (aiErr) {
-        if (st) { st.textContent = '✓ Andmed laetud · AI viga: ' + aiErr.message; }
-      }
-    } else {
-      if (st) {
-        st.textContent = (filled.length ? '✓ Täidetud: ' + filled.join(', ') : '✓ Pilt laetud') +
-          ' · AI jaoks lisa Anthropic API võti Seadetes';
-        st.style.color = 'var(--ac)';
-      }
+    if (st) {
+      st.textContent = (filled.length ? '✓ ' + filled.join(', ') + ' · ' : '✓ Pilt laetud · ') + 'Genereerin AI kokkuvõtet...';
+      st.style.color = 'var(--ac)';
+    }
+    const context = [
+      ogTitle && ('Pealkiri: ' + ogTitle),
+      ogDesc  && ('Kirjeldus: ' + ogDesc),
+      price   && ('Hind: ' + price + ' €'),
+      addr    && ('Asukoht: ' + addr),
+      area    && ('Pindala: ' + area + ' m²'),
+      'URL: ' + url
+    ].filter(Boolean).join('\n');
+    try {
+      const summary = await aiFetch({ max_tokens: 500, messages: [{ role: 'user', content: 'Oled Uus Maa kinnisvarabüroo müügiassistent. Sinu ülesanne on helistada selle kuulutuse omanikule ja pakkuda müügiteenust.\n\nKuulutuse andmed:\n' + context + '\n\nKoosta lühike (max 150 sõna) kõne ettevalmistuse kokkuvõte eesti keeles. Sisalda: kinnisvara tüüp ja põhiandmed, mida küsida omanikult, müügiargument miks Uus Maa.' + AI_STIIL }] });
+      const isErr = summary.indexOf('Viga') === 0;
+      const aiEl = document.getElementById('lAiSummary');
+      if (aiEl && summary && !isErr) aiEl.value = summary;
+      if (st) { st.textContent = isErr ? ('✓ Andmed laetud · ' + summary) : '✓ Kõik valmis · AI kokkuvõte genereeritud'; st.style.color = 'var(--ac)'; }
+    } catch (aiErr) {
+      if (st) { st.textContent = '✓ Andmed laetud · AI viga: ' + aiErr.message; }
     }
   } catch (e) {
     if (st) { st.textContent = '❌ Viga: ' + (e.message || 'proxy ei vasta'); st.style.color = 'var(--red)'; }
@@ -2581,8 +2569,6 @@ function mellKey(e){ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); s
 async function sendMell(){
   const inp = document.getElementById('mellInp');
   const q = inp.value.trim(); if(!q) return;
-  const apiKey = localStorage.getItem('anthropic_key') || '';
-  if(!apiKey){ mellAddMsg('sys', 'Lisa Anthropic API võti Seadetes.'); return; }
   inp.value = ''; mellGrow(inp);
   mellAddMsg('u', q);
   const btn = document.getElementById('mellSend'); btn.disabled = true;
@@ -2590,19 +2576,7 @@ async function sendMell(){
   MELL_HISTORY.push({ role:'user', content:q });
   const system = 'Oled "Mell", Uus Maa kinnisvarabüroo müügiassistent. Vastad eesti keeles, otsekohe, lühidalt ja praktiliselt. Aitad müügispetsialisti selle konkreetse leadiga: anna konkreetne järgmine samm, mitte üldine jutt. Kui kasutaja palub sõnumi, anna valmis, kohe saadetav tekst ilma emojideta.' + AI_STIIL + '\n\nLEADI ANDMED:\n' + mellLeadContext();
   try{
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({ model:'claude-haiku-4-5', max_tokens:700, system: system, messages: MELL_HISTORY }),
-      signal: AbortSignal.timeout(30000)
-    });
-    const j = await r.json();
-    const ans = j.content?.[0]?.text || (j.error?.message ? ('Viga: ' + j.error.message) : 'Vastust ei saadud.');
+    const ans = await aiFetch({ system: system, messages: MELL_HISTORY, max_tokens:700 });
     thinking.textContent = ans;
     MELL_HISTORY.push({ role:'assistant', content:ans });
     document.getElementById('mellMsgs').scrollTop = 999999;
@@ -2727,18 +2701,7 @@ async function saveKabiCall(){
 }
 
 async function kabiAI(system, user){
-  var apiKey = localStorage.getItem('anthropic_key') || '';
-  if(!apiKey){ toast('Lisa Anthropic API võti Seadetes.'); return null; }
-  try{
-    var r = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','content-type':'application/json'},
-      body: JSON.stringify({ model:'claude-haiku-4-5', max_tokens:700, system:system, messages:[{role:'user',content:user}] }),
-      signal: AbortSignal.timeout(30000)
-    });
-    var j = await r.json();
-    return j.content && j.content[0] ? j.content[0].text : (j.error && j.error.message ? ('Viga: '+j.error.message) : 'Vastust ei saadud.');
-  }catch(e){ return 'Viga: ' + e.message; }
+  return await aiFetch({ system: system, messages:[{role:'user', content:user}], max_tokens:700 });
 }
 
 function kabiContext(){
