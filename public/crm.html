@@ -2780,7 +2780,8 @@ async function kabiGen(kind){
   sys += AI_STIIL;
   kabiShowOut(title, 'Genereerin...');
   var out = await kabiAI(sys, 'Andmed:\n' + kabiContext());
-  if(out!==null) kabiShowOut(title, out);
+  if(out === null) kabiShowOut(title, 'AI ei vastanud. Kontrolli, kas Anthropic API võti on Seadetes (AI ja kõneabi) salvestatud ja kontol on krediit.');
+  else kabiShowOut(title, out);
 }
 
 var KABI_ACT_TYPE = '';
