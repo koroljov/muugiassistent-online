@@ -2652,6 +2652,16 @@ var KABI_GROUPS = [
   {g:"Mis paneks meelt muutma", f:"change_mind_reason", mode:"mitu", o:["parem tulemus","konkreetne ostja","tasuta hinnang","kindel tasu","mitte miski"]}
 ];
 var KABI_GHINTS = {"Veel müügis?":"Kui müüdud, lõpeta soojalt, küsi luba hiljem.","Aeg turul":"3+ kuud = avatum. Märka seda.","Huvilisi / vaatamisi":"Vähe huvi = valupunkt. Lase rääkida.","Pakkumised":"Tehing katkes? Küsi, mis juhtus.","Hind":"Langetanud → hind on tema teema. Hea sild hinnavõrdlusele.","Ostja tagasiside":"Korduv põhjus = sinu argument hiljem.","Miks ise müüb":"Ära vaidle. Silt: \"saan aru\". Kogu põhjus.","Mis paneks meelt muutma":"See on kuld. Siit tuleb su järgmine samm."};
+var KABI_VHINTS = {
+  "Veel müügis?": {"jah":"Veel müügis — jätka, kogu infot.","müüdud":"Müüdud. Lõpeta soojalt, küsi luba hiljem helistada.","maha võetud":"Maha võetud — uuri, kas müük katkes või lükkus edasi."},
+  "Aeg turul": {"<2 näd":"Värske kuulutus. Omanik veel optimistlik, ära survesta.","2–4 näd":"Veel värske. Kuula, ära paku veel midagi.","1–3 kuud":"Hakkab venima — esimesed kahtlused tekivad.","3–6 kuud":"Pikalt müügis = avatum. Märka seda.",">6 kuud":"Väga pikalt müügis. Tõenäoliselt valmis kuulama abi."},
+  "Huvilisi / vaatamisi": {"0":"Null huvi = tõsine signaal. Tõenäoliselt hind või nähtavus.","üksikud":"Vähe huvi = valupunkt. Lase rääkida.","mõned":"Mõõdukas huvi. Küsi vaatamiste kohta.","palju":"Palju huvi, aga müümata? Küsi, mis takistab tehingut."},
+  "Pakkumised": {"ei":"Pakkumisi pole. Hind või nõudlus.","madalad":"Madalad pakkumised = hind ostja jaoks kõrge.","hinna lähedal":"Lähedal — ehk vajab väikest tõuget.","tehing katkes":"Katkenud tehing? Küsi, mis juhtus."},
+  "Hind": {"algne":"Algne hind, paindlikkust pole testitud.","langetas korra":"Langetanud → hind on tema teema. Hea sild hinnavõrdlusele.","langetas mitu":"Mitu langetust = surve all, avatum abile.","plaanib langetada":"Plaanib langetada — õige hetk pakkuda nõu."},
+  "Ostja tagasiside": {"hind kõrge":"Korduv 'hind kõrge' → sinu argument hinnavõrdlusele.","asukoht":"Asukohta ei muuda — fookus esitlusele ja hinnale.","seisukord":"Seisukord — väike kosmeetika või hind.","pildid":"Pildid — kiire võit, paku pildi/video abi.","ei midagi":"Tagasisidet pole = vähe vaatamisi, nähtavuse probleem."},
+  "Miks ise müüb": {"vahendustasu":"Tasu pärast. Räägi tulemusest, mitte tasust.","saab ise":"Enesekindel. Austa, näita kus jääb vajaka.","halb kogemus":"Halb kogemus. Eristu, ära käitu nagu tüüpmaakler.","kõned tüütavad":"Tüütatud. Ole lühike, anna kontroll.","ei usalda":"Usaldus puudu. Ehita aeglaselt, ära pressi.","soov ise kontrollida":"Tahab kontrolli. Paku tuge, mitte ülevõtmist."},
+  "Mis paneks meelt muutma": {"parem tulemus":"Tulemusele orienteeritud. Näita, kuidas saad rohkem.","konkreetne ostja":"Ostja-põhine. Maini, kui sul on huvilisi.","tasuta hinnang":"Avatud tasuta väärtusele. Paku hinnavõrdlust.","kindel tasu":"Tasu-tundlik. Räägi paindlikust mudelist.","mitte miski":"Suletud praegu. Istuta seeme, küsi luba hiljem."}
+};
 
 function kabiEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -2679,7 +2689,8 @@ function kabiChip(el){
   var vals = [];
   grpEl.querySelectorAll('.kabi-chip.sel').forEach(function(x){ vals.push(x.getAttribute('data-v')); });
   KABI[cfg.f] = vals.length ? vals.join(', ') : null;
-  var hint = document.getElementById('kabiHint'); if(hint){ hint.style.display='block'; hint.textContent = KABI_GHINTS[cfg.g] || ''; }
+  var hint = document.getElementById('kabiHint');
+  if(hint){ var vh = (KABI_VHINTS[cfg.g] && KABI_VHINTS[cfg.g][el.getAttribute('data-v')]) || KABI_GHINTS[cfg.g] || ''; hint.style.display='block'; hint.textContent = vh; }
 }
 
 async function saveKabiCall(){
