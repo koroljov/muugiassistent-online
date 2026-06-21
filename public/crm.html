@@ -1768,15 +1768,14 @@ function openLead(id) {
     </div>`;
   }).join('');
 
-  const callLog = leadCalls.length
-    ? leadCalls.slice(0, 8).map(c =>
-        `<div class="call-item">
-          <div>${c.call_result || '—'}</div>
-          ${c.call_comment ? `<div class="call-meta">${c.call_comment}</div>` : ''}
-          <div class="call-meta">${new Date(c.call_time).toLocaleDateString('et-EE')}${c.next_action_at ? ' · järgmine: ' + new Date(c.next_action_at).toLocaleDateString('et-EE') : ''}</div>
-        </div>`
-      ).join('')
-    : '<div style="font-size:11px;color:var(--tx2);padding:4px 0">Kõnede ajalugu puudub.</div>';
+  const leadTasks = TASKS.filter(t => t.lead_id === l.id);
+  let tItems = [];
+  leadCalls.forEach(c => tItems.push({ when: c.call_time, icon:'📞', title: c.call_result || c.still_listed || 'Kõne', meta: c.call_comment || '' }));
+  leadTasks.forEach(t => tItems.push({ when: t.due_date || t.created_at, icon:'✓', title: (t.type || 'Ülesanne') + (t.status ? ' · ' + t.status : ''), meta: t.comment || '' }));
+  tItems.sort((a,b) => new Date(b.when||0) - new Date(a.when||0));
+  const timeline = tItems.length
+    ? tItems.slice(0,15).map(it => `<div class="call-item"><div>${it.icon} ${it.title}</div>${it.meta?`<div class="call-meta">${it.meta}</div>`:''}<div class="call-meta">${it.when?new Date(it.when).toLocaleDateString('et-EE'):''}</div></div>`).join('')
+    : '<div style="font-size:11px;color:var(--tx2);padding:4px 0">Ajalugu puudub.</div>';
 
   const contactMethodOpts = ['Kõne (väljaminev)','Kõne (sissetulev)','KV.ee sõnum','E-mail','Soovitus','Isiklik tutvus','Muu'];
   document.getElementById('leadBody').innerHTML = `
@@ -1807,8 +1806,8 @@ function openLead(id) {
       </div>
 
       <div>
-        <div class="sec-lbl" style="margin-top:0">Kõnede ajalugu</div>
-        ${callLog}
+        <div class="sec-lbl" style="margin-top:0">Ajalugu</div>
+        ${timeline}
         <button class="btn-ghost" style="width:100%;margin-top:6px;font-size:10px" onclick="toggleCallForm()">+ Lisa kõne</button>
 
         <div id="callFormWrap" style="display:none;margin-top:10px;background:var(--cd);border-radius:8px;padding:12px">
@@ -2795,6 +2794,7 @@ async function kabiAddAction(type, dateStr, timeStr, comment){
     if(timeStr) rec.due_time = timeStr;
     var r2 = await sb.from('tasks').insert(rec).select().single();
     if(r2.error){ toast('❌ ' + r2.error.message); return false; }
+    if(typeof TASKS!=='undefined' && TASKS.unshift) TASKS.unshift(r2.data);
     if(dateStr){
       await sb.from('leads').update({ next_action_at: dateStr }).eq('id', CURRENT.id);
       CURRENT.next_action_at = dateStr;
