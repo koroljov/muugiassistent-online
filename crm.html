@@ -949,6 +949,30 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
   transition: opacity 0.15s;
 }
 #addBtn:hover { opacity: 0.88; }
+
+/* MELL — AI ASSISTENT */
+.mell-back{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:399;display:none}
+.mell-back.open{display:block}
+.mell-panel{position:fixed;top:0;right:0;width:380px;max-width:92vw;height:100%;background:var(--sf);border-left:1px solid var(--bd);z-index:400;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.22s ease;box-shadow:-8px 0 32px rgba(0,0,0,0.28)}
+.mell-panel.open{transform:translateX(0)}
+.mell-head{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--bd)}
+.mell-head .mh-title{font-size:13px;font-weight:600;flex:1;line-height:1.3}
+.mell-head .mh-sub{font-size:10px;color:var(--tx2);font-weight:400;display:block;margin-top:2px}
+.mell-x{background:none;border:none;color:var(--tx2);font-size:20px;cursor:pointer;line-height:1}
+.mell-x:hover{color:var(--tx)}
+.mell-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.mell-msg{font-size:12px;line-height:1.5;padding:9px 12px;border-radius:10px;max-width:88%;white-space:pre-wrap;word-wrap:break-word}
+.mell-msg.u{align-self:flex-end;background:var(--ac);color:#fff;border-bottom-right-radius:3px}
+.mell-msg.a{align-self:flex-start;background:var(--cd);color:var(--tx);border-bottom-left-radius:3px}
+.mell-msg.sys{align-self:center;font-size:10px;color:var(--tx2);background:none;padding:2px;text-align:center}
+.mell-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
+.mell-chip{font-size:10px;color:var(--tx);background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:5px 10px;cursor:pointer}
+.mell-chip:hover{border-color:var(--ac);color:var(--ac)}
+.mell-foot{padding:10px 16px;border-top:1px solid var(--bd);display:flex;gap:8px;align-items:flex-end}
+.mell-inp{flex:1;background:var(--cd);border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-size:12px;padding:9px 11px;resize:none;font-family:inherit;line-height:1.4;max-height:120px}
+.mell-inp:focus{outline:none;border-color:var(--ac)}
+.mell-send{background:var(--ac);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.mell-send:disabled{opacity:0.5;cursor:default}
 </style>
 </head>
 <body>
@@ -1134,6 +1158,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     <div class="modal-body" id="leadBody"></div>
     <div class="modal-foot">
       <button class="btn-danger" onclick="archiveLead()">Arhiveeri</button>
+      <button class="btn-ghost" onclick="openMell()">Küsi Mellilt</button>
       <button class="btn-ghost" onclick="closeModal('leadModal')">Sulge</button>
       <button class="btn-sm" onclick="saveLead()">Salvesta</button>
     </div>
@@ -2404,6 +2429,131 @@ function toast(msg) {
     if (cp) cp.style.background = colorHex;
   });
 })();
+
+// ============================================================
+// MELL — AI ASSISTENT (avatud leadi kontekst)
+// ============================================================
+let MELL_HISTORY = [];
+
+function mellLeadContext(){
+  const l = CURRENT; if(!l) return '';
+  return [
+    l.property_address && ('Aadress: ' + l.property_address),
+    l.property_type && ('Tüüp: ' + l.property_type),
+    l.deal_type && ('Tehing: ' + l.deal_type),
+    l.client_type && ('Kliendi tüüp: ' + l.client_type),
+    (l.price != null) && ('Hind: ' + l.price + ' €'),
+    (l.area != null) && ('Pindala: ' + l.area + ' m²'),
+    l.region && ('Piirkond: ' + l.region),
+    l.status && ('Staatus: ' + l.status),
+    l.contact_name && ('Kontakt: ' + l.contact_name),
+    l.phone && ('Telefon: ' + l.phone),
+    l.last_call_result && ('Viimase kõne tulemus: ' + l.last_call_result),
+    l.listing_note && ('Kuulutuse märkus: ' + l.listing_note),
+    l.lead_comment && ('Kommentaar: ' + l.lead_comment),
+    l.business_need && ('Ärivajadus: ' + l.business_need),
+    l.ai_summary && ('Varasem AI kokkuvõte: ' + l.ai_summary)
+  ].filter(Boolean).join('\n');
+}
+
+async function openMell(){
+  if(!CURRENT){ alert('Ava esmalt lead.'); return; }
+  MELL_HISTORY = [];
+  document.getElementById('mellSub').textContent = CURRENT.property_address || 'Lead';
+  const msgs = document.getElementById('mellMsgs');
+  msgs.innerHTML = '';
+  mellAddMsg('sys', 'Mell näeb selle leadi andmeid. Küsi midagi või vali allpool.');
+  document.getElementById('mellBack').classList.add('open');
+  document.getElementById('mellPanel').classList.add('open');
+  try{
+    const { data } = await sb.from('mell_conversations')
+      .select('question,answer,created_at').eq('lead_id', CURRENT.id)
+      .order('created_at', { ascending: true }).limit(20);
+    if(data && data.length){
+      msgs.innerHTML = '';
+      data.forEach(r => {
+        mellAddMsg('u', r.question);
+        mellAddMsg('a', r.answer);
+        MELL_HISTORY.push({ role:'user', content:r.question }, { role:'assistant', content:r.answer });
+      });
+    }
+  }catch(e){}
+  setTimeout(() => document.getElementById('mellInp').focus(), 200);
+}
+
+function closeMell(){
+  document.getElementById('mellBack').classList.remove('open');
+  document.getElementById('mellPanel').classList.remove('open');
+}
+
+function mellAddMsg(role, text){
+  const m = document.createElement('div');
+  m.className = 'mell-msg ' + role;
+  m.textContent = text;
+  const c = document.getElementById('mellMsgs');
+  c.appendChild(m); c.scrollTop = c.scrollHeight;
+  return m;
+}
+
+function mellChip(t){ document.getElementById('mellInp').value = t; sendMell(); }
+function mellGrow(el){ el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function mellKey(e){ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMell(); } }
+
+async function sendMell(){
+  const inp = document.getElementById('mellInp');
+  const q = inp.value.trim(); if(!q) return;
+  const apiKey = localStorage.getItem('anthropic_key') || '';
+  if(!apiKey){ mellAddMsg('sys', 'Lisa Anthropic API võti Seadetes.'); return; }
+  inp.value = ''; mellGrow(inp);
+  mellAddMsg('u', q);
+  const btn = document.getElementById('mellSend'); btn.disabled = true;
+  const thinking = mellAddMsg('a', '...');
+  MELL_HISTORY.push({ role:'user', content:q });
+  const system = 'Oled "Mell", Uus Maa kinnisvarabüroo müügiassistent. Vastad eesti keeles, otsekohe, lühidalt ja praktiliselt. Aitad müügispetsialisti selle konkreetse leadiga: anna konkreetne järgmine samm, mitte üldine jutt. Kui kasutaja palub sõnumi, anna valmis, kohe saadetav tekst ilma emojideta.\n\nLEADI ANDMED:\n' + mellLeadContext();
+  try{
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({ model:'claude-haiku-4-5', max_tokens:700, system: system, messages: MELL_HISTORY }),
+      signal: AbortSignal.timeout(30000)
+    });
+    const j = await r.json();
+    const ans = j.content?.[0]?.text || (j.error?.message ? ('Viga: ' + j.error.message) : 'Vastust ei saadud.');
+    thinking.textContent = ans;
+    MELL_HISTORY.push({ role:'assistant', content:ans });
+    document.getElementById('mellMsgs').scrollTop = 999999;
+    try{ await sb.from('mell_conversations').insert({ user_id: USER?.id, lead_id: CURRENT?.id, question: q, answer: ans }); }catch(e){}
+  }catch(err){
+    thinking.textContent = 'Viga: ' + err.message;
+    MELL_HISTORY.pop();
+  }finally{
+    btn.disabled = false;
+  }
+}
 </script>
+
+<!-- MELL ASSISTENT PANEEL -->
+<div class="mell-back" id="mellBack" onclick="closeMell()"></div>
+<div class="mell-panel" id="mellPanel">
+  <div class="mell-head">
+    <div class="mh-title">Mell<span class="mh-sub" id="mellSub">Müügiassistent</span></div>
+    <button class="mell-x" onclick="closeMell()">×</button>
+  </div>
+  <div class="mell-msgs" id="mellMsgs"></div>
+  <div class="mell-chips">
+    <div class="mell-chip" onclick="mellChip('Mis on selle objekti seis ja mida peaksin järgmisena tegema?')">Mis seis?</div>
+    <div class="mell-chip" onclick="mellChip('Mida peaksin omanikult küsima?')">Mida küsida?</div>
+    <div class="mell-chip" onclick="mellChip('Kirjuta lühike sõnum omanikule, et pakkuda Uus Maa müügiteenust.')">Kirjuta sõnum</div>
+  </div>
+  <div class="mell-foot">
+    <textarea class="mell-inp" id="mellInp" rows="1" placeholder="Küsi Mellilt..." onkeydown="mellKey(event)" oninput="mellGrow(this)"></textarea>
+    <button class="mell-send" id="mellSend" onclick="sendMell()">Saada</button>
+  </div>
+</div>
 </body>
 </html>
