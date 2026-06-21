@@ -994,6 +994,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .kabi-chips{display:flex;flex-wrap:wrap;gap:5px}
 .kabi-rz{font-size:11px;padding:4px 9px;border-radius:14px;cursor:pointer;border:1px solid var(--bd);color:var(--tx2)}
 .kabi-rz:hover{border-color:var(--ac);color:var(--ac)}
+.kabi-rz.sel{background:var(--acb);border-color:var(--ac);color:var(--ac)}
 .kabi-rzout{margin-top:7px;font-size:12px;line-height:1.5;color:var(--tx);background:var(--cd);padding:8px 10px;border-radius:8px}
 .kabi-info{color:var(--ac);cursor:pointer;font-style:normal}
 .kabi-guide{font-size:12px;line-height:1.6;color:var(--tx2);background:var(--cd);border-radius:8px;padding:8px 10px;margin-bottom:8px}
@@ -2603,6 +2604,8 @@ function openKabi(){
   var kq = document.getElementById('kabiQuote'); if(kq) kq.value='';
   var ksb = document.getElementById('kabiSaveBtn'); if(ksb) ksb.disabled=false;
   var ks = document.getElementById('kabiScript'); if(ks) ks.textContent = USER_SCRIPT || DEFAULT_SCRIPT;
+  var af = document.getElementById('kabiActForm'); if(af) af.style.display='none';
+  document.querySelectorAll('#kabiActTypes .kabi-rz').forEach(function(x){ x.classList.remove('sel'); });
   document.getElementById('kabiBack').classList.add('open');
   document.getElementById('kabiPanel').classList.add('open');
   kabiRestoreBox();
@@ -2618,7 +2621,7 @@ function closeKabi(){
 function kabiRz(el){
   var o = document.getElementById('kabiRzOut'); o.style.display='block';
   if(el.getAttribute('data-cal')){
-    o.innerHTML = '<div style="margin-bottom:6px">' + el.getAttribute('data-r') + '</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="date" class="inp" style="width:auto;font-size:11px"><input type="time" class="inp" style="width:auto;font-size:11px"><button class="btn-sm" onclick="toast(\'Kalendrisse salvestus tuleb faasis 7\')">Kalendrisse</button></div>';
+    o.innerHTML = '<div style="margin-bottom:6px">' + el.getAttribute('data-r') + '</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="date" id="kabiRzDate" class="inp" style="width:auto;font-size:11px"><input type="time" id="kabiRzTime" class="inp" style="width:auto;font-size:11px"><button class="btn-sm" onclick="kabiRzCal()">Lisa järelkõne</button></div>';
   } else {
     o.textContent = el.getAttribute('data-r');
   }
@@ -2749,13 +2752,58 @@ async function kabiGen(kind){
   if(out!==null) kabiShowOut(title, out);
 }
 
-async function kabiTask(type){
-  if(!CURRENT) return;
-  var c = prompt(type + ' — lisa kommentaar (valikuline):', '');
-  if(c===null) return;
-  var res = await sb.from('tasks').insert({ lead_id:CURRENT.id, assigned_to:(typeof USER!=='undefined'&&USER)?USER.id:null, type:type, status:'tegemata', comment:c||null }).select().single();
-  if(res.error){ toast('❌ ' + res.error.message); return; }
-  toast(type + ' lisatud');
+var KABI_ACT_TYPE = '';
+function kabiActType(el, type){
+  KABI_ACT_TYPE = type;
+  document.querySelectorAll('#kabiActTypes .kabi-rz').forEach(function(x){ x.classList.remove('sel'); });
+  el.classList.add('sel');
+  document.getElementById('kabiActForm').style.display = 'block';
+  var dwrap = document.getElementById('kabiActDateWrap'); if(dwrap) dwrap.style.display = (type==='Kommentaar') ? 'none' : 'flex';
+}
+async function kabiSubmitAction(){
+  var d = document.getElementById('kabiActDate').value;
+  var t = document.getElementById('kabiActTime').value;
+  var c = document.getElementById('kabiActComment').value.trim();
+  var ok = await kabiAddAction(KABI_ACT_TYPE, d, t, c);
+  if(ok){
+    document.getElementById('kabiActForm').style.display = 'none';
+    document.getElementById('kabiActComment').value = '';
+    document.getElementById('kabiActDate').value = '';
+    document.getElementById('kabiActTime').value = '';
+    document.querySelectorAll('#kabiActTypes .kabi-rz').forEach(function(x){ x.classList.remove('sel'); });
+  }
+}
+async function kabiRzCal(){
+  var d = document.getElementById('kabiRzDate').value;
+  var t = document.getElementById('kabiRzTime').value;
+  await kabiAddAction('Järelkõne', d, t, '');
+}
+async function kabiAddAction(type, dateStr, timeStr, comment){
+  if(!CURRENT) return false;
+  if(type==='Kommentaar'){
+    var prev = CURRENT.lead_comment || '';
+    var stamp = new Date().toLocaleDateString('et-EE');
+    var note = (prev ? prev + '\n' : '') + '[' + stamp + '] ' + (comment||'');
+    var r1 = await sb.from('leads').update({ lead_comment: note }).eq('id', CURRENT.id);
+    if(r1.error){ toast('❌ ' + r1.error.message); return false; }
+    CURRENT.lead_comment = note;
+    var i0 = LEADS.findIndex(function(l){ return l.id===CURRENT.id; }); if(i0>=0) LEADS[i0].lead_comment = note;
+    toast('Märkus lisatud');
+  } else {
+    var rec = { lead_id:CURRENT.id, assigned_to:(typeof USER!=='undefined'&&USER)?USER.id:null, type:type, status:'tegemata', comment:comment||null };
+    if(dateStr) rec.due_date = dateStr;
+    if(timeStr) rec.due_time = timeStr;
+    var r2 = await sb.from('tasks').insert(rec).select().single();
+    if(r2.error){ toast('❌ ' + r2.error.message); return false; }
+    if(dateStr){
+      await sb.from('leads').update({ next_action_at: dateStr }).eq('id', CURRENT.id);
+      CURRENT.next_action_at = dateStr;
+      var i1 = LEADS.findIndex(function(l){ return l.id===CURRENT.id; }); if(i1>=0) LEADS[i1].next_action_at = dateStr;
+    }
+    toast(type + ' lisatud');
+  }
+  if(typeof render === 'function') render();
+  return true;
 }
 
 var DEFAULT_SCRIPT = '"Tere! Olen [Nimi], müügiassistent Uus Maa Arenas. Nägin teie kuulutust ja teen kaardistust omanike seas — kuidas müük turul päriselt liigub ja mis täna takistab. Kas teil on 1–2 minutit?"';
@@ -2889,12 +2937,20 @@ function kabiRestoreBox(){
     <div class="kabi-sec">
       <div class="kabi-sec-lbl">5 · Järeltegevus</div>
       <button class="btn-sm" style="width:100%;margin-bottom:8px" onclick="kabiGen('letter')">Saada kliendile (AI koostab)</button>
-      <div class="kabi-mini">Kõnejärgsed tegevused:</div>
-      <div class="kabi-chips" style="margin-bottom:8px">
-        <span class="kabi-rz" onclick="kabiTask('Järelkõne')">Järelkõne</span>
-        <span class="kabi-rz" onclick="kabiTask('Kohtumine')">Kohtumine</span>
-        <span class="kabi-rz" onclick="kabiTask('Ülesanne')">Ülesanne</span>
-        <span class="kabi-rz" onclick="kabiTask('Kommentaar')">Kommentaar</span>
+      <div class="kabi-mini">Kõnejärgne tegevus:</div>
+      <div class="kabi-chips" id="kabiActTypes" style="margin-bottom:6px">
+        <span class="kabi-rz" onclick="kabiActType(this,'Järelkõne')">Järelkõne</span>
+        <span class="kabi-rz" onclick="kabiActType(this,'Kohtumine')">Kohtumine</span>
+        <span class="kabi-rz" onclick="kabiActType(this,'Ülesanne')">Ülesanne</span>
+        <span class="kabi-rz" onclick="kabiActType(this,'Kommentaar')">Kommentaar</span>
+      </div>
+      <div id="kabiActForm" style="display:none;margin-bottom:8px">
+        <div id="kabiActDateWrap" style="display:flex;gap:6px;margin-bottom:6px">
+          <input type="date" id="kabiActDate" class="inp" style="width:auto;font-size:11px">
+          <input type="time" id="kabiActTime" class="inp" style="width:auto;font-size:11px">
+        </div>
+        <textarea id="kabiActComment" class="kabi-quote" rows="2" placeholder="Kommentaar..."></textarea>
+        <button class="btn-sm" style="margin-top:6px" onclick="kabiSubmitAction()">Lisa</button>
       </div>
       <div class="kabi-mini">AI genereerib:</div>
       <div class="kabi-chips">
