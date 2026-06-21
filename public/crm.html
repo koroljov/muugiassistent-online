@@ -1002,6 +1002,14 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .kabi-ty{flex:1;font-size:11px;padding:6px 4px;background:transparent;border:1px solid var(--bd);border-radius:8px;color:var(--tx2);cursor:pointer}
 .kabi-ty.sel{background:var(--acb);border-color:var(--ac);color:var(--ac)}
 .kabi-tip{margin-top:8px;font-size:12px;line-height:1.5;color:var(--tx2)}
+.kabi-hint{font-size:12px;line-height:1.5;color:var(--ac);background:var(--acb);border:1px solid var(--ac);border-radius:8px;padding:7px 10px;margin-bottom:10px}
+.kabi-grp{margin-bottom:9px}
+.kabi-grp-lbl{font-size:11px;color:var(--tx);margin-bottom:4px}
+.kabi-grp-tag{font-size:10px;color:var(--tx2)}
+.kabi-grp-chips{display:flex;flex-wrap:wrap;gap:5px}
+.kabi-chip{font-size:11px;padding:4px 9px;border-radius:14px;cursor:pointer;border:1px solid var(--bd);color:var(--tx2)}
+.kabi-chip:hover{border-color:var(--ac)}
+.kabi-chip.sel{background:var(--acb);border-color:var(--ac);color:var(--ac)}
 </style>
 </head>
 <body>
@@ -2580,6 +2588,8 @@ function openKabi(){
   var g = document.getElementById('kabiGuide'); if(g) g.style.display='none';
   document.querySelectorAll('.kabi-ty').forEach(function(b){ b.classList.remove('sel'); });
   var tip = document.getElementById('kabiTip'); if(tip) tip.textContent='';
+  kabiRenderGrid();
+  var kh = document.getElementById('kabiHint'); if(kh){ kh.style.display='none'; kh.textContent=''; }
   document.getElementById('kabiBack').classList.add('open');
   document.getElementById('kabiPanel').classList.add('open');
 }
@@ -2604,6 +2614,47 @@ function kabiType(el, t){
 function kabiToggleGuide(){
   var g = document.getElementById('kabiGuide');
   g.style.display = g.style.display === 'none' ? 'block' : 'none';
+}
+
+var KABI_GROUPS = [
+  {g:"Veel müügis?", f:"still_listed", mode:"üks", o:["jah","müüdud","maha võetud"]},
+  {g:"Aeg turul", f:"time_on_market", mode:"üks", o:["<2 näd","2–4 näd","1–3 kuud","3–6 kuud",">6 kuud"]},
+  {g:"Huvilisi / vaatamisi", f:"inquiries_count", mode:"üks", o:["0","üksikud","mõned","palju"]},
+  {g:"Pakkumised", f:"offers", mode:"üks", o:["ei","madalad","hinna lähedal","tehing katkes"]},
+  {g:"Hind", f:"price_change", mode:"üks", o:["algne","langetas korra","langetas mitu","plaanib langetada"]},
+  {g:"Ostja tagasiside", f:"buyer_feedback", mode:"mitu", o:["hind kõrge","asukoht","seisukord","pildid","ei midagi"]},
+  {g:"Miks ise müüb", f:"no_broker_reason", mode:"mitu", o:["vahendustasu","saab ise","halb kogemus","kõned tüütavad","ei usalda","soov ise kontrollida"]},
+  {g:"Mis paneks meelt muutma", f:"change_mind_reason", mode:"mitu", o:["parem tulemus","konkreetne ostja","tasuta hinnang","kindel tasu","mitte miski"]}
+];
+var KABI_GHINTS = {"Veel müügis?":"Kui müüdud, lõpeta soojalt, küsi luba hiljem.","Aeg turul":"3+ kuud = avatum. Märka seda.","Huvilisi / vaatamisi":"Vähe huvi = valupunkt. Lase rääkida.","Pakkumised":"Tehing katkes? Küsi, mis juhtus.","Hind":"Langetanud → hind on tema teema. Hea sild hinnavõrdlusele.","Ostja tagasiside":"Korduv põhjus = sinu argument hiljem.","Miks ise müüb":"Ära vaidle. Silt: \"saan aru\". Kogu põhjus.","Mis paneks meelt muutma":"See on kuld. Siit tuleb su järgmine samm."};
+
+function kabiEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function kabiRenderGrid(){
+  var el = document.getElementById('kabiGrid'); if(!el) return;
+  var h = '';
+  KABI_GROUPS.forEach(function(grp, gi){
+    var tag = grp.mode === 'üks' ? 'üks valik' : 'mitu valikut';
+    h += '<div class="kabi-grp" data-gi="'+gi+'"><div class="kabi-grp-lbl">'+kabiEsc(grp.g)+' <span class="kabi-grp-tag">· '+tag+'</span></div><div class="kabi-grp-chips">';
+    grp.o.forEach(function(opt){ h += '<span class="kabi-chip" data-v="'+kabiEsc(opt)+'" onclick="kabiChip(this)">'+kabiEsc(opt)+'</span>'; });
+    h += '</div></div>';
+  });
+  el.innerHTML = h;
+}
+
+function kabiChip(el){
+  var grpEl = el.closest('.kabi-grp'); var gi = +grpEl.getAttribute('data-gi'); var cfg = KABI_GROUPS[gi];
+  if(cfg.mode === 'üks'){
+    var was = el.classList.contains('sel');
+    grpEl.querySelectorAll('.kabi-chip').forEach(function(x){ x.classList.remove('sel'); });
+    if(!was) el.classList.add('sel');
+  } else {
+    el.classList.toggle('sel');
+  }
+  var vals = [];
+  grpEl.querySelectorAll('.kabi-chip.sel').forEach(function(x){ vals.push(x.getAttribute('data-v')); });
+  KABI[cfg.f] = vals.length ? vals.join(', ') : null;
+  var hint = document.getElementById('kabiHint'); if(hint){ hint.style.display='block'; hint.textContent = KABI_GHINTS[cfg.g] || ''; }
 }
 </script>
 
@@ -2667,7 +2718,11 @@ function kabiToggleGuide(){
       </div>
       <div id="kabiTip" class="kabi-tip"></div>
     </div>
-    <div class="kabi-sec"><div class="kabi-sec-lbl">3 · Andmekorje</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl">3 · Andmekorje — klõpsa, mida klient räägib</div>
+      <div id="kabiHint" class="kabi-hint" style="display:none"></div>
+      <div id="kabiGrid"></div>
+    </div>
     <div class="kabi-sec"><div class="kabi-sec-lbl">4 · Koostöö-pakkumine</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
     <div class="kabi-sec"><div class="kabi-sec-lbl">5 · Järeltegevus</div><div class="kabi-todo">Tuleb järgmises sammus</div></div>
   </div>
