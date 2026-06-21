@@ -1015,6 +1015,11 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .kabi-quote:focus{outline:none;border-color:var(--ac)}
 .kabi-foot{padding:10px 14px;border-top:1px solid var(--bd);background:var(--bg)}
 .kabi-out{margin-top:10px;background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:10px}
+.hist-item{background:var(--cd);border-radius:8px;margin-bottom:6px;overflow:hidden}
+.hist-head{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 10px;cursor:pointer;font-size:12px}
+.hist-head:hover{background:var(--bd)}
+.hist-detail{padding:6px 10px 8px;border-top:1px solid var(--bd)}
+.hist-detail b{color:var(--tx2);font-weight:600}
 </style>
 </head>
 <body>
@@ -1743,6 +1748,40 @@ function renderTasks() {
 // ============================================================
 // LEAD MODAL
 // ============================================================
+var HIST_LABELS = {still_listed:'Veel müügis', time_on_market:'Aeg turul', inquiries_count:'Huvilisi/vaatamisi', viewings_count:'Vaatamisi', offers:'Pakkumised', price_change:'Hind', obstacle:'Takistus', buyer_feedback:'Ostja tagasiside', urgency:'Kiirus', attitude:'Suhtumine', no_broker_reason:'Miks ise müüb', change_mind_reason:'Mis paneks meelt muutma', personality_type:'Inimtüüp', important_quote:'Tsitaat', call_comment:'Kommentaar', next_action:'Järgmine samm', ai_feedback:'AI tagasiside'};
+function histCallTitle(c){
+  var bits = [];
+  if(c.still_listed) bits.push(c.still_listed);
+  if(c.call_result) bits.push(c.call_result);
+  if(c.time_on_market) bits.push(c.time_on_market);
+  return 'Kõne' + (bits.length ? ' · ' + bits.join(' · ') : '');
+}
+function histDetail(c){
+  var rows = '';
+  Object.keys(HIST_LABELS).forEach(function(k){
+    if(c[k]) rows += '<div class="call-meta"><b>' + HIST_LABELS[k] + ':</b> ' + kabiEsc(String(c[k])) + '</div>';
+  });
+  return rows || '<div class="call-meta">Lisaandmed puuduvad.</div>';
+}
+function histToggle(el){
+  var d = el.nextElementSibling;
+  if(d) d.style.display = (d.style.display === 'none') ? 'block' : 'none';
+}
+function histItemHtml(it){
+  var when = it.when ? new Date(it.when).toLocaleDateString('et-EE') : '';
+  if(it.kind === 'call'){
+    var c = it.obj;
+    return '<div class="hist-item"><div class="hist-head" onclick="histToggle(this)"><span>📞 ' + kabiEsc(histCallTitle(c)) + '</span><span class="call-meta">' + when + '</span></div><div class="hist-detail" style="display:none">' + histDetail(c) + '</div></div>';
+  }
+  var t = it.obj;
+  var title = (t.type || 'Ülesanne') + (t.status ? ' · ' + t.status : '');
+  var det = '';
+  if(t.due_date) det += '<div class="call-meta"><b>Tähtaeg:</b> ' + kabiEsc(t.due_date) + (t.due_time ? ' ' + kabiEsc(t.due_time) : '') + '</div>';
+  if(t.comment) det += '<div class="call-meta"><b>Kommentaar:</b> ' + kabiEsc(t.comment) + '</div>';
+  if(!det) det = '<div class="call-meta">Lisaandmed puuduvad.</div>';
+  return '<div class="hist-item"><div class="hist-head" onclick="histToggle(this)"><span>✓ ' + kabiEsc(title) + '</span><span class="call-meta">' + when + '</span></div><div class="hist-detail" style="display:none">' + det + '</div></div>';
+}
+
 function openLead(id) {
   if (_wasDragging) return; // Don't open modal if user was dragging
   CURRENT = LEADS.find(l => l.id === id);
@@ -1773,11 +1812,11 @@ function openLead(id) {
 
   const leadTasks = TASKS.filter(t => t.lead_id === l.id);
   let tItems = [];
-  leadCalls.forEach(c => tItems.push({ when: c.call_time, icon:'📞', title: c.call_result || c.still_listed || 'Kõne', meta: c.call_comment || '' }));
-  leadTasks.forEach(t => tItems.push({ when: t.due_date || t.created_at, icon:'✓', title: (t.type || 'Ülesanne') + (t.status ? ' · ' + t.status : ''), meta: t.comment || '' }));
+  leadCalls.forEach(c => tItems.push({ when: c.call_time, kind:'call', obj:c }));
+  leadTasks.forEach(t => tItems.push({ when: t.due_date || t.created_at, kind:'task', obj:t }));
   tItems.sort((a,b) => new Date(b.when||0) - new Date(a.when||0));
   const timeline = tItems.length
-    ? tItems.slice(0,15).map(it => `<div class="call-item"><div>${it.icon} ${it.title}</div>${it.meta?`<div class="call-meta">${it.meta}</div>`:''}<div class="call-meta">${it.when?new Date(it.when).toLocaleDateString('et-EE'):''}</div></div>`).join('')
+    ? tItems.slice(0,15).map(histItemHtml).join('')
     : '<div style="font-size:11px;color:var(--tx2);padding:4px 0">Ajalugu puudub.</div>';
 
   const contactMethodOpts = ['Kõne (väljaminev)','Kõne (sissetulev)','KV.ee sõnum','E-mail','Soovitus','Isiklik tutvus','Muu'];
