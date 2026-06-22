@@ -1208,7 +1208,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
         <div class="set-sec">Kuulutuse kiirlisamine</div>
         <div>
-          <div style="font-size:10px;color:var(--tx2);margin-bottom:8px;line-height:1.5">Lohista al-olev nupp brauseri järjehoidjaribale (üks kord). Edaspidi: ava kv.ee või kinnisvara24 kuulutus, klõpsa nuppu — CRM avaneb juba täidetuna. Toimib sinu brauseris, ilma serverita.</div>
+          <div style="font-size:10px;color:var(--tx2);margin-bottom:8px;line-height:1.5">Lohista al-olev nupp brauseri järjehoidjaribale (üks kord). Edaspidi: ava kuulutus (kv.ee, kinnisvara24, city24 või Facebook Marketplace), klõpsa nuppu — AI loeb andmed ja CRM avaneb täidetuna. Toimib sinu brauseris, ilma serverita.</div>
           <a id="bmLink" href="#" onclick="alert('Ära klõpsa siin — lohista see nupp järjehoidjaribale. Siis kasuta seda kuulutuse lehel.');return false;" draggable="true" style="display:inline-block;padding:8px 14px;background:var(--ac);color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;cursor:grab">↓ Lisa kuulutus CRM-i</a>
         </div>
 
@@ -1329,9 +1329,15 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
             </select>
           </div>
         </div>
-        <div>
-          <div class="set-lbl">Hind / oodatav hind (€)</div>
-          <input class="inp" id="nHind" type="number" min="0" placeholder="näit. 150000">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div class="set-lbl">Hind / oodatav hind (€)</div>
+            <input class="inp" id="nHind" type="number" min="0" placeholder="näit. 150000">
+          </div>
+          <div>
+            <div class="set-lbl">Pindala (m²)</div>
+            <input class="inp" id="nPindala" type="number" min="0" step="0.1" placeholder="näit. 65">
+          </div>
         </div>
         <div>
           <div class="set-lbl">Märkus</div>
@@ -1541,23 +1547,14 @@ async function startApp() {
 
 // See funktsioon jookseb portaali lehel (bookmarkletina). Peab olema iseseisev, ilma CRM-i globaalideta.
 function _crmGrab(){
-  if(!/kv\.ee|kinnisvara24\.ee/.test(location.hostname)){ alert('Ava kõigepealt kv.ee või kinnisvara24 kuulutuse leht.'); return; }
+  if(!/kv\.ee|kinnisvara24\.ee|city24\.ee|facebook\.com/.test(location.hostname)){ alert('Ava kõigepealt kuulutuse leht (kv.ee, kinnisvara24, city24 või Facebook Marketplace).'); return; }
   function m(p){ var e=document.querySelector('meta[property="'+p+'"]'); return e?e.content:''; }
-  var t = m('og:title') || document.title || '', img = m('og:image') || '';
-  var pr = '', _bfs = -1;  // PEAMINE hind = suurima fondiga euro-element (valdib teiste kuulutuste numbreid)
-  document.querySelectorAll('*').forEach(function(el){ if(el.children.length) return; var x=(el.textContent||'').trim(); if(/^[\d\s ]{3,12}€$/.test(x)){ var f=parseFloat(getComputedStyle(el).fontSize)||0; if(f>_bfs){ _bfs=f; pr=x.replace(/[^\d]/g,''); } } });
-  var raw = t.replace(/\s*[-–|]\s*(Kinnisvaraportaal|kinnisvara24|KV\.EE).*$/i,'').trim();
-  if(!pr){ var ptt = t.match(/(\d[\d\s ]{2,9})\s*€/); if(ptt) pr = ptt[1].replace(/[^\d]/g,''); }
-  var a = '', ptok = raw.match(/\d[\d\s ]{2,9}\s*€/);
-  if(ptok){ a = raw.slice(raw.indexOf(ptok[0]) + ptok[0].length).replace(/^[\s,–-]+/,'').trim(); }
-  else if(raw.indexOf(' - ') > -1){ a = raw.slice(raw.indexOf(' - ') + 3).trim(); }
-  if(!a){ var parts = raw.split(',').map(function(s){return s.trim();}).filter(Boolean); var j=0; while(j<parts.length && /(müüa|üürile|tuba|^korter$|^maja$|m²|€)/i.test(parts[j])) j++; a = parts.slice(j).join(', '); }
-  var l = t.toLowerCase();
-  var ty = /korter/.test(l)?'Korter':/maja|elamu|ridaelamu/.test(l)?'Maja':/äripind|büroo|kontor|ladu|tootmis/.test(l)?'Äripind':/krunt|maa|kinnistu/.test(l)?'Maa':'';
-  var dl = /üür|rent/i.test(t)?'uur':/müü/i.test(t)?'muuk':'';
-  var d = { url: location.href, addr: a, price: pr, type: ty, deal: dl, img: img };
-  var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(d))));
-  window.open('https://muugiassistent-online.vercel.app/crm.html#import=' + encodeURIComponent(b64), '_blank');
+  var priceHint='', _bfs=-1;
+  document.querySelectorAll('*').forEach(function(el){ if(el.children.length) return; var x=(el.textContent||'').trim(); if(/^[\d\s ]{3,14}€$/.test(x)){ var f=parseFloat(getComputedStyle(el).fontSize)||0; if(f>_bfs){ _bfs=f; priceHint=x; } } });
+  var txt=(document.body?document.body.innerText:'').replace(/\s+/g,' ').slice(0,3500);
+  var d={ v:2, url:location.href, ogTitle:m('og:title')||document.title||'', ogDesc:m('og:description')||'', img:m('og:image')||'', priceHint:priceHint, text:txt };
+  var b64=btoa(unescape(encodeURIComponent(JSON.stringify(d))));
+  window.open('https://muugiassistent-online.vercel.app/crm.html#import='+encodeURIComponent(b64),'_blank');
 }
 function setBookmarkletLink(){
   var a = document.getElementById('bmLink');
@@ -1567,27 +1564,34 @@ function setBookmarkletLink(){
 // Bookmarkletist tulnud andmed: #import=<base64 JSON> → ava Uus lead vorm eeltäidetuna.
 function importFromHash(){
   try{
-    var m = (location.hash||'').match(/[#&]import=([^&]+)/);
+    var m=(location.hash||'').match(/[#&]import=([^&]+)/);
     if(!m) return;
-    var d = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
-    history.replaceState(null, '', location.pathname + location.search);  // puhasta, et ei korduks
-    if(typeof openNew === 'function') openNew();
-    var set = function(id,val){ var el=document.getElementById(id); if(el && val!=null && val!=='') el.value = val; };
-    set('nUrl', d.url);
-    set('nAadress', d.addr);
-    set('nHind', d.price ? String(d.price).replace(/[^\d]/g,'') : '');
-    set('nTuup', d.type);
-    set('nTehing', d.deal);
-    set('nMarkus', d.note);
+    var d=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+    history.replaceState(null,'',location.pathname+location.search);
+    if(typeof openNew==='function') openNew();
+    var set=function(id,val){ var el=document.getElementById(id); if(el&&val!=null&&val!=='') el.value=val; };
+    set('nUrl',d.url);
     if(d.url){ var b=document.getElementById('nUrlBtn'); if(b) b.style.display=''; }
-    if(d.img){
-      _lastFetchedImg = d.img;
-      var prev = document.getElementById('nImgPreview');
-      if(prev){ prev.style.backgroundImage='url('+d.img+')'; prev.style.display='block'; }
-    }
-    var st = document.getElementById('nUrlStatus');
-    if(st){ st.style.color='var(--ac)'; st.textContent='Andmed kuulutuselt — kontrolli, lisa nimi/telefon ja salvesta'; }
+    if(d.img){ _lastFetchedImg=d.img; var prev=document.getElementById('nImgPreview'); if(prev){ prev.style.backgroundImage='url('+d.img+')'; prev.style.display='block'; } }
+    if(d.v===2){ importExtractAI(d); }
+    else { set('nAadress',d.addr); set('nHind',d.price?String(d.price).replace(/[^\d]/g,''):''); set('nTuup',d.type); set('nTehing',d.deal); set('nMarkus',d.note); var st0=document.getElementById('nUrlStatus'); if(st0){ st0.style.color='var(--ac)'; st0.textContent='Andmed kuulutuselt — kontrolli ja salvesta'; } }
   }catch(e){}
+}
+async function importExtractAI(d){
+  var st=document.getElementById('nUrlStatus');
+  if(st){ st.style.color='var(--tx2)'; st.textContent='AI loeb kuulutust…'; }
+  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","deal":"","price":"","area":""}. addr=objekti aadress (tänav number, linnaosa, linn). type=üks: Korter, Maja, Äripind, Maa. deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number. Kui väli puudub, jäta "".';
+  var user='Pealkiri: '+(d.ogTitle||'')+'\nKirjeldus: '+(d.ogDesc||'')+'\nHinnavihje: '+(d.priceHint||'')+'\nTekst: '+(d.text||'');
+  try{
+    var ans=await aiFetch({ system:sys, max_tokens:200, messages:[{role:'user',content:user}] });
+    var jm=(ans||'').match(/\{[\s\S]*\}/);
+    var r=jm?JSON.parse(jm[0]):{};
+    var set=function(id,val){ var el=document.getElementById(id); if(el&&val!=null&&val!=='') el.value=val; };
+    set('nAadress',r.addr); set('nTuup',r.type); set('nTehing',r.deal);
+    if(r.price) set('nHind',String(r.price).replace(/[^\d]/g,''));
+    if(r.area) set('nPindala',String(r.area).replace(/[^\d.,]/g,'').replace(',','.'));
+    if(st){ st.style.color='var(--ac)'; st.textContent='AI luges kuulutuse — kontrolli, lisa nimi/telefon ja salvesta'; }
+  }catch(e){ if(st){ st.style.color='var(--red)'; st.textContent='AI ei suutnud lugeda — täida käsitsi'; } }
 }
 
 // ============================================================
@@ -2290,7 +2294,7 @@ async function fetchListingEdit() {
 
 
 function openNew(defaultStatus = 'uus') {
-  ['nUrl','nNimi','nTel','nAadress','nHind','nMarkus','nKommentaar'].forEach(id => document.getElementById(id).value = '');
+  ['nUrl','nNimi','nTel','nAadress','nHind','nPindala','nMarkus','nKommentaar'].forEach(id => { var el=document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('nUrlBtn').style.display = 'none';
   document.getElementById('nUrlStatus').textContent = '';
   document.getElementById('nUrlStatus').style.color = 'var(--tx2)';
@@ -2319,6 +2323,7 @@ async function saveNewLead() {
     property_type:    document.getElementById('nTuup').value           || null,
     deal_type:        document.getElementById('nTehing').value         || null,
     price:            parseFloat(document.getElementById('nHind').value) || null,
+    area:             parseFloat(document.getElementById('nPindala').value) || null,
     listing_note:     urlVal || noteBase || null,
     img_url:          _lastFetchedImg || null,
     contact_method:   document.getElementById('nKontaktViis').value    || null,
