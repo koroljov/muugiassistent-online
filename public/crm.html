@@ -382,7 +382,11 @@ input, select, textarea, button {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  transition: flex-basis 0.15s ease, opacity 0.15s ease;
 }
+/* Tühjad etapid kompaktsemaks ja tuhmimaks — täidetud veerud paistavad rohkem */
+.kol-empty { flex: 0 0 148px; opacity: 0.6; }
+.kol-empty:hover { opacity: 1; }
 
 .kol-head { padding: 2px 4px 8px; }
 
@@ -1770,7 +1774,7 @@ function makeKol(st, isReadOnly) {
   }).join('');
 
   const col = document.createElement('div');
-  col.className = 'kol';
+  col.className = 'kol' + (leads.length === 0 ? ' kol-empty' : '');
   // Drop-tsoon on terve kolumn, mitte ainult kol-cards
   col.setAttribute('ondragover', `onDragOver(event)`);
   col.setAttribute('ondragleave', `onDragLeave(event)`);
