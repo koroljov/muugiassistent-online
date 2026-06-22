@@ -1738,7 +1738,13 @@ function renderPipeBar() {
   const total = LEADS.reduce((s, l) => s + leadEur(l), 0);
   const open  = LEADS.filter(l => l.status !== 'ei soovi abi').reduce((s, l) => s + leadEur(l), 0);
 
-  document.getElementById('pipeBar').innerHTML = stDots +
+  // "Täna teha" fookus: täna + üle aja järeltegevused → klõps viib Ülesannetesse
+  const dueCount = LEADS.filter(l => { var d = dateInfo(l.next_action_at); return d && (d.cls.indexOf('s-overdue') > -1 || d.cls.indexOf('s-today') > -1); }).length;
+  const focus = dueCount > 0
+    ? `<div class="ps" onclick="setView('tasks', document.querySelectorAll('.tab')[2])" title="Vaata ülesandeid" style="cursor:pointer;background:rgba(245,158,11,0.16);border-radius:6px;padding:2px 9px;margin-right:4px"><span>⏰</span><span class="ps-n" style="color:#f59e0b">${dueCount}</span><span class="ps-l" style="color:#f59e0b">täna teha</span></div>`
+    : '';
+
+  document.getElementById('pipeBar').innerHTML = focus + stDots +
     `<div class="pipe-eur"><span>Portfellis: <b>${eur(total) || '0 €'}</b></span><span>Aktiivne: <b>${eur(open) || '0 €'}</b></span></div>`;
 }
 
@@ -1766,9 +1772,9 @@ function makeKol(st, isReadOnly) {
       <div class="k-badge" style="background:${st.color}"></div>
       ${daysText ? `<div class="k-days" style="background:${daysColor}">${daysText}</div>` : ''}
       <div class="k-name">${esc(l.contact_name || '(nimi puudub)')}</div>
-      <div class="k-sub">${esc(l.property_address || l.property_type || '—')}</div>
+      <div class="k-sub">${esc(l.property_address || l.property_type || '—')}${l.area ? ' · ' + l.area + ' m²' : ''}</div>
       <div class="k-eur"><b>${eur(leadEur(l))}</b>${l.deal_type ? ' · ' + l.deal_type : ''}</div>
-      ${l.contact_method ? `<div class="k-cm">📞 ${l.contact_method}</div>` : ''}
+      ${l.phone ? `<div class="k-cm">📞 ${esc(l.phone)}</div>` : (l.contact_method ? `<div class="k-cm">${esc(l.contact_method)}</div>` : '')}
       ${di ? `<div class="k-next ${di.cls.split(' ')[0]}">${di.txt}</div>` : ''}
     </div>`;
   }).join('');
