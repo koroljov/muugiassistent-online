@@ -1381,6 +1381,10 @@ async function aiFetch(payload){
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(30000)
       });
+      if(r.status === 401){        // ikka 401 — sessioon on päriselt kadunud
+        sessionLost();
+        return 'Sessioon aegus. Logi uuesti sisse ja proovi uuesti.';
+      }
     }
     var j = await r.json();
     if(!r.ok) return 'Viga: ' + (j.error || r.status);
@@ -1461,6 +1465,22 @@ async function doLogout() {
   document.getElementById('loginScreen').style.display = 'flex';
   USER = null;
 }
+
+// Sessioon kadus (aegus / logiti mujal välja) — näita login-ekraani selge teatega, mitte segast viga.
+function sessionLost(msg){
+  USER = null;
+  var app = document.getElementById('app'); if(app) app.style.display = 'none';
+  var ab = document.getElementById('addBtn'); if(ab) ab.style.display = 'none';
+  var ls = document.getElementById('loginScreen'); if(ls) ls.style.display = 'flex';
+  var err = document.getElementById('loginErr'); if(err) err.textContent = msg || 'Sessioon aegus. Logi palun uuesti sisse.';
+}
+
+// Kuula sessiooni muutusi: kui token aegub/väljalogitakse mujalt, suuna rahulikult login-ekraanile.
+sb.auth.onAuthStateChange(function(event, session){
+  if(event === 'SIGNED_OUT' && USER){
+    sessionLost('Sessioon aegus. Logi palun uuesti sisse.');
+  }
+});
 
 // Auto-login
 (async () => {
@@ -2010,6 +2030,7 @@ async function proxyFetch(url, timeoutMs = 15000) {
       body: JSON.stringify({ url: url }),
       signal: AbortSignal.timeout(timeoutMs + 4000)
     });
+    if (r.status === 401) { sessionLost(); throw new Error('Sessioon aegus. Logi uuesti sisse.'); }
   }
   const j = await r.json();
   if (!r.ok) throw new Error(j.error || ('status ' + r.status));
