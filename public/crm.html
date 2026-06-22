@@ -1112,6 +1112,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
           </div>
         </div>
       </div>
+      <button class="ib" onclick="openHelp()" title="Abi — küsi kuidas">?</button>
       <button class="ib" id="modeBtn" onclick="toggleMode()" title="Hele/Tume">☀</button>
       <button class="ib" onclick="toggleSet()" title="Seaded">⚙</button>
       <button class="user-btn" onclick="doLogout()">
@@ -1362,6 +1363,24 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     <div class="modal-foot">
       <button class="btn-ghost" onclick="closeModal('newModal')">Tühista</button>
       <button class="btn-sm" onclick="saveNewLead()">Lisa lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- ABI (AI Q&A) -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <div class="modal-title">Abi — küsi kuidas</div>
+      <button class="modal-x" onclick="closeModal('helpModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:8px;line-height:1.5">Küsi, kuidas CRM-i kasutada (nt "kuidas lisada kuulutus", "mis on Kõneabi"). AI vastab.</div>
+      <div id="helpAnswer" style="font-size:12px;line-height:1.6;white-space:pre-wrap;min-height:36px;margin-bottom:10px;color:var(--tx2)"></div>
+      <div style="display:flex;gap:6px">
+        <input class="inp" id="helpInput" placeholder="Kirjuta küsimus..." onkeydown="if(event.key==='Enter')sendHelp()" style="flex:1">
+        <button class="btn-sm" onclick="sendHelp()">Küsi</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2740,6 +2759,21 @@ document.addEventListener('click', e => {
 // MODALS
 // ============================================================
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// "?" Abi — kontekstipõhine AI küsi-vastus CRM-i kasutamise kohta
+function openHelp(){
+  var i=document.getElementById('helpInput'); if(i) i.value='';
+  var a=document.getElementById('helpAnswer'); if(a){ a.textContent=''; a.style.color='var(--tx2)'; }
+  document.getElementById('helpModal').classList.add('open');
+  setTimeout(function(){ var el=document.getElementById('helpInput'); if(el) el.focus(); }, 100);
+}
+async function sendHelp(){
+  var q=(document.getElementById('helpInput').value||'').trim(); if(!q) return;
+  var ans=document.getElementById('helpAnswer'); ans.style.color='var(--tx2)'; ans.textContent='Mõtlen…';
+  var sys='Oled selle CRM-i (Müügiassistent, kinnisvaramüük) abiline. Vasta eesti keeles, lühidalt ja praktiliselt, kuidas CRM-i kasutada. FUNKTSIOONID: Vahekaardid — Töövoog (kanban, lohista kaarte etappide vahel), Nimekiri, Ülesanded (järelkõned/tegevused), Statistika. Lead lisamine: "+ Uus lead" (avab täisakna) VÕI kuulutuse kiirnupp (Seaded → Kuulutuse kiirlisamine → lohista nupp brauseri ribale; kuulutuse lehel klõpsa nuppu → AI täidab aadressi/hinna/pindala/nime/telefoni/pildi). Lead avades: Kõneabi (kõne ajal tugi — avalöök, inimtüüp, andmekorje klõpsuga, AI väljundid: kokkuvõte/kuulutuse tagasiside/kliendikiri), Küsi Mellilt (AI nõu ja sõnumid), ajalugu, Salvesta. Seaded: oma kõneskript, kiirnupp, pehmed vihjed, tutvustus. Statistikas näeb kogutud kõneandmete mustreid. Kui küsimus pole CRM-i kohta, ütle lühidalt et aitad CRM-i kasutamisega.'+AI_STIIL;
+  var r=await aiFetch({ system:sys, max_tokens:400, messages:[{role:'user',content:q}] });
+  ans.style.color='var(--tx)'; ans.textContent=r;
+}
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape')
