@@ -1578,11 +1578,39 @@ function importFromHash(){
     var set=function(id,val){ var el=document.getElementById(id); if(el&&val!=null&&val!=='') el.value=val; };
     set('nUrl',d.url);
     if(d.url){ var b=document.getElementById('nUrlBtn'); if(b) b.style.display=''; }
-    if(d.img){ _lastFetchedImg=d.img; var prev=document.getElementById('nImgPreview'); if(prev){ prev.style.backgroundImage='url('+d.img+')'; prev.style.display='block'; } }
+    if(d.img){ _lastFetchedImg=d.img; var prev=document.getElementById('nImgPreview'); if(prev){ prev.style.backgroundImage='url('+d.img+')'; prev.style.display='block'; } storeLeadImage(d.img).then(function(u){ if(u && u!==d.img) _lastFetchedImg=u; }); }
     if(d.v===2){ importExtractAI(d); }
     else { set('nAadress',d.addr); set('nHind',d.price?String(d.price).replace(/[^\d]/g,''):''); set('nTuup',d.type); set('nTehing',d.deal); set('nMarkus',d.note); var st0=document.getElementById('nUrlStatus'); if(st0){ st0.style.color='var(--red)'; st0.textContent='⚠ Vana kiirnupp — lohista Seadetest uus nupp ribale (siis loeb AI korrektselt). Praegu täidetud vanal viisil, kontrolli üle.'; } }
   }catch(e){}
 }
+// Tõmba og-pilt, vähenda (~800px, JPEG) ja salvesta Supabase Storage'i → väike + püsiv.
+// Tagavara: kui CORS/laadimine ebaõnnestub, tagasta originaal-URL.
+async function storeLeadImage(srcUrl){
+  try{
+    if(!srcUrl || !/^https?:\/\//.test(srcUrl)) return srcUrl;
+    var blob = await new Promise(function(resolve, reject){
+      var img = new Image(); img.crossOrigin = 'anonymous';
+      img.onload = function(){
+        try{
+          var scale = Math.min(1, 800 / (img.naturalWidth||800));
+          var c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round((img.naturalWidth||800) * scale));
+          c.height = Math.max(1, Math.round((img.naturalHeight||600) * scale));
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          c.toBlob(function(b){ b ? resolve(b) : reject(new Error('toBlob null')); }, 'image/jpeg', 0.72);
+        }catch(e){ reject(e); }
+      };
+      img.onerror = function(){ reject(new Error('img load/CORS')); };
+      img.src = srcUrl;
+    });
+    var path = (typeof USER!=='undefined' && USER && USER.id ? USER.id : 'x') + '/' + Date.now() + '_' + Math.random().toString(36).slice(2,8) + '.jpg';
+    var up = await sb.storage.from('lead-images').upload(path, blob, { contentType:'image/jpeg', upsert:false });
+    if(up.error) throw up.error;
+    var pub = sb.storage.from('lead-images').getPublicUrl(path);
+    return (pub.data && pub.data.publicUrl) ? pub.data.publicUrl : srcUrl;
+  }catch(e){ return srcUrl; }
+}
+
 async function importExtractAI(d){
   var st=document.getElementById('nUrlStatus');
   if(st){ st.style.color='var(--tx2)'; st.textContent='AI loeb kuulutust…'; }
