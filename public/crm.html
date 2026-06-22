@@ -1297,6 +1297,10 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
           <input class="inp" id="nTel" placeholder="+372 5xxx xxxx" type="tel">
         </div>
         <div>
+          <div class="set-lbl">E-post</div>
+          <input class="inp" id="nEpost" placeholder="nimi@näide.ee" type="email">
+        </div>
+        <div>
           <div class="set-lbl">Kontakteerimise viis</div>
           <select class="inp" id="nKontaktViis">
             <option value="">—</option>
@@ -1551,8 +1555,10 @@ function _crmGrab(){
   function m(p){ var e=document.querySelector('meta[property="'+p+'"]'); return e?e.content:''; }
   var priceHint='', _bfs=-1;
   document.querySelectorAll('*').forEach(function(el){ if(el.children.length) return; var x=(el.textContent||'').trim(); if(/^[\d\s ]{3,14}€$/.test(x)){ var f=parseFloat(getComputedStyle(el).fontSize)||0; if(f>_bfs){ _bfs=f; priceHint=x; } } });
-  var txt=(document.body?document.body.innerText:'').replace(/\s+/g,' ').slice(0,3500);
-  var d={ v:2, url:location.href, ogTitle:m('og:title')||document.title||'', ogDesc:m('og:description')||'', img:m('og:image')||'', priceHint:priceHint, text:txt };
+  var tels=[].slice.call(document.querySelectorAll('a[href^="tel:"]')).map(function(a){return a.getAttribute('href').replace('tel:','').trim();});
+  var mails=[].slice.call(document.querySelectorAll('a[href^="mailto:"]')).map(function(a){return a.getAttribute('href').replace('mailto:','').trim();});
+  var txt=(document.body?document.body.innerText:'').replace(/\s+/g,' ').slice(0,7000);
+  var d={ v:2, url:location.href, ogTitle:m('og:title')||document.title||'', ogDesc:m('og:description')||'', img:m('og:image')||'', priceHint:priceHint, tel:tels.join(', '), email:mails.join(', '), text:txt };
   var b64=btoa(unescape(encodeURIComponent(JSON.stringify(d))));
   window.open('https://muugiassistent-online.vercel.app/crm.html#import='+encodeURIComponent(b64),'_blank');
 }
@@ -1580,17 +1586,18 @@ function importFromHash(){
 async function importExtractAI(d){
   var st=document.getElementById('nUrlStatus');
   if(st){ st.style.color='var(--tx2)'; st.textContent='AI loeb kuulutust…'; }
-  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","deal":"","price":"","area":""}. addr=objekti aadress (tänav number, linnaosa, linn). type=üks: Korter, Maja, Äripind, Maa. deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number. Kui väli puudub, jäta "".';
-  var user='Pealkiri: '+(d.ogTitle||'')+'\nKirjeldus: '+(d.ogDesc||'')+'\nHinnavihje: '+(d.priceHint||'')+'\nTekst: '+(d.text||'');
+  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","deal":"","price":"","area":"","name":"","phone":"","email":""}. addr=objekti aadress (tänav number, linnaosa, linn). type=üks sõna: Korter, Maja, Äripind või Maa. deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
+  var user='Pealkiri: '+(d.ogTitle||'')+'\nKirjeldus: '+(d.ogDesc||'')+'\nHinnavihje: '+(d.priceHint||'')+'\nTelefon: '+(d.tel||'')+'\nE-post: '+(d.email||'')+'\nTekst: '+(d.text||'');
   try{
-    var ans=await aiFetch({ system:sys, max_tokens:200, messages:[{role:'user',content:user}] });
+    var ans=await aiFetch({ system:sys, max_tokens:300, messages:[{role:'user',content:user}] });
     var jm=(ans||'').match(/\{[\s\S]*\}/);
     var r=jm?JSON.parse(jm[0]):{};
     var set=function(id,val){ var el=document.getElementById(id); if(el&&val!=null&&val!=='') el.value=val; };
     set('nAadress',r.addr); set('nTuup',r.type); set('nTehing',r.deal);
+    set('nNimi',r.name); set('nTel',r.phone); set('nEpost',r.email);
     if(r.price) set('nHind',String(r.price).replace(/[^\d]/g,''));
     if(r.area) set('nPindala',String(r.area).replace(/[^\d.,]/g,'').replace(',','.'));
-    if(st){ st.style.color='var(--ac)'; st.textContent='AI luges kuulutuse — kontrolli, lisa nimi/telefon ja salvesta'; }
+    if(st){ st.style.color='var(--ac)'; st.textContent='AI luges kuulutuse — kontrolli ja salvesta. (Kui telefon puudub: vajuta kuulutusel Näita numbrit ja klõpsa nuppu uuesti.)'; }
   }catch(e){ if(st){ st.style.color='var(--red)'; st.textContent='AI ei suutnud lugeda — täida käsitsi'; } }
 }
 
@@ -2294,7 +2301,7 @@ async function fetchListingEdit() {
 
 
 function openNew(defaultStatus = 'uus') {
-  ['nUrl','nNimi','nTel','nAadress','nHind','nPindala','nMarkus','nKommentaar'].forEach(id => { var el=document.getElementById(id); if(el) el.value = ''; });
+  ['nUrl','nNimi','nTel','nEpost','nAadress','nHind','nPindala','nMarkus','nKommentaar'].forEach(id => { var el=document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('nUrlBtn').style.display = 'none';
   document.getElementById('nUrlStatus').textContent = '';
   document.getElementById('nUrlStatus').style.color = 'var(--tx2)';
@@ -2319,6 +2326,7 @@ async function saveNewLead() {
   const { data, error } = await sb.from('leads').insert({
     contact_name:     nimi,
     phone:            document.getElementById('nTel').value.trim()     || null,
+    email:            document.getElementById('nEpost').value.trim()   || null,
     property_address: document.getElementById('nAadress').value.trim() || null,
     property_type:    document.getElementById('nTuup').value           || null,
     deal_type:        document.getElementById('nTehing').value         || null,
