@@ -1723,10 +1723,13 @@ function render() {
 }
 
 function renderPipeBar() {
-  const stDots = STAATUSED.map(st => {
-    const cnt = LEADS.filter(l => l.status === st.key).length;
-    return `<div class="ps"><div class="ps-dot" style="background:${st.color}"></div><span class="ps-n">${cnt}</span><span class="ps-l">${st.nimi}</span></div>`;
-  }).join('');
+  // Puhastatud riba: peida vanad "(vana)" staatused ja nullkogusega etapid — näita ainult seda, kus leadid päriselt on.
+  const stDots = STAATUSED
+    .filter(st => !/\(vana\)/i.test(st.nimi))
+    .map(st => ({ st, cnt: LEADS.filter(l => l.status === st.key).length }))
+    .filter(x => x.cnt > 0)
+    .map(({ st, cnt }) => `<div class="ps"><div class="ps-dot" style="background:${st.color}"></div><span class="ps-n">${cnt}</span><span class="ps-l">${st.nimi}</span></div>`)
+    .join('');
 
   const total = LEADS.reduce((s, l) => s + leadEur(l), 0);
   const open  = LEADS.filter(l => l.status !== 'ei soovi abi').reduce((s, l) => s + leadEur(l), 0);
