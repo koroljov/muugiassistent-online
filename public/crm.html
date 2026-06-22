@@ -384,9 +384,11 @@ input, select, textarea, button {
   min-width: 0;
   transition: flex-basis 0.15s ease, opacity 0.15s ease;
 }
-/* Tühjad etapid kompaktsemaks ja tuhmimaks — täidetud veerud paistavad rohkem */
-.kol-empty { flex: 0 0 148px; opacity: 0.6; }
+/* Tühjad etapid kitsaks ja tuhmiks — vähem müra, täidetud veerud paistavad. +Lisa ilmub hiirega peale. */
+.kol-empty { flex: 0 0 116px; opacity: 0.4; }
 .kol-empty:hover { opacity: 1; }
+.kol-empty .kard-add { display: none; }
+.kol-empty:hover .kard-add { display: block; }
 
 .kol-head { padding: 2px 4px 8px; }
 
