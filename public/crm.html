@@ -1206,6 +1206,12 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
           <div style="font-size:10px;color:var(--tx2);margin-top:4px;text-align:center">Pehmed vihjed: <span id="tipToggleState">sees</span></div>
         </div>
 
+        <div class="set-sec">Kuulutuse kiirlisamine</div>
+        <div>
+          <div style="font-size:10px;color:var(--tx2);margin-bottom:8px;line-height:1.5">Lohista al-olev nupp brauseri järjehoidjaribale (üks kord). Edaspidi: ava kv.ee või kinnisvara24 kuulutus, klõpsa nuppu — CRM avaneb juba täidetuna. Toimib sinu brauseris, ilma serverita.</div>
+          <a id="bmLink" href="#" onclick="alert('Ära klõpsa siin — lohista see nupp järjehoidjaribale. Siis kasuta seda kuulutuse lehel.');return false;" draggable="true" style="display:inline-block;padding:8px 14px;background:var(--ac);color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;cursor:grab">↓ Lisa kuulutus CRM-i</a>
+        </div>
+
         <div class="set-sec">Punktid</div>
         <div class="xp-box">
           <div class="xp-box-big" id="setXpBig">0 xp</div>
@@ -1530,6 +1536,27 @@ async function startApp() {
   updateXP();
   await loadData();
   importFromHash();   // bookmarkletist tulnud kuulutuse andmed → ava "Uus lead" täidetuna
+  setBookmarkletLink();
+}
+
+// See funktsioon jookseb portaali lehel (bookmarkletina). Peab olema iseseisev, ilma CRM-i globaalideta.
+function _crmGrab(){
+  if(!/kv\.ee|kinnisvara24\.ee/.test(location.hostname)){ alert('Ava kõigepealt kv.ee või kinnisvara24 kuulutuse leht.'); return; }
+  function m(p){ var e=document.querySelector('meta[property="'+p+'"]'); return e?e.content:''; }
+  var t = m('og:title') || document.title || '', img = m('og:image') || '';
+  var b = document.body ? document.body.innerText : '';
+  var pm = b.match(/(\d[\d\s ]{2,9})\s*€/), pr = pm ? pm[1].replace(/[^\d]/g,'') : '';
+  var a = '', i = t.indexOf(' - '); if(i>-1) a = t.slice(i+3).replace(/\s*-\s*Kinnisvaraportaal.*$/i,'').trim();
+  var l = t.toLowerCase();
+  var ty = /korter/.test(l)?'Korter':/maja|elamu|ridaelamu/.test(l)?'Maja':/äripind|büroo|kontor|ladu|tootmis/.test(l)?'Äripind':/krunt|maa|kinnistu/.test(l)?'Maa':'';
+  var dl = /üür|rent/i.test(t)?'uur':/müü/i.test(t)?'muuk':'';
+  var d = { url: location.href, addr: a, price: pr, type: ty, deal: dl, img: img };
+  var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(d))));
+  window.open('https://muugiassistent-online.vercel.app/crm.html#import=' + encodeURIComponent(b64), '_blank');
+}
+function setBookmarkletLink(){
+  var a = document.getElementById('bmLink');
+  if(a){ a.setAttribute('href', 'javascript:(' + _crmGrab.toString() + ')();'); }
 }
 
 // Bookmarkletist tulnud andmed: #import=<base64 JSON> → ava Uus lead vorm eeltäidetuna.
