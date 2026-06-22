@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
@@ -11,6 +12,10 @@ export async function POST(request: Request) {
   const admin = getSupabaseAdmin();
   const { data, error: authErr } = await admin.auth.getUser(token);
   if (authErr || !data?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!rateLimit("ai:" + data.user.id, 40, 60000)) {
+    return NextResponse.json({ error: "Liiga palju AI-päringuid korraga. Oota hetk." }, { status: 429 });
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "ANTHROPIC_API_KEY puudub serveris" }, { status: 500 });

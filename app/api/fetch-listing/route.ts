@@ -1,6 +1,7 @@
 // app/api/fetch-listing/route.ts — tõmbab kuulutuse lehe serveripoolselt (ei CORS-i, usaldusväärsem kui brauseri proksi).
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
@@ -9,6 +10,10 @@ export async function POST(request: Request) {
   const admin = getSupabaseAdmin();
   const { data, error: authErr } = await admin.auth.getUser(token);
   if (authErr || !data?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!rateLimit("fetch:" + data.user.id, 80, 60000)) {
+    return NextResponse.json({ error: "Liiga palju päringuid korraga. Oota hetk." }, { status: 429 });
+  }
 
   const body = await request.json();
   const url = (body?.url || "").trim();

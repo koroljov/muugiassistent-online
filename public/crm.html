@@ -1598,7 +1598,7 @@ function makeKol(st, isReadOnly) {
       : `<div class="k-img-wrap" id="kimg-${l.id}"></div>`;
     return `<div class="kard ${dcs}" draggable="true"
       data-lid="${l.id}"
-      data-kurl="${!l.img_url && hasUrl ? l.listing_note.replace(/"/g,'') : ''}"
+      data-kurl="${!l.img_url && hasUrl ? esc(l.listing_note) : ''}"
       style="border-left-color:${st.color}"
       onclick="openLead('${l.id}')"
       ondragstart="startDrag('${l.id}',event)"
@@ -1606,8 +1606,8 @@ function makeKol(st, isReadOnly) {
       ${imgPart}
       <div class="k-badge" style="background:${st.color}"></div>
       ${daysText ? `<div class="k-days" style="background:${daysColor}">${daysText}</div>` : ''}
-      <div class="k-name">${l.contact_name || '(nimi puudub)'}</div>
-      <div class="k-sub">${l.property_address || l.property_type || '—'}</div>
+      <div class="k-name">${esc(l.contact_name || '(nimi puudub)')}</div>
+      <div class="k-sub">${esc(l.property_address || l.property_type || '—')}</div>
       <div class="k-eur"><b>${eur(leadEur(l))}</b>${l.deal_type ? ' · ' + l.deal_type : ''}</div>
       ${l.contact_method ? `<div class="k-cm">📞 ${l.contact_method}</div>` : ''}
       ${di ? `<div class="k-next ${di.cls.split(' ')[0]}">${di.txt}</div>` : ''}
@@ -1756,8 +1756,8 @@ function renderList() {
     const st = STAATUSED.find(s => s.key === l.status);
     const di = dateInfo(l.next_action_at);
     return `<tr onclick="openLead('${l.id}')">
-      <td><b>${l.contact_name || '—'}</b>${l.phone ? `<br><span style="font-size:10px;color:var(--tx2)">${l.phone}</span>` : ''}</td>
-      <td style="font-size:11px;color:var(--tx2)">${l.property_address || l.listing_note || '—'}</td>
+      <td><b>${esc(l.contact_name || '—')}</b>${l.phone ? `<br><span style="font-size:10px;color:var(--tx2)">${esc(l.phone)}</span>` : ''}</td>
+      <td style="font-size:11px;color:var(--tx2)">${esc(l.property_address || l.listing_note || '—')}</td>
       <td><span class="chip" style="color:${st?.color||'var(--tx2)'};border-color:${st?.color||'var(--bd)'}">${st?.nimi||l.status}</span></td>
       <td style="color:var(--ac);font-weight:600">${eur(leadEur(l))}</td>
       <td>${di ? `<span class="${di.cls.split(' ')[0]}">${di.txt}</span>` : '—'}</td>
@@ -1784,7 +1784,7 @@ function renderTasks() {
         ${isDone ? '✓' : ''}
       </div>
       <div style="flex:1">
-        <div style="font-size:11px;font-weight:500${isDone ? ';text-decoration:line-through;opacity:.45' : ''}">${t.type}${l ? ' · ' + (l.contact_name || l.property_address || '') : ''}</div>
+        <div style="font-size:11px;font-weight:500${isDone ? ';text-decoration:line-through;opacity:.45' : ''}">${esc(t.type)}${l ? ' · ' + esc(l.contact_name || l.property_address || '') : ''}</div>
         ${t.comment ? `<div style="font-size:10px;color:var(--tx2)">${t.comment}</div>` : ''}
         ${di ? `<div class="k-next ${di.cls.split(' ')[0]}" style="margin-top:3px">${di.txt}</div>` : ''}
       </div>
@@ -1873,14 +1873,14 @@ function openLead(id) {
   const contactMethodOpts = ['Kõne (väljaminev)','Kõne (sissetulev)','KV.ee sõnum','E-mail','Soovitus','Isiklik tutvus','Muu'];
   document.getElementById('leadBody').innerHTML = `
     <div class="pbar">${pbar}</div>
-    ${l.img_url ? `<img class="lead-img" src="${l.img_url}" onerror="this.style.display='none'">` : ''}
+    ${l.img_url ? `<img class="lead-img" src="${esc(l.img_url)}" onerror="this.style.display='none'">` : ''}
 
     <div class="kv-grid">
       <div>
-        <div class="kv-row"><span class="kv-lbl">Kontakti nimi</span><input class="kv-inp" id="lNimi" value="${l.contact_name||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Telefon</span><input class="kv-inp" id="lTel" value="${l.phone||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">E-post</span><input class="kv-inp" id="lEmail" value="${l.email||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Aadress</span><input class="kv-inp" id="lAadress" value="${l.property_address||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Kontakti nimi</span><input class="kv-inp" id="lNimi" value="${esc(l.contact_name)}"></div>
+        <div class="kv-row"><span class="kv-lbl">Telefon</span><input class="kv-inp" id="lTel" value="${esc(l.phone)}"></div>
+        <div class="kv-row"><span class="kv-lbl">E-post</span><input class="kv-inp" id="lEmail" value="${esc(l.email)}"></div>
+        <div class="kv-row"><span class="kv-lbl">Aadress</span><input class="kv-inp" id="lAadress" value="${esc(l.property_address)}"></div>
         <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
           <select class="kv-inp" id="lKontaktViis">
@@ -1889,13 +1889,13 @@ function openLead(id) {
           </select>
         </div>
         <div class="kv-row"><span class="kv-lbl">Järgmine tegevus</span><input class="kv-inp" id="lNext" type="date" value="${l.next_action_at||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Kuulutuse URL</span><div style="display:flex;gap:6px;flex:1"><input class="kv-inp" id="lUrl" placeholder="https://www.kv.ee/..." value="${l.listing_note&&l.listing_note.startsWith('http')?l.listing_note:''}" style="flex:1"><button class="btn-ghost" onclick="fetchListingEdit()" style="padding:6px 10px;font-size:10px;white-space:nowrap">↓ Täida</button></div></div>
+        <div class="kv-row"><span class="kv-lbl">Kuulutuse URL</span><div style="display:flex;gap:6px;flex:1"><input class="kv-inp" id="lUrl" placeholder="https://www.kv.ee/..." value="${l.listing_note&&l.listing_note.startsWith('http')?esc(l.listing_note):''}" style="flex:1"><button class="btn-ghost" onclick="fetchListingEdit()" style="padding:6px 10px;font-size:10px;white-space:nowrap">↓ Täida</button></div></div>
         <div id="lUrlStatus" style="font-size:9px;color:var(--tx2);margin-bottom:4px;min-height:12px;padding-left:100px"></div>
-        <div id="lImgPreview" style="display:${l.img_url?'block':'none'};width:calc(100% - 108px);margin-left:100px;height:80px;background-size:cover;background-position:center;border-radius:6px;margin-bottom:8px;border:1px solid var(--bd);background-image:url('${l.img_url||''}')"></div>
-        <input type="hidden" id="lImgUrl" value="${l.img_url||''}">
-        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?l.listing_note:''}</textarea></div>
-        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">AI tagasiside</span><textarea class="kv-inp" id="lAiSummary" rows="5" placeholder="Vajuta ↓ Täida AI kokkuvõtte genereerimiseks..." style="font-size:11px;line-height:1.5">${l.ai_summary||''}</textarea></div>
-        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${l.lead_comment||''}</textarea></div>
+        <div id="lImgPreview" style="display:${l.img_url?'block':'none'};width:calc(100% - 108px);margin-left:100px;height:80px;background-size:cover;background-position:center;border-radius:6px;margin-bottom:8px;border:1px solid var(--bd);background-image:url('${esc(l.img_url)}')"></div>
+        <input type="hidden" id="lImgUrl" value="${esc(l.img_url)}">
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?esc(l.listing_note):''}</textarea></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">AI tagasiside</span><textarea class="kv-inp" id="lAiSummary" rows="5" placeholder="Vajuta ↓ Täida AI kokkuvõtte genereerimiseks..." style="font-size:11px;line-height:1.5">${esc(l.ai_summary)}</textarea></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${esc(l.lead_comment)}</textarea></div>
       </div>
 
       <div>
@@ -2706,6 +2706,7 @@ var KABI_VHINTS = {
 };
 
 function kabiEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 function kabiRenderGrid(){
   var el = document.getElementById('kabiGrid'); if(!el) return;
