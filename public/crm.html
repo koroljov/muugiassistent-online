@@ -2248,7 +2248,17 @@ const _OGC = {}; // in-memory cache: url -> imgUrl|''
   }
 })();
 
+var _fetchingImgs = false;
 async function fetchImages() {
+  if (_fetchingImgs) return;          // väldi kattuvaid partiisid korduval render'il
+  _fetchingImgs = true;
+  try {
+    await _fetchImagesRun();
+  } finally {
+    _fetchingImgs = false;
+  }
+}
+async function _fetchImagesRun() {
   const cards = document.querySelectorAll('.kard[data-kurl]');
   const toFetch = [];
   for (const card of cards) {
@@ -2273,12 +2283,14 @@ async function fetchImages() {
     }
   }
 
-  // Fetch missing (max 15 to avoid rate-limits)
+  // Fetch missing (max 15 to avoid rate-limits) — paralleelselt, max 4 korraga
   const batch = toFetch.slice(0, 15);
-  for (const { card, url, ck } of batch) {
+  if (!batch.length) return;
+  const sess = await sb.auth.getSession();
+  const token = (sess.data && sess.data.session) ? sess.data.session.access_token : '';
+
+  async function fetchOne({ card, url, ck }) {
     try {
-      const sess = await sb.auth.getSession();
-      const token = (sess.data && sess.data.session) ? sess.data.session.access_token : '';
       const r = await fetch('/api/fetch-listing', { method: 'POST', headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + token }, body: JSON.stringify({ url: url, ogImageOnly: true }), signal: AbortSignal.timeout(15000) });
       const j = await r.json();
       const imgUrl = j.ogImage || '';
@@ -2297,8 +2309,18 @@ async function fetchImages() {
     } catch(e) {
       _OGC[ck] = '';
     }
-    await new Promise(res => setTimeout(res, 250));
   }
+
+  // Lihtne concurrency-pool: 4 paralleelset päringut, mitte 15 järjest 250ms viitega
+  const POOL = 4;
+  let idx = 0;
+  async function worker() {
+    while (idx < batch.length) {
+      const item = batch[idx++];
+      await fetchOne(item);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(POOL, batch.length) }, worker));
 }
 
 function injectImgWrap(wrap, imgUrl) {
