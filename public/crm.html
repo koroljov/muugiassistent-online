@@ -1584,7 +1584,6 @@ function importFromHash(){
     if(typeof openNew==='function') openNew();
     var set=function(id,val){ var el=document.getElementById(id); if(el&&val!=null&&val!=='') el.value=val; };
     set('nUrl',d.url);
-    if(d.url){ var b=document.getElementById('nUrlBtn'); if(b) b.style.display=''; }
     if(d.img){ _lastFetchedImg=d.img; var prev=document.getElementById('nImgPreview'); if(prev){ prev.style.backgroundImage='url('+d.img+')'; prev.style.display='block'; } storeLeadImage(d.img).then(function(u){ if(u && u!==d.img) _lastFetchedImg=u; }); }
     if(d.v===2){ importExtractAI(d); }
     else { set('nAadress',d.addr); set('nHind',d.price?String(d.price).replace(/[^\d]/g,''):''); set('nTuup',d.type); set('nTehing',d.deal); set('nMarkus',d.note); var st0=document.getElementById('nUrlStatus'); if(st0){ st0.style.color='var(--red)'; st0.textContent='⚠ Vana kiirnupp — lohista Seadetest uus nupp ribale (siis loeb AI korrektselt). Praegu täidetud vanal viisil, kontrolli üle.'; } }
@@ -1719,8 +1718,8 @@ function render() {
   renderKanban();
   renderList();
   renderTasks();
-  // Fetch OG images in background after DOM update
-  setTimeout(fetchImages, 50);
+  // Taustal portaali og-pildi tõmme eemaldatud: portaalid blokeerivad serveri.
+  // Imporditud leadid saavad pildi storeLeadImage kaudu (Supabase Storage).
 }
 
 function renderPipeBar() {
@@ -2042,12 +2041,12 @@ function openLead(id) {
           </select>
         </div>
         <div class="kv-row"><span class="kv-lbl">Järgmine tegevus</span><input class="kv-inp" id="lNext" type="date" value="${l.next_action_at||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Kuulutuse URL</span><div style="display:flex;gap:6px;flex:1"><input class="kv-inp" id="lUrl" placeholder="https://www.kv.ee/..." value="${l.listing_note&&l.listing_note.startsWith('http')?esc(l.listing_note):''}" style="flex:1"><button class="btn-ghost" onclick="fetchListingEdit()" style="padding:6px 10px;font-size:10px;white-space:nowrap">↓ Täida</button></div></div>
+        <div class="kv-row"><span class="kv-lbl">Kuulutuse URL</span><div style="display:flex;gap:6px;flex:1"><input class="kv-inp" id="lUrl" placeholder="https://www.kv.ee/..." value="${l.listing_note&&l.listing_note.startsWith('http')?esc(l.listing_note):''}" style="flex:1"></div></div>
         <div id="lUrlStatus" style="font-size:9px;color:var(--tx2);margin-bottom:4px;min-height:12px;padding-left:100px"></div>
         <div id="lImgPreview" style="display:${l.img_url?'block':'none'};width:calc(100% - 108px);margin-left:100px;height:80px;background-size:cover;background-position:center;border-radius:6px;margin-bottom:8px;border:1px solid var(--bd);background-image:url('${esc(l.img_url)}')"></div>
         <input type="hidden" id="lImgUrl" value="${esc(l.img_url)}">
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?esc(l.listing_note):''}</textarea></div>
-        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">AI tagasiside</span><textarea class="kv-inp" id="lAiSummary" rows="5" placeholder="Vajuta ↓ Täida AI kokkuvõtte genereerimiseks..." style="font-size:11px;line-height:1.5">${esc(l.ai_summary)}</textarea></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">AI tagasiside</span><textarea class="kv-inp" id="lAiSummary" rows="5" placeholder="AI tagasiside — täitub kuulutuse importimisel; täienda Küsi Mellilt kaudu" style="font-size:11px;line-height:1.5">${esc(l.ai_summary)}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${esc(l.lead_comment)}</textarea></div>
       </div>
 
@@ -2144,11 +2143,9 @@ async function proxyFetch(url, timeoutMs = 15000) {
 }
 
 function onUrlInput(val) {
-  const btn = document.getElementById('nUrlBtn');
-  const st  = document.getElementById('nUrlStatus');
-  const isListing = val && (val.includes('kv.ee/') || val.includes('kinnisvara24.ee/'));
-  btn.style.display = isListing ? '' : 'none';
-  if (!isListing) st.textContent = '';
+  // Vana "Täida" eemaldatud (serveripoolne portaali-päring blokeeritud). Andmete täitmiseks kasuta kiirnuppu kuulutuse lehel.
+  var btn = document.getElementById('nUrlBtn'); if(btn) btn.style.display = 'none';
+  var st  = document.getElementById('nUrlStatus'); if(st && !val) st.textContent = '';
 }
 
 async function fetchListing() {
