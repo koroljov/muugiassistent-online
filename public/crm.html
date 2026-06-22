@@ -1574,7 +1574,7 @@ function importFromHash(){
     if(d.url){ var b=document.getElementById('nUrlBtn'); if(b) b.style.display=''; }
     if(d.img){ _lastFetchedImg=d.img; var prev=document.getElementById('nImgPreview'); if(prev){ prev.style.backgroundImage='url('+d.img+')'; prev.style.display='block'; } }
     if(d.v===2){ importExtractAI(d); }
-    else { set('nAadress',d.addr); set('nHind',d.price?String(d.price).replace(/[^\d]/g,''):''); set('nTuup',d.type); set('nTehing',d.deal); set('nMarkus',d.note); var st0=document.getElementById('nUrlStatus'); if(st0){ st0.style.color='var(--ac)'; st0.textContent='Andmed kuulutuselt — kontrolli ja salvesta'; } }
+    else { set('nAadress',d.addr); set('nHind',d.price?String(d.price).replace(/[^\d]/g,''):''); set('nTuup',d.type); set('nTehing',d.deal); set('nMarkus',d.note); var st0=document.getElementById('nUrlStatus'); if(st0){ st0.style.color='var(--red)'; st0.textContent='⚠ Vana kiirnupp — lohista Seadetest uus nupp ribale (siis loeb AI korrektselt). Praegu täidetud vanal viisil, kontrolli üle.'; } }
   }catch(e){}
 }
 async function importExtractAI(d){
