@@ -1546,7 +1546,12 @@ function _crmGrab(){
   var t = m('og:title') || document.title || '', img = m('og:image') || '';
   var b = document.body ? document.body.innerText : '';
   var pm = b.match(/(\d[\d\s ]{2,9})\s*€/), pr = pm ? pm[1].replace(/[^\d]/g,'') : '';
-  var a = '', i = t.indexOf(' - '); if(i>-1) a = t.slice(i+3).replace(/\s*-\s*Kinnisvaraportaal.*$/i,'').trim();
+  var raw = t.replace(/\s*[-–|]\s*(Kinnisvaraportaal|kinnisvara24|KV\.EE).*$/i,'').trim();
+  var ptt = t.match(/(\d[\d\s ]{2,9})\s*€/); if(ptt) pr = ptt[1].replace(/[^\d]/g,'');
+  var a = '', ptok = raw.match(/\d[\d\s ]{2,9}\s*€/);
+  if(ptok){ a = raw.slice(raw.indexOf(ptok[0]) + ptok[0].length).replace(/^[\s,–-]+/,'').trim(); }
+  else if(raw.indexOf(' - ') > -1){ a = raw.slice(raw.indexOf(' - ') + 3).trim(); }
+  if(!a){ var parts = raw.split(',').map(function(s){return s.trim();}).filter(Boolean); var j=0; while(j<parts.length && /(müüa|üürile|tuba|^korter$|^maja$|m²|€)/i.test(parts[j])) j++; a = parts.slice(j).join(', '); }
   var l = t.toLowerCase();
   var ty = /korter/.test(l)?'Korter':/maja|elamu|ridaelamu/.test(l)?'Maja':/äripind|büroo|kontor|ladu|tootmis/.test(l)?'Äripind':/krunt|maa|kinnistu/.test(l)?'Maa':'';
   var dl = /üür|rent/i.test(t)?'uur':/müü/i.test(t)?'muuk':'';
