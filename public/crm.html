@@ -1645,7 +1645,7 @@ async function storeLeadImage(srcUrl){
 async function importExtractAI(d){
   var st=document.getElementById('lUrlStatus');
   if(st){ st.style.color='var(--tx2)'; st.textContent='AI loeb kuulutust…'; }
-  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","deal":"","price":"","area":"","name":"","phone":"","email":""}. addr=objekti aadress (tänav number, linnaosa, linn). type=üks sõna: Korter, Maja, Äripind või Maa. deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
+  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","deal":"","price":"","area":"","rooms":"","name":"","phone":"","email":""}. addr=objekti aadress (tänav number, linnaosa, linn). type=üks sõna: Korter, Maja, Äripind või Maa. deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). rooms=tubade arv (mitu tuba), ainult number. name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
   var user='Pealkiri: '+(d.ogTitle||'')+'\nKirjeldus: '+(d.ogDesc||'')+'\nHinnavihje: '+(d.priceHint||'')+'\nTelefon: '+(d.tel||'')+'\nE-post: '+(d.email||'')+'\nTekst: '+(d.text||'');
   try{
     var ans=await aiFetch({ system:sys, max_tokens:300, messages:[{role:'user',content:user}] });
@@ -1657,6 +1657,7 @@ async function importExtractAI(d){
     set('lNimi',r.name); set('lTel',_ph); set('lEmail',_em);
     if(r.price) set('lHind',String(r.price).replace(/[^\d]/g,''));
     if(r.area) set('lPindala',String(r.area).replace(/[^\d.,]/g,'').replace(',','.'));
+    if(r.rooms) set('lTube',String(r.rooms).replace(/[^\d]/g,''));
     if(st){ st.style.color='var(--ac)'; st.textContent='AI luges kuulutuse — kontrolli ja salvesta. (Kui telefon puudub: vajuta kuulutusel Näita numbrit ja klõpsa nuppu uuesti.)'; }
   }catch(e){ if(st){ st.style.color='var(--red)'; st.textContent='AI ei suutnud lugeda — täida käsitsi'; } }
 }
@@ -2070,6 +2071,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Aadress</span><input class="kv-inp" id="lAadress" value="${esc(l.property_address)}"></div>
         <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Pindala m²</span><input class="kv-inp" id="lPindala" type="number" value="${l.area||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Tube</span><input class="kv-inp" id="lTube" type="number" min="0" value="${l.rooms||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup"><option value="">—</option>${['Korter','Maja','Äripind','Maa'].map(o => `<option${l.property_type===o?' selected':''}>${o}</option>`).join('')}</select></div>
         <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
         <div class="kv-row"><span class="kv-lbl">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:5px">${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b> · ` : ''}<a href="https://www.maaamet.ee/kinnisvara/htraru/" target="_blank" rel="noopener" style="color:var(--ac);text-decoration:none">Maa-amet tehinguhinnad →</a></div></div>
@@ -2132,6 +2134,7 @@ async function saveLead() {
     property_address: document.getElementById('lAadress').value.trim()     || null,
     price:            parseFloat(document.getElementById('lHind').value)   || null,
     area:             parseFloat(document.getElementById('lPindala').value) || null,
+    rooms:            parseInt(document.getElementById('lTube').value, 10)  || null,
     property_type:    document.getElementById('lTuup').value               || null,
     deal_type:        document.getElementById('lTehing').value             || null,
     contact_method:   document.getElementById('lKontaktViis').value        || null,
