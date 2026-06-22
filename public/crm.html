@@ -1259,11 +1259,11 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     </div>
     <div class="modal-body" id="leadBody"></div>
     <div class="modal-foot">
-      <button class="btn-danger" onclick="archiveLead()">Arhiveeri</button>
-      <button class="btn-ghost" onclick="openMell()">Küsi Mellilt</button>
-      <button class="btn-ghost" onclick="openKabi()">Kõneabi</button>
+      <button class="btn-danger" id="leadArchiveBtn" onclick="archiveLead()">Arhiveeri</button>
+      <button class="btn-ghost" id="leadMellBtn" onclick="openMell()">Küsi Mellilt</button>
+      <button class="btn-ghost" id="leadKabiBtn" onclick="openKabi()">Kõneabi</button>
       <button class="btn-ghost" onclick="closeModal('leadModal')">Sulge</button>
-      <button class="btn-sm" onclick="saveLead()">Salvesta</button>
+      <button class="btn-sm" id="leadSaveBtn" onclick="saveLead()">Salvesta</button>
     </div>
   </div>
 </div>
@@ -1583,10 +1583,10 @@ function importFromHash(){
     history.replaceState(null,'',location.pathname+location.search);
     if(typeof openNew==='function') openNew();
     var set=function(id,val){ var el=document.getElementById(id); if(el&&val!=null&&val!=='') el.value=val; };
-    set('nUrl',d.url);
-    if(d.img){ _lastFetchedImg=d.img; var prev=document.getElementById('nImgPreview'); if(prev){ prev.style.backgroundImage='url('+d.img+')'; prev.style.display='block'; } storeLeadImage(d.img).then(function(u){ if(u && u!==d.img) _lastFetchedImg=u; }); }
+    set('lUrl',d.url);
+    if(d.img){ var prev=document.getElementById('lImgPreview'); if(prev){ prev.style.backgroundImage='url('+d.img+')'; prev.style.display='block'; } var iu=document.getElementById('lImgUrl'); if(iu) iu.value=d.img; storeLeadImage(d.img).then(function(u){ if(u){ var iu2=document.getElementById('lImgUrl'); if(iu2) iu2.value=u; var pv=document.getElementById('lImgPreview'); if(pv) pv.style.backgroundImage='url('+u+')'; } }); }
     if(d.v===2){ importExtractAI(d); }
-    else { set('nAadress',d.addr); set('nHind',d.price?String(d.price).replace(/[^\d]/g,''):''); set('nTuup',d.type); set('nTehing',d.deal); set('nMarkus',d.note); var st0=document.getElementById('nUrlStatus'); if(st0){ st0.style.color='var(--red)'; st0.textContent='⚠ Vana kiirnupp — lohista Seadetest uus nupp ribale (siis loeb AI korrektselt). Praegu täidetud vanal viisil, kontrolli üle.'; } }
+    else { set('lAadress',d.addr); set('lHind',d.price?String(d.price).replace(/[^\d]/g,''):''); set('lTuup',d.type); set('lTehing',d.deal); set('lMarkus',d.note); var st0=document.getElementById('lUrlStatus'); if(st0){ st0.style.color='var(--red)'; st0.textContent='⚠ Vana kiirnupp — lohista Seadetest uus nupp ribale (siis loeb AI korrektselt). Praegu täidetud vanal viisil, kontrolli üle.'; } }
   }catch(e){}
 }
 // Tõmba og-pilt, vähenda (~800px, JPEG) ja salvesta Supabase Storage'i → väike + püsiv.
@@ -1618,7 +1618,7 @@ async function storeLeadImage(srcUrl){
 }
 
 async function importExtractAI(d){
-  var st=document.getElementById('nUrlStatus');
+  var st=document.getElementById('lUrlStatus');
   if(st){ st.style.color='var(--tx2)'; st.textContent='AI loeb kuulutust…'; }
   var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","deal":"","price":"","area":"","name":"","phone":"","email":""}. addr=objekti aadress (tänav number, linnaosa, linn). type=üks sõna: Korter, Maja, Äripind või Maa. deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
   var user='Pealkiri: '+(d.ogTitle||'')+'\nKirjeldus: '+(d.ogDesc||'')+'\nHinnavihje: '+(d.priceHint||'')+'\nTelefon: '+(d.tel||'')+'\nE-post: '+(d.email||'')+'\nTekst: '+(d.text||'');
@@ -1627,11 +1627,11 @@ async function importExtractAI(d){
     var jm=(ans||'').match(/\{[\s\S]*\}/);
     var r=jm?JSON.parse(jm[0]):{};
     var set=function(id,val){ var el=document.getElementById(id); if(el&&val!=null&&val!=='') el.value=val; };
-    set('nAadress',r.addr); set('nTuup',r.type); set('nTehing',r.deal);
+    set('lAadress',r.addr); set('lTuup',r.type); set('lTehing',r.deal);
     var _ph=((d.tel||'').split(',')[0]||'').trim()||r.phone; var _em=((d.email||'').split(',')[0]||'').trim()||r.email;
-    set('nNimi',r.name); set('nTel',_ph); set('nEpost',_em);
-    if(r.price) set('nHind',String(r.price).replace(/[^\d]/g,''));
-    if(r.area) set('nPindala',String(r.area).replace(/[^\d.,]/g,'').replace(',','.'));
+    set('lNimi',r.name); set('lTel',_ph); set('lEmail',_em);
+    if(r.price) set('lHind',String(r.price).replace(/[^\d]/g,''));
+    if(r.area) set('lPindala',String(r.area).replace(/[^\d.,]/g,'').replace(',','.'));
     if(st){ st.style.color='var(--ac)'; st.textContent='AI luges kuulutuse — kontrolli ja salvesta. (Kui telefon puudub: vajuta kuulutusel Näita numbrit ja klõpsa nuppu uuesti.)'; }
   }catch(e){ if(st){ st.style.color='var(--red)'; st.textContent='AI ei suutnud lugeda — täida käsitsi'; } }
 }
@@ -1985,9 +1985,10 @@ function histItemHtml(it){
   return '<div class="hist-item"><div class="hist-head" onclick="histToggle(this)"><span>✓ ' + kabiEsc(title) + '</span><span class="call-meta">' + when + '</span></div><div class="hist-detail" style="display:none">' + det + '</div></div>';
 }
 
-function openLead(id) {
+function openLead(id, defaultStatus) {
   if (_wasDragging) return; // Don't open modal if user was dragging
-  CURRENT = LEADS.find(l => l.id === id);
+  var isNew = (id == null);
+  CURRENT = isNew ? { status: defaultStatus || 'uus' } : LEADS.find(l => l.id === id);
   if (!CURRENT) return;
   const l         = CURRENT;
   // 'prospect' on jagatud võti A+M — eelistame M sektsiooni vaate
@@ -1998,7 +1999,7 @@ function openLead(id) {
   const aktIdx    = pipeSteps.findIndex(s => s.key === l.status);
   const leadCalls = CALLS.filter(c => c.lead_id === l.id);
 
-  document.getElementById('leadTitle').textContent = l.contact_name || l.property_address || 'Lead';
+  document.getElementById('leadTitle').textContent = isNew ? 'Uus lead' : (l.contact_name || l.property_address || 'Lead');
 
   const role = localStorage.getItem('ma_role') || 'specialist';
   const isAssistant = role === 'assistant';
@@ -2006,7 +2007,7 @@ function openLead(id) {
 
   const pbar = pipeSteps.map((s, i) => {
     const cls = i < aktIdx ? 'done' : (i === aktIdx ? 'current' : '');
-    const clickable = canChangeSection ? `onclick="changeStatus('${s.key}')"` : '';
+    const clickable = (!isNew && canChangeSection) ? `onclick="changeStatus('${s.key}')"` : '';
     return `<div class="pbar-step ${cls}" ${clickable} style="${!canChangeSection ? 'cursor:default' : ''}">
       <div class="pbar-dot"></div>
       <div class="pbar-lbl">${s.nimi}</div>
@@ -2055,10 +2056,16 @@ function openLead(id) {
 
       <div>
         <div class="sec-lbl" style="margin-top:0">Ajalugu</div>
-        ${timeline}
-        <button class="btn-ghost" style="width:100%;margin-top:6px;font-size:10px" onclick="openKabi()">+ Lisa kõne (Kõneabi)</button>
+        ${isNew
+          ? '<div style="font-size:11px;color:var(--tx2);padding:4px 0">Salvesta lead (Lisa lead), siis saad kohe helistada (Kõneabi) ja näed ajalugu.</div>'
+          : timeline + '<button class="btn-ghost" style="width:100%;margin-top:6px;font-size:10px" onclick="openKabi()">+ Lisa kõne (Kõneabi)</button>'}
       </div>
     </div>`;
+
+  // Jaluse nupud: uue leadi puhul peida Arhiveeri/Mell/Kõneabi (vajavad salvestatud leadi); Salvesta → "Lisa lead"
+  var _fb = function(id, show){ var e=document.getElementById(id); if(e) e.style.display = show ? '' : 'none'; };
+  _fb('leadArchiveBtn', !isNew); _fb('leadMellBtn', !isNew); _fb('leadKabiBtn', !isNew);
+  var _sb = document.getElementById('leadSaveBtn'); if(_sb) _sb.textContent = isNew ? 'Lisa lead' : 'Salvesta';
 
   document.getElementById('leadModal').classList.add('open');
 }
@@ -2099,6 +2106,22 @@ async function saveLead() {
     img_url:          document.getElementById('lImgUrl')?.value.trim()     || null,
     ai_summary:       document.getElementById('lAiSummary')?.value.trim()  || null,
   };
+  if (!CURRENT.id) {
+    // UUS lead → insert
+    if (!patch.contact_name) { toast('Kontakti nimi on kohustuslik'); return; }
+    patch.status = CURRENT.status || 'uus';
+    patch.status_changed_at = new Date().toISOString();
+    patch.created_by  = (typeof USER!=='undefined' && USER) ? USER.id : null;
+    patch.assigned_to = (typeof USER!=='undefined' && USER) ? USER.id : null;
+    const { data, error } = await sb.from('leads').insert(patch).select().single();
+    if (error) { toast('❌ ' + error.message); return; }
+    LEADS.unshift(data); CURRENT = data;
+    if (typeof addXP === 'function') addXP(20);
+    toast('✅ Lead lisatud');
+    closeModal('leadModal');
+    render();
+    return;
+  }
   const { error } = await sb.from('leads').update(patch).eq('id', CURRENT.id);
   if (error) { toast('❌ ' + error.message); return; }
   Object.assign(CURRENT, patch);
@@ -2340,19 +2363,10 @@ async function fetchListingEdit() {
 
 
 function openNew(defaultStatus = 'uus') {
-  ['nUrl','nNimi','nTel','nEpost','nAadress','nHind','nPindala','nMarkus','nKommentaar'].forEach(id => { var el=document.getElementById(id); if(el) el.value = ''; });
-  document.getElementById('nUrlBtn').style.display = 'none';
-  document.getElementById('nUrlStatus').textContent = '';
-  document.getElementById('nUrlStatus').style.color = 'var(--tx2)';
-  document.getElementById('nTuup').value = '';
-  document.getElementById('nTehing').value = '';
-  document.getElementById('nKontaktViis').value = '';
+  // Ühtne aken: uus lead avab sama täisakna mis muutmine (kogu info kohe näha).
   _lastFetchedImg = '';
-  const _prev = document.getElementById('nImgPreview');
-  if (_prev) { _prev.style.display = 'none'; _prev.style.backgroundImage = ''; }
-  document.getElementById('newModal').dataset.status = defaultStatus;
-  document.getElementById('newModal').classList.add('open');
-  setTimeout(() => document.getElementById('nNimi').focus(), 100);
+  openLead(null, defaultStatus);
+  setTimeout(function(){ var n=document.getElementById('lNimi'); if(n) n.focus(); }, 100);
 }
 
 async function saveNewLead() {
