@@ -1355,16 +1355,33 @@ const SB_URL = 'https://iawvsfylguajkoikbdaf.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+// Tagasta värske sessioonitoken. force=true sunnib värskenduse (aegunud tokeni puhul).
+async function freshToken(force){
+  try{
+    if(force) await sb.auth.refreshSession();
+    var sess = await sb.auth.getSession();
+    return (sess.data && sess.data.session) ? sess.data.session.access_token : '';
+  }catch(e){ return ''; }
+}
+
 async function aiFetch(payload){
   try{
-    var sess = await sb.auth.getSession();
-    var token = (sess.data && sess.data.session) ? sess.data.session.access_token : '';
+    var token = await freshToken();
     var r = await fetch('/api/ai', {
       method:'POST',
       headers:{'content-type':'application/json','authorization':'Bearer '+token},
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(30000)
     });
+    if(r.status === 401){          // token aegunud — värskenda ja proovi uuesti
+      token = await freshToken(true);
+      r = await fetch('/api/ai', {
+        method:'POST',
+        headers:{'content-type':'application/json','authorization':'Bearer '+token},
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000)
+      });
+    }
     var j = await r.json();
     if(!r.ok) return 'Viga: ' + (j.error || r.status);
     return j.text || '';
@@ -1978,14 +1995,22 @@ async function archiveLead() {
 // Proxy helper — tõmbab lehe serveripoolse /api/fetch-listing kaudu (usaldusväärne, ei CORS-i)
 async function proxyFetch(url, timeoutMs = 15000) {
   if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;  // lisa puuduv skeem
-  const sess = await sb.auth.getSession();
-  const token = (sess.data && sess.data.session) ? sess.data.session.access_token : '';
-  const r = await fetch('/api/fetch-listing', {
+  let token = await freshToken();
+  let r = await fetch('/api/fetch-listing', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + token },
     body: JSON.stringify({ url: url }),
     signal: AbortSignal.timeout(timeoutMs + 4000)
   });
+  if (r.status === 401) {          // token aegunud — värskenda ja proovi uuesti
+    token = await freshToken(true);
+    r = await fetch('/api/fetch-listing', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + token },
+      body: JSON.stringify({ url: url }),
+      signal: AbortSignal.timeout(timeoutMs + 4000)
+    });
+  }
   const j = await r.json();
   if (!r.ok) throw new Error(j.error || ('status ' + r.status));
   return j.html || '';
@@ -2297,8 +2322,7 @@ async function _fetchImagesRun() {
   // Fetch missing (max 15 to avoid rate-limits) — paralleelselt, max 4 korraga
   const batch = toFetch.slice(0, 15);
   if (!batch.length) return;
-  const sess = await sb.auth.getSession();
-  const token = (sess.data && sess.data.session) ? sess.data.session.access_token : '';
+  const token = await freshToken();
 
   async function fetchOne({ card, url, ck }) {
     try {
