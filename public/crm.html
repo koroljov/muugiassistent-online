@@ -1977,6 +1977,7 @@ async function archiveLead() {
 
 // Proxy helper — tõmbab lehe serveripoolse /api/fetch-listing kaudu (usaldusväärne, ei CORS-i)
 async function proxyFetch(url, timeoutMs = 15000) {
+  if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;  // lisa puuduv skeem
   const sess = await sb.auth.getSession();
   const token = (sess.data && sess.data.session) ? sess.data.session.access_token : '';
   const r = await fetch('/api/fetch-listing', {
