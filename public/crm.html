@@ -1553,8 +1553,10 @@ async function startApp() {
 function _crmGrab(){
   if(!/kv\.ee|kinnisvara24\.ee|city24\.ee|facebook\.com/.test(location.hostname)){ alert('Ava kõigepealt kuulutuse leht (kv.ee, kinnisvara24, city24 või Facebook Marketplace).'); return; }
   function m(p){ var e=document.querySelector('meta[property="'+p+'"]'); return e?e.content:''; }
-  var rev=[].slice.call(document.querySelectorAll('a,button,span,div')).filter(function(e){ return e.children.length===0 && /näita\s*(numbrit|telefoni|nr)/i.test(e.textContent||''); });
-  rev.forEach(function(e){ try{ e.click(); }catch(_){} });
+  var cands=[].slice.call(document.querySelectorAll('a,button,div,span')).filter(function(e){ var t=(e.textContent||'').trim(); return t.length>0 && t.length<40 && /näita\s*(numbrit|telefoni|nr)/i.test(t); });
+  cands.sort(function(a,b){ return a.textContent.length-b.textContent.length; });
+  var didReveal=false;
+  if(cands[0]){ try{ cands[0].click(); didReveal=true; }catch(_){} }
   setTimeout(function(){
     var priceHint='', _bfs=-1;
     document.querySelectorAll('*').forEach(function(el){ if(el.children.length) return; var x=(el.textContent||'').trim(); if(/^[\d\s ]{3,14}€$/.test(x)){ var f=parseFloat(getComputedStyle(el).fontSize)||0; if(f>_bfs){ _bfs=f; priceHint=x; } } });
@@ -1565,7 +1567,7 @@ function _crmGrab(){
     var b64=btoa(unescape(encodeURIComponent(JSON.stringify(d))));
     var w=window.open('https://muugiassistent-online.vercel.app/crm.html#import='+encodeURIComponent(b64),'_blank');
     if(!w){ alert('Luba hüpikaknad selle saidi jaoks ja proovi uuesti.'); }
-  }, rev.length ? 1100 : 0);
+  }, didReveal ? 1500 : 0);
 }
 function setBookmarkletLink(){
   var a = document.getElementById('bmLink');
