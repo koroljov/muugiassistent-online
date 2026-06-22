@@ -1129,6 +1129,14 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
   <!-- MAIN CONTENT -->
   <div id="main">
 
+    <!-- PEHME VIHE -->
+    <div id="tipBar" style="display:none;align-items:center;gap:8px;margin:0 0 8px;padding:7px 10px;background:var(--cd);border:1px solid var(--bd);border-left:3px solid var(--ac);border-radius:6px;font-size:11px;color:var(--tx2);line-height:1.4">
+      <span style="flex-shrink:0">💡</span>
+      <span id="tipBarText" style="flex:1"></span>
+      <span onclick="tipDismissAll()" style="cursor:pointer;text-decoration:underline;white-space:nowrap;flex-shrink:0">Loobu vihjetest</span>
+      <span onclick="document.getElementById('tipBar').style.display='none'" style="cursor:pointer;padding:0 4px;flex-shrink:0" title="Peida">×</span>
+    </div>
+
     <!-- KANBAN -->
     <div class="view active" id="view-kanban"></div>
 
@@ -1193,7 +1201,9 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
         <div class="set-sec">Abi</div>
         <div>
-          <button class="btn-ghost" style="width:100%;font-size:11px" onclick="showOnboardingFromSettings()">Näita tutvustust uuesti</button>
+          <button class="btn-ghost" style="width:100%;font-size:11px;margin-bottom:6px" onclick="showOnboardingFromSettings()">Näita tutvustust uuesti</button>
+          <button class="btn-ghost" style="width:100%;font-size:11px" onclick="tipsEnable()">Lülita pehmed vihjed sisse</button>
+          <div style="font-size:10px;color:var(--tx2);margin-top:4px;text-align:center">Pehmed vihjed: <span id="tipToggleState">sees</span></div>
         </div>
 
         <div class="set-sec">Punktid</div>
@@ -2428,6 +2438,36 @@ function setView(v, el) {
   document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
   if (el) el.classList.add('active');
   if (v === 'stats') renderStats();
+  showTip(v);
+}
+
+// ---- Pehmed vihjed (jäävad peale kuni kasutaja loobub) ----
+var TIP_TEXTS = {
+  list:  'Nimekiri: kõik leadid korraga. Klõpsa real, et avada lead ja näha ajalugu.',
+  tasks: 'Ülesanded: siia kogunevad järelkõned. Alusta päeva siit — kellele pead täna tagasi helistama.',
+  stats: 'Statistika: kogutud kõned muutuvad pildiks. Mida rohkem kõnesid salvestad, seda täpsem ülevaade.'
+};
+function tipsOff(){ try{ return localStorage.getItem('tips_off') === '1'; }catch(e){ return false; } }
+function showTip(key){
+  var bar = document.getElementById('tipBar'); if(!bar) return;
+  if(tipsOff() || !TIP_TEXTS[key]){ bar.style.display = 'none'; return; }
+  var t = document.getElementById('tipBarText'); if(t) t.textContent = TIP_TEXTS[key];
+  bar.style.display = 'flex';
+}
+function tipDismissAll(){
+  try{ localStorage.setItem('tips_off', '1'); }catch(e){}
+  var b = document.getElementById('tipBar'); if(b) b.style.display = 'none';
+  var k = document.getElementById('kabiTipBar'); if(k) k.style.display = 'none';
+  syncTipToggle();
+}
+function tipsEnable(){
+  try{ localStorage.removeItem('tips_off'); }catch(e){}
+  syncTipToggle();
+  var ev = document.querySelector('.tab.active');
+  showTip(ev ? (ev.textContent.indexOf('Nimekiri')>-1?'list':ev.textContent.indexOf('Ülesanded')>-1?'tasks':ev.textContent.indexOf('Statistika')>-1?'stats':'kanban') : 'kanban');
+}
+function syncTipToggle(){
+  var s = document.getElementById('tipToggleState'); if(s) s.textContent = tipsOff() ? 'väljas' : 'sees';
 }
 
 // ============================================================
@@ -2465,6 +2505,7 @@ function toggleSet() {
   if (panel.classList.contains('open')) {
     const role = localStorage.getItem('ma_role') || 'specialist';
     if (role === 'specialist') loadUsers();
+    syncTipToggle();
   }
 }
 
@@ -2666,6 +2707,7 @@ function openKabi(){
   var ks = document.getElementById('kabiScript'); if(ks) ks.textContent = USER_SCRIPT || DEFAULT_SCRIPT;
   var af = document.getElementById('kabiActForm'); if(af) af.style.display='none';
   document.querySelectorAll('#kabiActTypes .kabi-rz').forEach(function(x){ x.classList.remove('sel'); });
+  var ktb = document.getElementById('kabiTipBar'); if(ktb) ktb.style.display = tipsOff() ? 'none' : 'flex';
   document.getElementById('kabiBack').classList.add('open');
   document.getElementById('kabiPanel').classList.add('open');
   kabiRestoreBox();
@@ -3009,6 +3051,12 @@ function kabiRestoreBox(){
     <button class="kabi-x" onclick="closeKabi()">×</button>
   </div>
   <div class="kabi-body" id="kabiBody">
+    <div id="kabiTipBar" style="display:none;align-items:center;gap:8px;margin:0 0 10px;padding:7px 10px;background:var(--cd);border:1px solid var(--bd);border-left:3px solid var(--ac);border-radius:6px;font-size:11px;color:var(--tx2);line-height:1.4">
+      <span style="flex-shrink:0">💡</span>
+      <span style="flex:1">Käi ülevalt alla: avalöök, inimtüüp, andmekorje. Klõpsa seda, mida klient räägib. Lõpus vajuta Salvesta kõne.</span>
+      <span onclick="tipDismissAll()" style="cursor:pointer;text-decoration:underline;white-space:nowrap;flex-shrink:0">Loobu vihjetest</span>
+      <span onclick="document.getElementById('kabiTipBar').style.display='none'" style="cursor:pointer;padding:0 4px;flex-shrink:0" title="Peida">×</span>
+    </div>
     <div class="kabi-sec">
       <div class="kabi-sec-lbl">1 · Avalöök</div>
       <div class="kabi-script" id="kabiScript">"Tere! Olen [Nimi], müügiassistent Uus Maa Arenas. Nägin teie kuulutust ja teen kaardistust omanike seas — kuidas müük turul päriselt liigub ja mis täna takistab. Kas teil on 1–2 minutit?"</div>
