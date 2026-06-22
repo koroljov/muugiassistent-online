@@ -2072,6 +2072,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Pindala m²</span><input class="kv-inp" id="lPindala" type="number" value="${l.area||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup"><option value="">—</option>${['Korter','Maja','Äripind','Maa'].map(o => `<option${l.property_type===o?' selected':''}>${o}</option>`).join('')}</select></div>
         <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
+        <div class="kv-row"><span class="kv-lbl">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:5px">${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b> · ` : ''}<a href="https://www.maaamet.ee/kinnisvara/htraru/" target="_blank" rel="noopener" style="color:var(--ac);text-decoration:none">Maa-amet tehinguhinnad →</a></div></div>
         <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
           <select class="kv-inp" id="lKontaktViis">
             <option value="">—</option>
@@ -2772,6 +2773,7 @@ async function sendHelp(){
   var ans=document.getElementById('helpAnswer'); ans.style.color='var(--tx2)'; ans.textContent='Mõtlen…';
   var sys='Oled selle CRM-i (Müügiassistent, kinnisvaramüük) abiline. Vasta eesti keeles, lühidalt ja praktiliselt, kuidas CRM-i kasutada. FUNKTSIOONID: Vahekaardid — Töövoog (kanban, lohista kaarte etappide vahel), Nimekiri, Ülesanded (järelkõned/tegevused), Statistika. Lead lisamine: "+ Uus lead" (avab täisakna) VÕI kuulutuse kiirnupp (Seaded → Kuulutuse kiirlisamine → lohista nupp brauseri ribale; kuulutuse lehel klõpsa nuppu → AI täidab aadressi/hinna/pindala/nime/telefoni/pildi). Lead avades: Kõneabi (kõne ajal tugi — avalöök, inimtüüp, andmekorje klõpsuga, AI väljundid: kokkuvõte/kuulutuse tagasiside/kliendikiri), Küsi Mellilt (AI nõu ja sõnumid), ajalugu, Salvesta. Seaded: oma kõneskript, kiirnupp, pehmed vihjed, tutvustus. Statistikas näeb kogutud kõneandmete mustreid. Kui küsimus pole CRM-i kohta, ütle lühidalt et aitad CRM-i kasutamisega.'+AI_STIIL;
   var r=await aiFetch({ system:sys, max_tokens:400, messages:[{role:'user',content:q}] });
+  r=(r||'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').replace(/^#{1,6}\s*/gm,'').replace(/^\s*[-*]\s+/gm,'• ');
   ans.style.color='var(--tx)'; ans.textContent=r;
 }
 
