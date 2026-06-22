@@ -2034,6 +2034,9 @@ function openLead(id) {
         <div class="kv-row"><span class="kv-lbl">E-post</span><input class="kv-inp" id="lEmail" value="${esc(l.email)}"></div>
         <div class="kv-row"><span class="kv-lbl">Aadress</span><input class="kv-inp" id="lAadress" value="${esc(l.property_address)}"></div>
         <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Pindala m²</span><input class="kv-inp" id="lPindala" type="number" value="${l.area||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup"><option value="">—</option>${['Korter','Maja','Äripind','Maa'].map(o => `<option${l.property_type===o?' selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
         <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
           <select class="kv-inp" id="lKontaktViis">
             <option value="">—</option>
@@ -2086,6 +2089,9 @@ async function saveLead() {
     email:            document.getElementById('lEmail').value.trim()       || null,
     property_address: document.getElementById('lAadress').value.trim()     || null,
     price:            parseFloat(document.getElementById('lHind').value)   || null,
+    area:             parseFloat(document.getElementById('lPindala').value) || null,
+    property_type:    document.getElementById('lTuup').value               || null,
+    deal_type:        document.getElementById('lTehing').value             || null,
     contact_method:   document.getElementById('lKontaktViis').value        || null,
     next_action_at:   document.getElementById('lNext').value               || null,
     listing_note:     document.getElementById('lUrl').value.trim() || document.getElementById('lMarkus').value.trim() || null,
