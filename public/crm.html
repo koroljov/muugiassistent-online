@@ -344,6 +344,9 @@ input, select, textarea, button {
 .ps-n { font-size: 11px; font-weight: 600; }
 .ps-l { font-size: 10px; color: var(--tx2); }
 
+.help-chip { font-size: 10px; background: var(--cd); border: 1px solid var(--bd); border-radius: 12px; padding: 3px 9px; cursor: pointer; color: var(--tx2); }
+.help-chip:hover { border-color: var(--ac); color: var(--tx); }
+
 .pipe-eur {
   margin-left: auto;
   display: flex;
@@ -1261,8 +1264,11 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 <div class="modal-overlay" id="leadModal">
   <div class="modal">
     <div class="modal-head">
-      <div class="modal-title" id="leadTitle">Lead</div>
-      <button class="modal-x" onclick="closeModal('leadModal')">×</button>
+      <div class="modal-title" id="leadTitle">Kontakt</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="modal-x" onclick="openHelp('lead')" title="Abi — küsi kuidas" style="font-size:16px">?</button>
+        <button class="modal-x" onclick="closeModal('leadModal')">×</button>
+      </div>
     </div>
     <div class="modal-body" id="leadBody"></div>
     <div class="modal-foot">
@@ -1375,7 +1381,8 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
       <button class="modal-x" onclick="closeModal('helpModal')">×</button>
     </div>
     <div class="modal-body">
-      <div style="font-size:11px;color:var(--tx2);margin-bottom:8px;line-height:1.5">Küsi, kuidas CRM-i kasutada (nt "kuidas lisada kuulutus", "mis on Kõneabi"). AI vastab.</div>
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:8px;line-height:1.5">Küsi, kuidas CRM-i kasutada. Vali valmisküsimus või kirjuta ise.</div>
+      <div id="helpPresets" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
       <div id="helpAnswer" style="font-size:12px;line-height:1.6;white-space:pre-wrap;min-height:36px;margin-bottom:10px;color:var(--tx2)"></div>
       <div style="display:flex;gap:6px">
         <input class="inp" id="helpInput" placeholder="Kirjuta küsimus..." onkeydown="if(event.key==='Enter')sendHelp()" style="flex:1">
@@ -2784,12 +2791,18 @@ document.addEventListener('click', e => {
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
 // "?" Abi — kontekstipõhine AI küsi-vastus CRM-i kasutamise kohta
-function openHelp(){
+function openHelp(ctx){
   var i=document.getElementById('helpInput'); if(i) i.value='';
   var a=document.getElementById('helpAnswer'); if(a){ a.textContent=''; a.style.color='var(--tx2)'; }
+  var presets = (ctx==='lead')
+    ? ['Mis on Kõneabi ja kuidas kasutada?','Kuidas salvestada kõne?','Kuidas saata kliendile kiri?','Mida selle kontakti kohta täita?']
+    : ['Kuidas lisada kuulutus kiirnupuga?','Mis on müügitoru etapid?','Kuidas kasutada Kõneabi?','Kuidas lisada uus kontakt?'];
+  var pc=document.getElementById('helpPresets');
+  if(pc){ pc.innerHTML = presets.map(function(q){ return '<span class="help-chip" onclick="helpAsk(this.textContent)">'+esc(q)+'</span>'; }).join(''); }
   document.getElementById('helpModal').classList.add('open');
   setTimeout(function(){ var el=document.getElementById('helpInput'); if(el) el.focus(); }, 100);
 }
+function helpAsk(q){ var i=document.getElementById('helpInput'); if(i) i.value=q; sendHelp(); }
 async function sendHelp(){
   var q=(document.getElementById('helpInput').value||'').trim(); if(!q) return;
   var ans=document.getElementById('helpAnswer'); ans.style.color='var(--tx2)'; ans.textContent='Mõtlen…';
