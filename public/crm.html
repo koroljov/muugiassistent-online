@@ -1599,17 +1599,35 @@ function setBookmarkletLink(){
   if(a){ a.setAttribute('href', 'javascript:(' + _crmGrab.toString() + ')();'); }
 }
 
-// Bookmarkletist tulnud andmed: #import=<base64 JSON> → ava Uus lead vorm eeltäidetuna.
+// Kuulutuse normaliseeritud võti (host + objekti ID) — sama objekti eri URL-id (lühike vs slug) annavad sama võtme.
+function listingKey(url){
+  if(!url) return '';
+  try{
+    var u = new URL(/^https?:\/\//i.test(url) ? url : 'https://' + url);
+    var host = u.hostname.replace(/^www\./,'');
+    var nums = u.pathname.match(/\d{4,}/g) || [];
+    var id = nums.length ? nums[nums.length-1] : u.pathname.replace(/\/+$/,'');
+    return host + '|' + id;
+  }catch(e){ return String(url).toLowerCase().replace(/[#?].*$/,'').replace(/\/+$/,''); }
+}
+
+// Bookmarkletist tulnud andmed: #import=<base64 JSON> → ava Uus lead vorm eeltäidetuna (või olemasolev, kui objekt juba CRM-is).
 function importFromHash(){
   try{
     var m=(location.hash||'').match(/[#&]import=([^&]+)/);
     if(!m) return;
     var d=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
     history.replaceState(null,'',location.pathname+location.search);
-    if(typeof openNew==='function') openNew();
-    var set=function(id,val){ var el=document.getElementById(id); if(el&&val!=null&&val!=='') el.value=val; };
+    // DUBLEERIMISE TUVASTUS: kui sama objekt juba CRM-is → ava olemasolev (ei dubleeri); täida ainult tühjad väljad
+    var _key = listingKey(d.url);
+    var _existing = _key ? LEADS.find(function(l){ return l.listing_note && listingKey(l.listing_note) === _key; }) : null;
+    var onlyEmpty = !!_existing;
+    window._importOnlyEmpty = onlyEmpty;
+    if(_existing){ if(typeof openLead==='function') openLead(_existing.id); if(typeof toast==='function') toast('Objekt on juba CRM-is — avasin olemasoleva (ei dubleerinud)'); }
+    else { if(typeof openNew==='function') openNew(); }
+    var set=function(id,val){ var el=document.getElementById(id); if(!el||val==null||val==='') return; if(onlyEmpty && el.value && String(el.value).trim()!=='') return; el.value=val; };
     set('lUrl',d.url);
-    if(d.img){ var prev=document.getElementById('lImgPreview'); if(prev){ prev.style.backgroundImage='url('+d.img+')'; prev.style.display='block'; } var iu=document.getElementById('lImgUrl'); if(iu) iu.value=d.img; storeLeadImage(d.img).then(function(u){ if(u){ var iu2=document.getElementById('lImgUrl'); if(iu2) iu2.value=u; var pv=document.getElementById('lImgPreview'); if(pv) pv.style.backgroundImage='url('+u+')'; } }); }
+    if(d.img && !(onlyEmpty && (document.getElementById('lImgUrl')||{}).value)){ var prev=document.getElementById('lImgPreview'); if(prev){ prev.style.backgroundImage='url('+d.img+')'; prev.style.display='block'; } var iu=document.getElementById('lImgUrl'); if(iu) iu.value=d.img; storeLeadImage(d.img).then(function(u){ if(u){ var iu2=document.getElementById('lImgUrl'); if(iu2) iu2.value=u; var pv=document.getElementById('lImgPreview'); if(pv) pv.style.backgroundImage='url('+u+')'; } }); }
     if(d.v===2){ importExtractAI(d); }
     else { set('lAadress',d.addr); set('lHind',d.price?String(d.price).replace(/[^\d]/g,''):''); set('lTuup',d.type); set('lTehing',d.deal); set('lMarkus',d.note); var st0=document.getElementById('lUrlStatus'); if(st0){ st0.style.color='var(--red)'; st0.textContent='⚠ Vana kiirnupp — lohista Seadetest uus nupp ribale (siis loeb AI korrektselt). Praegu täidetud vanal viisil, kontrolli üle.'; } }
   }catch(e){}
@@ -1651,7 +1669,8 @@ async function importExtractAI(d){
     var ans=await aiFetch({ system:sys, max_tokens:300, messages:[{role:'user',content:user}] });
     var jm=(ans||'').match(/\{[\s\S]*\}/);
     var r=jm?JSON.parse(jm[0]):{};
-    var set=function(id,val){ var el=document.getElementById(id); if(el&&val!=null&&val!=='') el.value=val; };
+    var oe = !!window._importOnlyEmpty;
+    var set=function(id,val){ var el=document.getElementById(id); if(!el||val==null||val==='') return; if(oe && el.value && String(el.value).trim()!=='') return; el.value=val; };
     set('lAadress',r.addr); set('lTuup',r.type); set('lTehing',r.deal);
     var _ph=((d.tel||'').split(',')[0]||'').trim()||r.phone; var _em=((d.email||'').split(',')[0]||'').trim()||r.email;
     set('lNimi',r.name); set('lTel',_ph); set('lEmail',_em);
