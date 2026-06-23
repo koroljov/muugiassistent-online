@@ -1253,7 +1253,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 </div><!-- /app -->
 
 <!-- ADD BTN -->
-<button id="addBtn" onclick="openNew()" style="display:none">+ Uus lead</button>
+<button id="addBtn" onclick="openNew()" style="display:none">+ Uus kontakt</button>
 
 <!-- ============================================================
      LEAD MODAL
@@ -1455,7 +1455,7 @@ const STAATUSED = [
   { key: 'pigem avatud',     nimi: 'Avatud (vana)',   color: '#94a3b8', section: 'A', xp: 0,  assistantDrop: false }, // legacy DB andmed
   { key: 'tehing',           nimi: 'Tehing (vana)',   color: '#a78bfa', section: 'A', xp: 0,  assistantDrop: false },
   // Prospect = sama võti 'prospect' mis Edasta → . Nähtav Minu pipeline'is.
-  { key: 'prospect',         nimi: 'Prospect',        color: '#818cf8', section: 'M', xp: 0   },
+  { key: 'prospect',         nimi: 'Potentsiaalne',   color: '#818cf8', section: 'M', xp: 0   },
   { key: 'k_kontakt',        nimi: 'Kontakt',         color: '#60a5fa', section: 'M', xp: 0   },
   { key: 'leping',           nimi: 'Leping',                color: '#3b82f6', section: 'M', xp: 100 },
   { key: 'ettevalmistus',    nimi: 'Ettevalmistus',         color: '#8b5cf6', section: 'M', xp: 150 },
@@ -1856,7 +1856,7 @@ function renderKanban() {
   secA.id = 'kanban-sec-A';
   const colsA = document.createElement('div');
   colsA.className = 'kol-sec-cols';
-  const labelA = `<div class="kol-sec-label"><div class="sec-dot"></div>Assistendi pipeline</div>`;
+  const labelA = `<div class="kol-sec-label"><div class="sec-dot"></div>Assistendi müügitoru</div>`;
   STAATUSED.filter(s => s.section === 'A').forEach(st => {
     // Assistent saab dropida ainult kui assistantDrop=true; spetsialist saab alati
     const readOnly = isAssistant ? !st.assistantDrop : false;
@@ -1876,7 +1876,7 @@ function renderKanban() {
   secM.id = 'kanban-sec-M';
   const colsM = document.createElement('div');
   colsM.className = 'kol-sec-cols';
-  const labelM = `<div class="kol-sec-label"><div class="sec-dot" style="background:var(--ac)"></div>Minu pipeline</div>`;
+  const labelM = `<div class="kol-sec-label"><div class="sec-dot" style="background:var(--ac)"></div>Minu müügitoru</div>`;
   STAATUSED.filter(s => s.section === 'M').forEach(st => {
     colsM.appendChild(makeKol(st, isAssistant)); // assistent ei saa M-i dropida
   });
@@ -2053,7 +2053,7 @@ function openLead(id, defaultStatus) {
   const aktIdx    = pipeSteps.findIndex(s => s.key === l.status);
   const leadCalls = CALLS.filter(c => c.lead_id === l.id);
 
-  document.getElementById('leadTitle').textContent = isNew ? 'Uus lead' : (l.contact_name || l.property_address || 'Lead');
+  document.getElementById('leadTitle').textContent = isNew ? 'Uus kontakt' : (l.contact_name || l.property_address || 'Kontakt');
 
   const role = localStorage.getItem('ma_role') || 'specialist';
   const isAssistant = role === 'assistant';
