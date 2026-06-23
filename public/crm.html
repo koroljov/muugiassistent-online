@@ -2952,6 +2952,7 @@ var KABI_TIPS = {"Juht":"Otse asjasse. Numbrid. Austa aega. Ära lobise.","Anal�
 function openKabi(){
   if(!CURRENT){ alert('Ava esmalt lead.'); return; }
   KABI = { lead_id: CURRENT.id };
+  window._kabiOutputs = {};
   document.getElementById('kabiSub').textContent = CURRENT.property_address || 'Lead';
   var rz = document.getElementById('kabiRzOut'); if(rz){ rz.style.display='none'; rz.innerHTML=''; }
   var g = document.getElementById('kabiGuide'); if(g) g.style.display='none';
@@ -3064,10 +3065,22 @@ async function saveKabiCall(){
   rec.caller_id = (typeof USER !== 'undefined' && USER) ? USER.id : null;
   var q = document.getElementById('kabiQuote');
   if(q && q.value.trim()) rec.important_quote = q.value.trim();
+  var O = window._kabiOutputs || {};
+  var fbLbl = { summary:'KÕNE KOKKUVÕTE', listing:'KUULUTUSE TAGASISIDE', advice:'AI SOOVITUS', letter:'KIRI KLIENDILE' };
+  var fbParts = ['summary','listing','advice','letter'].filter(function(k){ return O[k]; }).map(function(k){ return fbLbl[k] + ':\n' + O[k]; });
+  if(fbParts.length) rec.ai_feedback = fbParts.join('\n\n———\n\n');
   var btn = document.getElementById('kabiSaveBtn'); if(btn) btn.disabled = true;
   var res = await sb.from('calls').insert(rec).select().single();
   if(res.error){ toast('❌ Viga: ' + res.error.message); if(btn) btn.disabled = false; return; }
   if(typeof CALLS !== 'undefined' && CALLS && CALLS.unshift) CALLS.unshift(res.data);
+  if(O.summary && CURRENT && CURRENT.id){
+    try{
+      await sb.from('leads').update({ ai_summary: O.summary }).eq('id', CURRENT.id);
+      CURRENT.ai_summary = O.summary;
+      var _li = (typeof LEADS !== 'undefined' && LEADS) ? LEADS.find(function(x){ return x.id === CURRENT.id; }) : null;
+      if(_li) _li.ai_summary = O.summary;
+    }catch(e){}
+  }
   if(typeof addXP === 'function') addXP(35);
   toast('📞 Kõne salvestatud · +35 xp');
   closeKabi();
@@ -3122,7 +3135,7 @@ async function kabiGen(kind){
   kabiShowOut(title, 'Genereerin...');
   var out = await kabiAI(sys, 'Andmed:\n' + kabiContext(), model);
   if(out === null) kabiShowOut(title, 'AI ei vastanud. Kontrolli, kas Anthropic API võti on Seadetes (AI ja kõneabi) salvestatud ja kontol on krediit.');
-  else kabiShowOut(title, out);
+  else { kabiShowOut(title, out); if(window._kabiOutputs) window._kabiOutputs[kind] = out; }
 }
 
 var KABI_ACT_TYPE = '';
