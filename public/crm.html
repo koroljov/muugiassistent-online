@@ -1131,6 +1131,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     <div class="tab" onclick="setView('list',this)">☰ Nimekiri</div>
     <div class="tab" onclick="setView('tasks',this)">✓ Ülesanded</div>
     <div class="tab" onclick="setView('stats',this)">📊 Statistika</div>
+    <div class="tab" onclick="setView('manager',this)">📈 Juhtimine</div>
   </div>
 
   <!-- PIPELINE BAR -->
@@ -1176,6 +1177,11 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     <!-- STATS -->
     <div class="view" id="view-stats">
       <div id="statsWrap" style="padding:8px 4px"></div>
+    </div>
+
+    <!-- JUHTIMINE (müügijuhi vaade) -->
+    <div class="view" id="view-manager">
+      <div id="mgrWrap" style="padding:8px 4px"></div>
     </div>
 
     <!-- SETTINGS PANEL -->
@@ -2667,12 +2673,98 @@ async function statsAnalyze(){
   out.innerHTML = '<div style="font-size:11px;color:var(--tx2);margin-bottom:6px">AI turuanalüüs (' + n + ' kõne põhjal)</div><div style="font-size:12px;line-height:1.65;white-space:pre-wrap;color:var(--tx)">' + kabiEsc(res) + '</div>';
 }
 
+// ============================================================
+// MÜÜGIJUHI VAADE (S3) — toru tervis paari numbriga, olemasolevatest andmetest
+// ============================================================
+// Etapi tõenäosus = HINNANG kaalutud prognoosi jaoks (mitte lubadus). Läbipaistev: % kuvatakse.
+var MGR_STAGES = [
+  { key:'prospect',        nimi:'Potentsiaalne',         p:0.10 },
+  { key:'k_kontakt',       nimi:'Kontakt',               p:0.25 },
+  { key:'leping',          nimi:'Leping',                p:0.45 },
+  { key:'ettevalmistus',   nimi:'Ettevalmistus',         p:0.60 },
+  { key:'ostja',           nimi:'Ostja',                 p:0.55 },
+  { key:'t_ettevalmistus', nimi:'Tehingu ettevalmistus', p:0.80 },
+  { key:'k_tehing',        nimi:'Tehing',                p:1.00 }
+];
+function mgrHero(label, big, sub){
+  return '<div style="flex:1;min-width:140px;background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:12px 14px">'
+    + '<div style="font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">'+label+'</div>'
+    + '<div style="font-size:22px;font-weight:700;color:var(--tx);margin:3px 0">'+big+'</div>'
+    + '<div style="font-size:10px;color:var(--tx2)">'+sub+'</div></div>';
+}
+function mgrLine(label, val){
+  return '<div style="display:flex;justify-content:space-between;padding:6px 2px;font-size:12px;border-bottom:1px solid var(--bd)"><span style="color:var(--tx2)">'+label+'</span><span style="font-weight:600">'+val+'</span></div>';
+}
+function renderManager(){
+  var w = document.getElementById('mgrWrap'); if(!w) return;
+  var prob = {}; MGR_STAGES.forEach(function(s){ prob[s.key] = s.p; });
+  var mLeads = LEADS.filter(function(l){ return prob[l.status] != null; });
+  var won    = mLeads.filter(function(l){ return l.status === 'k_tehing'; });
+  var active = mLeads.filter(function(l){ return l.status !== 'k_tehing'; });
+  var activeEur   = active.reduce(function(s,l){ return s + leadEur(l); }, 0);
+  var forecastEur = mLeads.reduce(function(s,l){ return s + leadEur(l) * prob[l.status]; }, 0);
+
+  var html = '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">'
+    + mgrHero('Aktiivne toru', eur(activeEur) || '0 €', active.length + ' objekti')
+    + mgrHero('Prognoos (hinnang)', eur(Math.round(forecastEur)) || '0 €', 'kaalutud etapi tõenäosusega')
+    + '</div>';
+
+  if(mLeads.length === 0){
+    w.innerHTML = html + '<div class="stat-empty" style="padding:16px">Müügitorus pole veel objekte. Kui edastad leadi "Potentsiaalne" etappi, ilmub see siia.</div>';
+    return;
+  }
+
+  var maxCnt = Math.max.apply(null, MGR_STAGES.map(function(s){ return mLeads.filter(function(l){ return l.status===s.key; }).length; }).concat([1]));
+  var rows = MGR_STAGES.map(function(s){
+    var ls  = mLeads.filter(function(l){ return l.status===s.key; });
+    var cnt = ls.length;
+    var e   = ls.reduce(function(a,l){ return a + leadEur(l); }, 0);
+    var pct = Math.round(cnt/maxCnt*100);
+    return '<div class="stat-row"><div class="stat-bar" style="width:'+pct+'%"></div>'
+      + '<span class="stat-lbl">'+s.nimi+' <span style="opacity:.45">'+Math.round(s.p*100)+'%</span></span>'
+      + '<span class="stat-val">'+cnt+(e? ' · '+eur(e):'')+'</span></div>';
+  }).join('');
+  html += '<div class="stat-block"><div class="stat-title">Etapid — kus objektid on</div>'+rows+'</div>';
+
+  var today = new Date(); today.setHours(0,0,0,0); var todayMs = today.getTime();
+  function naTime(l){ if(!l.next_action_at) return null; var d=new Date(l.next_action_at); d.setHours(0,0,0,0); return d.getTime(); }
+  var attn = active.filter(function(l){ var t=naTime(l); return t===null || t < todayMs; });
+  attn.sort(function(a,b){ var ta=naTime(a), tb=naTime(b); if(ta===null) return 1; if(tb===null) return -1; return ta-tb; });
+  var attnRows = attn.slice(0,8).map(function(l){
+    var t = naTime(l);
+    var tag = t===null ? '<span style="color:#f59e0b">pole järgmist sammu</span>' : (t<todayMs ? '<span style="color:#ef4444">üle aja</span>' : '');
+    var st = STAATUSED.find(function(s){ return s.key===l.status && s.section==='M'; });
+    return '<div onclick="openLead(\''+l.id+'\')" style="display:flex;justify-content:space-between;gap:8px;padding:7px 8px;border-bottom:1px solid var(--bd);cursor:pointer;font-size:12px">'
+      + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+kabiEsc(l.contact_name||l.property_address||'Objekt')+' <span style="opacity:.5">· '+(st?st.nimi:l.status)+'</span></span>'
+      + '<span style="white-space:nowrap;font-size:11px">'+tag+'</span></div>';
+  }).join('');
+  if(!attnRows) attnRows = '<div class="stat-empty">Kõik objektid on järeltegevusega kaetud.</div>';
+  html += '<div class="stat-block"><div class="stat-title">Vajab tähelepanu ('+attn.length+')</div>'+attnRows+'</div>';
+
+  var weekAhead = todayMs + 7*86400000;
+  var dueSoon = active.filter(function(l){ var t=naTime(l); return t!==null && t>=todayMs && t<=weekAhead; }).length;
+  var overdue = active.filter(function(l){ var t=naTime(l); return t!==null && t<todayMs; }).length;
+  var wkAgo = Date.now() - 7*86400000;
+  var callsWk = CALLS.filter(function(c){ var d=c.call_time? new Date(c.call_time).getTime():0; return d>=wkAgo; }).length;
+  var winRate = mLeads.length ? Math.round(won.length/mLeads.length*100) : 0;
+  var small = mLeads.length < 10;
+  html += '<div class="stat-block"><div class="stat-title">Nädal</div>'
+    + mgrLine('Üle aja', overdue + ' objekti')
+    + mgrLine('Järgmise 7 päeva sees', dueSoon + ' tegevust')
+    + mgrLine('Kõnesid viimase 7 päeva jooksul', String(callsWk))
+    + mgrLine('Võiduprotsent', winRate + '% (' + won.length + '/' + mLeads.length + ')' + (small ? ' · esialgne' : ''))
+    + '</div>';
+
+  w.innerHTML = html;
+}
+
 function setView(v, el) {
   document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
   document.getElementById('view-' + v).classList.add('active');
   document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
   if (el) el.classList.add('active');
   if (v === 'stats') renderStats();
+  if (v === 'manager') renderManager();
   showTip(v);
 }
 
@@ -2680,7 +2772,8 @@ function setView(v, el) {
 var TIP_TEXTS = {
   list:  'Nimekiri: kõik leadid korraga. Klõpsa real, et avada lead ja näha ajalugu.',
   tasks: 'Ülesanded: siia kogunevad järelkõned. Alusta päeva siit — kellele pead täna tagasi helistama.',
-  stats: 'Statistika: kogutud kõned muutuvad pildiks. Mida rohkem kõnesid salvestad, seda täpsem ülevaade.'
+  stats: 'Statistika: kogutud kõned muutuvad pildiks. Mida rohkem kõnesid salvestad, seda täpsem ülevaade.',
+  manager: 'Juhtimine: müügitoru tervis ühe pilguga — aktiivne väärtus, prognoos, mis etapis leadid on ja mis vajab täna tähelepanu. Prognoos on hinnang etapi tõenäosuse järgi, mitte lubadus.'
 };
 function tipsOff(){ try{ return localStorage.getItem('tips_off') === '1'; }catch(e){ return false; } }
 function showTip(key){
@@ -2699,7 +2792,7 @@ function tipsEnable(){
   try{ localStorage.removeItem('tips_off'); }catch(e){}
   syncTipToggle();
   var ev = document.querySelector('.tab.active');
-  showTip(ev ? (ev.textContent.indexOf('Nimekiri')>-1?'list':ev.textContent.indexOf('Ülesanded')>-1?'tasks':ev.textContent.indexOf('Statistika')>-1?'stats':'kanban') : 'kanban');
+  showTip(ev ? (ev.textContent.indexOf('Nimekiri')>-1?'list':ev.textContent.indexOf('Ülesanded')>-1?'tasks':ev.textContent.indexOf('Statistika')>-1?'stats':ev.textContent.indexOf('Juhtimine')>-1?'manager':'kanban') : 'kanban');
 }
 function syncTipToggle(){
   var s = document.getElementById('tipToggleState'); if(s) s.textContent = tipsOff() ? 'väljas' : 'sees';
