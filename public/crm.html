@@ -224,6 +224,14 @@ input, select, textarea, button {
 }
 .ib:hover { background: var(--bd); color: var(--tx); }
 
+/* "Mis on uut" osuti — pulseeriv esiletõst */
+@keyframes ma-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(40,168,94,0.55); }
+  70%  { box-shadow: 0 0 0 9px rgba(40,168,94,0); }
+  100% { box-shadow: 0 0 0 0 rgba(40,168,94,0); }
+}
+.ma-pulse { animation: ma-pulse 1s ease-out 3; border-radius: 6px; }
+
 /* COLOR PICKER */
 .cpr { position: relative; }
 
@@ -1115,6 +1123,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
           </div>
         </div>
       </div>
+      <button class="ib" id="newsBtn" onclick="openNews()" title="Mis on uut" style="position:relative">🔔<span id="newsDot" style="display:none;position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#ef4444;border:1.5px solid var(--bg)"></span></button>
       <button class="ib" onclick="openHelp()" title="Abi — küsi kuidas">?</button>
       <button class="ib" id="modeBtn" onclick="toggleMode()" title="Hele/Tume">☀</button>
       <button class="ib" onclick="toggleSet()" title="Seaded">⚙</button>
@@ -1398,6 +1407,19 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
   </div>
 </div>
 
+<!-- MIS ON UUT -->
+<div class="modal-overlay" id="newsModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <div class="modal-title">Mis on uut</div>
+      <button class="modal-x" onclick="closeModal('newsModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="newsList"></div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -1585,6 +1607,7 @@ async function startApp() {
   await loadData();
   importFromHash();   // bookmarkletist tulnud kuulutuse andmed → ava "Uus lead" täidetuna
   setBookmarkletLink();
+  checkWhatsNew();    // "Mis on uut" — näita täppi, kui on nägemata suuri uuendusi
 }
 
 // See funktsioon jookseb portaali lehel (bookmarkletina). Peab olema iseseisev, ilma CRM-i globaalideta.
@@ -2903,6 +2926,60 @@ async function sendHelp(){
   var r=await aiFetch({ system:sys, max_tokens:400, messages:[{role:'user',content:q}] });
   r=(r||'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').replace(/^#{1,6}\s*/gm,'').replace(/^\s*[-*]\s+/gm,'• ');
   ans.style.color='var(--tx)'; ans.textContent=r;
+}
+
+// ============================================================
+// "MIS ON UUT" — uuenduste teavitus + juhendamise vundament
+// ÜKS TÕEALLIKAS: iga uuendus on üks kirje. Sellest toituvad teavitus + "näita kus".
+// Forward-hook: hiljem saab sama kirje külge riputada pikema abiteksti ("?") ja
+// sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
+// Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
+// ============================================================
+var APP_BUILD = 3;
+var CHANGELOG = [
+  { v:3, major:true, date:'24.06.2026', title:'Juhtimine — müügitoru ülevaade',
+    why:'Uus vahekaart "Juhtimine": näed toru väärtust, prognoosi ja mis vajab täna tähelepanu — ühe pilguga.',
+    viewKey:'manager', tabLabel:'Juhtimine' },
+  { v:2, major:true, date:'24.06.2026', title:'Kõneabi AI-analüüsid jäävad alles',
+    why:'Kõne kokkuvõte ja tagasiside salvestuvad nüüd leadi külge — ei kao enam pärast akna sulgemist.',
+    viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → näed neid ajaloos ja "AI tagasiside" väljal.' }
+];
+function newsSeenKey(){ return 'ma_news_seen_' + (typeof USER !== 'undefined' && USER && USER.id ? USER.id : 'anon'); }
+function newsSeen(){ try{ return parseInt(localStorage.getItem(newsSeenKey()) || '0', 10) || 0; }catch(e){ return 0; } }
+function checkWhatsNew(){
+  var dot = document.getElementById('newsDot'); if(!dot) return;
+  var seen = newsSeen();
+  var unseenMajor = CHANGELOG.some(function(e){ return e.v > seen && e.major; });
+  dot.style.display = unseenMajor ? 'block' : 'none';
+}
+function openNews(){
+  var list = document.getElementById('newsList'); if(!list) return;
+  var seen = newsSeen();
+  list.innerHTML = CHANGELOG.map(function(e, i){
+    var isNew = e.v > seen;
+    return '<div style="padding:11px 0;border-bottom:1px solid var(--bd)">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+      + (isNew ? '<span style="font-size:9px;font-weight:700;color:#fff;background:var(--ac);padding:1px 6px;border-radius:10px">UUS</span>' : '')
+      + '<span style="font-weight:600;font-size:13px">' + kabiEsc(e.title) + '</span>'
+      + '<span style="font-size:10px;color:var(--tx2);margin-left:auto;white-space:nowrap">' + e.date + '</span></div>'
+      + '<div style="font-size:12px;color:var(--tx2);line-height:1.5">' + kabiEsc(e.why) + '</div>'
+      + (e.hint ? '<div style="font-size:11px;color:var(--tx2);opacity:.85;margin-top:4px">' + kabiEsc(e.hint) + '</div>' : '')
+      + (e.tabLabel ? '<button class="btn-sm" style="margin-top:8px;font-size:11px" onclick="newsGo(' + i + ')">Näita kus</button>' : '')
+      + '</div>';
+  }).join('');
+  document.getElementById('newsModal').classList.add('open');
+  // Nähtuks märkimine: avades on kasutaja uudised näinud → täpp kaob (ei tüüta enam).
+  try{ localStorage.setItem(newsSeenKey(), String(APP_BUILD)); }catch(e){}
+  checkWhatsNew();
+}
+function newsGo(i){
+  var e = CHANGELOG[i]; if(!e) return;
+  closeModal('newsModal');
+  if(e.viewKey){
+    var tab = [].slice.call(document.querySelectorAll('.tab')).find(function(t){ return t.textContent.indexOf(e.tabLabel) > -1; });
+    setView(e.viewKey, tab);
+    if(tab){ tab.classList.add('ma-pulse'); setTimeout(function(){ tab.classList.remove('ma-pulse'); }, 3200); }
+  }
 }
 
 document.addEventListener('keydown', e => {
