@@ -71,12 +71,19 @@ function parseKokku(html: string): {
   min_eur_m2: number | null; max_eur_m2: number | null;
   median_eur_m2: number | null; avg_eur_m2: number | null;
 } | null {
-  // Otsi <tr>, mis sisaldab "KOKKU"
-  const rowMatch = html.match(/<tr[^>]*>(?:(?!<\/tr>)[\s\S])*?KOKKU[\s\S]*?<\/tr>/i);
-  if (!rowMatch) return null;
-  const cells = [...rowMatch[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)]
-    .map((m) => m[1].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim());
+  // Dekodeeri tühikud (tuhandeeraldaja võib olla &nbsp; / &#160; / U+00A0)
+  const decoded = html.replace(/&nbsp;/gi, " ").replace(/&#160;/g, " ").replace(/ /g, " ");
+  const kIdx = decoded.indexOf("KOKKU");
+  if (kIdx < 0) return null;
+  // KOKKU-rea piirid: viimane <tr enne KOKKU-d ... esimene </tr> peale selle
+  const rowStart = decoded.lastIndexOf("<tr", kIdx);
+  const rowEnd = decoded.indexOf("</tr>", kIdx);
+  if (rowStart < 0 || rowEnd < 0) return null;
+  const row = decoded.slice(rowStart, rowEnd);
+  const cells = [...row.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)]
+    .map((m) => m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
   if (cells.length < 10) return null;
+  // Veerud: [KOKKU, Arv, KeskmPindala, Kokku€, txMin, txMax, m2Min, m2Max, m2Mediaan, m2Keskmine, Std]
   return {
     tx_count: parseNum(cells[1]),
     total_value: parseNum(cells[3]),
@@ -181,14 +188,15 @@ export async function POST(request: Request) {
 
   const parsed = parseKokku(html);
   if (!parsed || parsed.tx_count == null) {
+    const ki = html.indexOf("KOKKU");
     const debug = {
       len: html.length,
-      hasKokku: html.includes("KOKKU"),
+      hasKokku: ki >= 0,
       hasPinnauhik: html.includes("Pinnaühiku"),
-      hasErrorPage: /HtrErrorPage|error/i.test(html),
+      hasErrorPage: html.includes("HtrErrorPage"),
       hasTable: html.includes("<table"),
       hasMultiselect: html.includes("multiselect"),
-      tail: html.replace(/\s+/g, " ").slice(-600),
+      kokkuContext: ki >= 0 ? html.slice(ki - 50, ki + 400).replace(/\s+/g, " ") : "",
     };
     return NextResponse.json({ error: "Tulemust ei õnnestunud lugeda (vorm muutus või andmeid napib)", debug }, { status: 502 });
   }
