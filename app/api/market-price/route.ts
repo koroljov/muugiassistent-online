@@ -89,13 +89,15 @@ function parseKokku(html: string): {
 
 // Ehita Scrapfly js_scenario, mis juhib htraru-vormi nagu päris kasutaja.
 function buildScenario(typeCode: string, countyCode: string): string {
+  // NB: dropdownid value+change (vallandab AutoPostBack); maakond ja periood vajavad .click()
+  // (sündmustega) — .checked=true EI tööta (server ei näe valikut). Submit päris-klõpsuga.
   const steps = [
     { wait_for_selector: { selector: "#DDTrykis", timeout: 15000 } },
-    { execute: { script: "document.getElementById('DDTrykis').value='G';__doPostBack('DDTrykis','');" } },
+    { execute: { script: "var e=document.getElementById('DDTrykis');e.value='G';e.dispatchEvent(new Event('change',{bubbles:true}));" } },
     { wait_for_selector: { selector: "#LBTrykis option[value='T13']", timeout: 15000 } },
-    { execute: { script: `var l=document.getElementById('LBTrykis');l.value='${typeCode}';__doPostBack('LBTrykis','');` } },
+    { execute: { script: `var l=document.getElementById('LBTrykis');l.value='${typeCode}';l.dispatchEvent(new Event('change',{bubbles:true}));` } },
     { wait: 2500 },
-    { execute: { script: `var c=document.querySelectorAll('.multiselect-container')[0];var t='${countyCode}';var cb=[].slice.call(c.querySelectorAll('input[type=checkbox]')).filter(function(x){return x.value===t;})[0];if(cb){cb.click();}document.getElementById('RBLAeg_3').checked=true;` } },
+    { execute: { script: `var c=document.querySelectorAll('.multiselect-container')[0];var t='${countyCode}';var cb=[].slice.call(c.querySelectorAll('input[type=checkbox]')).filter(function(x){return x.value===t;})[0];if(cb){cb.click();}var rb=document.getElementById('RBLAeg_3');if(rb){rb.click();}` } },
     { wait: 800 },
     { click: { selector: "#btnTryki" } },
     { wait_for_selector: { selector: "table", timeout: 15000 } },
