@@ -1508,7 +1508,8 @@ async function loadMarketPrice(){
   if(!region){ box.innerHTML = mpMsg('Vali maakond rippmenüüst, siis saan piirkonna hinda näidata.'); return; }
   if(!ptype){ box.innerHTML = mpMsg('Vali objekti tüüp (Korter / Maja / Maa), siis saan piirkonna hinda näidata.'); return; }
   box.innerHTML = '<div style="font-size:10px;color:var(--tx2)">Pärin Maa-ametist… (esimesel korral selle piirkonna kohta ~20 s, edaspidi kohe)</div>';
-  var payload = { region: region, propertyType: ptype };
+  var usePurpose = (document.getElementById('lOtstarve') && document.getElementById('lOtstarve').value) || (l.use_purpose || '');
+  var payload = { region: region, propertyType: ptype, usePurpose: usePurpose };
   try{
     var token = await freshToken();
     var doFetch = function(tok){ return fetch('/api/market-price', { method:'POST', headers:{'content-type':'application/json','authorization':'Bearer '+tok}, body: JSON.stringify(payload), signal: AbortSignal.timeout(60000) }); };
@@ -1539,7 +1540,27 @@ function mpOwnEurM2(l){
 
 function renderMarketPrice(box, j, l){
   var d = j.data || {};
-  var med = Number(d.median_eur_m2), avg = Number(d.avg_eur_m2), tx = Number(d.tx_count);
+  var tx = Number(d.tx_count);
+  var srcP = j.source==='cache'?' · salvestatud baasist':j.source==='stale'?' · vana baas (värsket ei saanud)':'';
+  // HINNA-mõõdik (maja/maa/äripind): mediaan TEHINGUHIND, mitte €/m²
+  if(d.metric==='price' || d.median_price!=null){
+    var yrP=(d.period_start||'').slice(0,4); var periodP=yrP?yrP+' (eelmine täisaasta)':'eelmine täisaasta';
+    var mpv=Number(d.median_price), apv=Number(d.avg_price);
+    if(!(mpv>0)||!(tx>0)){ box.innerHTML=mpMsg('Maa-ametist ei saadud usaldusväärset tehinguhinda — selles segmendis andmeid napib.'); return; }
+    var ownP=(l&&l.price)?Number(l.price):null;
+    var hinnangP;
+    if(ownP){ var dfp=Math.round((ownP/mpv-1)*100); hinnangP='Sinu objekt ('+Math.round(ownP).toLocaleString('et-EE')+' €) on piirkonna mediaanist '+(dfp>0?dfp+'% ÜLE':dfp<0?Math.abs(dfp)+'% ALLA':'samal tasemel')+'.'; }
+    else { hinnangP='Lisa objekti hind, et piirkonna mediaaniga võrrelda.'; }
+    box.innerHTML='<div style="border:1px solid var(--bd);border-radius:6px;padding:8px;background:var(--cd)">'+
+      '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">Fakt — Maa-amet ('+esc(d.county||'')+' · '+esc(d.segment||'')+' · '+periodP+')</div>'+
+      '<div style="font-size:12px;margin:3px 0;color:var(--tx)">Mediaan tehinguhind <b>'+Math.round(mpv).toLocaleString('et-EE')+' €</b> · keskmine '+Math.round(apv||0).toLocaleString('et-EE')+' € · '+tx.toLocaleString('et-EE')+' tehingut</div>'+
+      '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-top:5px">Hinnang (arvutuslik)</div>'+
+      '<div style="font-size:12px;margin:3px 0;color:var(--tx)">'+hinnangP+'</div>'+
+      '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Maa-pinna tehingute mediaanHIND (sihtotstarve: '+esc(d.segment||'')+'), mitte €/m² ega objekti väärtus. Ei arvesta hoone seisukorda/suurust. Maakonna tase.'+(tx<30?' Õhuke andmebaas ('+tx+') — tõlgenda ettevaatlikult.':'')+srcP+'</div>'+
+    '</div>';
+    return;
+  }
+  var med = Number(d.median_eur_m2), avg = Number(d.avg_eur_m2);
   // Kiht 1: mõistlikkuse kontroll — ilma usaldusväärse numbrita ei näita
   if(!(med > 0) || !(tx > 0)){
     box.innerHTML = mpMsg('Maa-ametist ei saadud usaldusväärset hinda — selles segmendis on andmeid liiga vähe (alla 5 tehingu). Proovi laiemat piirkonda.');
@@ -2989,17 +3010,25 @@ function mellLeadContext(){
 // Maa-ameti turuhind Melli konteksti (FAKT) — AINULT juba kogutud baasist (ei käivita Scrapflyt).
 async function mellMarketLine(l){
   if(!l || !l.county) return '';
-  var t=(l.property_type||'').toLowerCase();
-  var code = /korter|eluruum/.test(t) ? 'T13' : /maja|majaosa|eramu|elamu|ridaelamu|talu|suvila/.test(t) ? 'T11'
-    : /krunt|maa|hoonestamata|metsa|põllu/.test(t) ? 'T12'
-    : /äri|büroo|kaubandus|ladu|tootmine|toitlustus|teenindus|majutus|garaa/.test(t) ? 'T11' : '';
-  if(!code) return '';
+  var t=(l.property_type||'').toLowerCase(), pp=(l.use_purpose||'').toLowerCase();
+  var segKey, metric;
+  if(/korter|eluruum/.test(t)){ segKey='T13'; metric='eur_m2'; }
+  else if(/maja|majaosa|eramu|elamu|ridaelamu|talu|suvila/.test(t)){ segKey='T11:elamumaa'; metric='price'; }
+  else if(/äri|büroo|kaubandus|ladu|tootmine|toitlustus|teenindus|majutus|garaa/.test(t)){ segKey='T11:ärimaa'; metric='price'; }
+  else if(/krunt|maa|hoonestamata|metsa|põllu/.test(t)){ var seg=/äri/.test(pp)?'ärimaa':/tootmis/.test(pp)?'tootmismaa':/maatulundus|põllu/.test(pp)?'maatulundusmaa':'elamumaa'; segKey='T12:'+seg; metric='price'; }
+  else return '';
   try{
-    var resp = await sb.from('market_prices').select('median_eur_m2,avg_eur_m2,tx_count,period_end')
-      .eq('county', l.county).eq('property_type', code).order('period_end',{ascending:false}).limit(1).maybeSingle();
-    var d = resp.data; if(!d || !d.median_eur_m2) return '';
-    var own = (l.price && l.area) ? Math.round(l.price/l.area) : null;
-    return '\n\nMAA-AMETI TURUHIND (FAKT, '+l.county+', '+String(d.period_end||'').slice(0,4)+'): mediaan '+Math.round(d.median_eur_m2)+' €/m², '+d.tx_count+' tehingut'+(own?('; selle objekti €/m² '+own):'')+'. NB: piirkonna keskmine, ei arvesta seisukorda/korrust.';
+    var resp = await sb.from('market_prices').select('median_eur_m2,median_price,tx_count,period_end,segment')
+      .eq('county', l.county).eq('property_type', segKey).order('period_end',{ascending:false}).limit(1).maybeSingle();
+    var d = resp.data; if(!d) return '';
+    if(metric==='eur_m2'){
+      if(!d.median_eur_m2) return '';
+      var own = (l.price && l.area) ? Math.round(l.price/l.area) : null;
+      return '\n\nMAA-AMETI TURUHIND (FAKT, '+l.county+', '+String(d.period_end||'').slice(0,4)+'): mediaan '+Math.round(d.median_eur_m2)+' €/m², '+d.tx_count+' tehingut'+(own?('; selle objekti €/m² '+own):'')+'. NB: piirkonna keskmine, ei arvesta seisukorda/korrust.';
+    } else {
+      if(!d.median_price) return '';
+      return '\n\nMAA-AMETI TURUHIND (FAKT, '+l.county+', '+(d.segment||'')+', '+String(d.period_end||'').slice(0,4)+'): mediaan tehinguhind '+Math.round(d.median_price)+' €, '+d.tx_count+' tehingut. NB: maa-pinna tehingute mediaanhind, mitte €/m² ega objekti väärtus.';
+    }
   }catch(e){ return ''; }
 }
 

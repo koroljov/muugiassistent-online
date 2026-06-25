@@ -38,14 +38,39 @@ const REGION_HINTS: Array<[RegExp, string]> = [
   [/võru|antsla|võrumaa/i, "0087"],
 ];
 
-// Objekti tüüp → htraru LBTrykis aruande kood + inimloetav silt.
-function mapPropertyType(t: string): { code: string; label: string } | null {
+// Objekti tüüp (+otstarve) → htraru aruande kood, mõõdik ja tabeli rida.
+// Korter: T13, €/m² (KOKKU rida). Maja/maa/äripind: T11/T12, mediaan TEHINGUHIND (sihtotstarbe rida).
+type PType = { code: string; label: string; metric: "eur_m2" | "price"; segment: string };
+function mapPropertyType(t: string, usePurpose?: string): PType | null {
   const s = (t || "").toLowerCase();
-  if (/korter|eluruum|korteriomand/.test(s)) return { code: "T13", label: "Korteriomandid (eluruumid)" };
-  if (/maja|majaosa|eramu|elamu|paaris|ridaelamu|talu|suvila/.test(s)) return { code: "T11", label: "Hoonestatud maa (elamud/majad)" };
-  if (/krunt|maa|hoonestamata|põllu|metsa/.test(s)) return { code: "T12", label: "Hoonestamata maa (krundid)" };
-  if (/äri|büroo|kaubandus|ladu|tootmine|toitlustus|teenindus|majutus|garaa/.test(s)) return { code: "T11", label: "Äripind / muu" };
-  return null; // tundmatu tüüp → ära päri valet segmenti
+  if (/korter|eluruum|korteriomand/.test(s)) return { code: "T13", label: "Korteriomandid (eluruumid)", metric: "eur_m2", segment: "KOKKU" };
+  if (/maja|majaosa|eramu|elamu|paaris|ridaelamu|talu|suvila/.test(s)) return { code: "T11", label: "Elamumaa (majad)", metric: "price", segment: "elamumaa" };
+  if (/äri|büroo|kaubandus|ladu|tootmine|toitlustus|teenindus|majutus|garaa/.test(s)) return { code: "T11", label: "Ärimaa (äripind)", metric: "price", segment: "ärimaa" };
+  if (/krunt|maa|hoonestamata|põllu|metsa/.test(s)) {
+    const p = (usePurpose || "").toLowerCase();
+    const seg = /äri/.test(p) ? "ärimaa" : /tootmis/.test(p) ? "tootmismaa" : /maatulundus|põllu/.test(p) ? "maatulundusmaa" : "elamumaa";
+    return { code: "T12", label: "Hoonestamata maa (" + seg + ")", metric: "price", segment: seg };
+  }
+  return null; // tundmatu tüüp (nt garaaž) → Maa-amet ei anna
+}
+
+// Eralda sihtotstarbe-rida (maja/maa/äripind, T11/T12). Veerud:
+// [otstarve, Arv, KeskmPindala, Kokku€, Min, Max, Mediaan€, Keskmine€, Std]
+function parsePriceRow(html: string, segment: string): { tx_count: number | null; total_value: number | null; median_price: number | null; avg_price: number | null } | null {
+  const decoded = html.replace(/&nbsp;/gi, " ").replace(/&#160;/g, " ").replace(/ /g, " ");
+  // Otsi rida, mille esimene lahter on täpselt sihtotstarve (nt "elamumaa")
+  const re = new RegExp("<tr[^>]*>\\s*<t[dh][^>]*>\\s*" + segment + "\\s*<\\/t[dh]>([\\s\\S]*?)<\\/tr>", "i");
+  const m = decoded.match(re);
+  if (!m) return null;
+  const cells = [...("<td>" + segment + "</td>" + m[1]).matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)]
+    .map((c) => c[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+  if (cells.length < 8) return null;
+  return {
+    tx_count: parseNum(cells[1]),
+    total_value: parseNum(cells[3]),
+    median_price: parseNum(cells[6]),
+    avg_price: parseNum(cells[7]),
+  };
 }
 
 function regionToCounty(region: string): { code: string; name: string } | null {
@@ -150,20 +175,15 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const region = (body?.region || "").toString();
   const propertyType = (body?.propertyType || body?.property_type || "").toString();
+  const usePurpose = (body?.usePurpose || body?.use_purpose || "").toString();
 
   const county = regionToCounty(region);
-  const ptype = mapPropertyType(propertyType);
+  const ptype = mapPropertyType(propertyType, usePurpose);
   if (!county) return NextResponse.json({ error: "Piirkonda ei tuvastatud", needs: "region" }, { status: 422 });
-  if (!ptype) return NextResponse.json({ error: "Objekti tüüpi ei tuvastatud (toetatud: korter, maja, krunt)", needs: "propertyType" }, { status: 422 });
+  if (!ptype) return NextResponse.json({ unsupported: true, message: "Selle objekti tüübi (nt garaaž) kohta Maa-amet hinnastatistikat ei anna." });
 
-  // AUS PIIRANG: Maa-amet annab €/m² usaldusväärselt ainult korterite kohta (T13, elupinna €/m²).
-  // Maja/maa (T11/T12) tehingud on maa-pinna põhised, ilma €/m² veeru ja KOKKU-reata → ei esita valet.
-  if (ptype.code !== "T13") {
-    return NextResponse.json({
-      unsupported: true,
-      message: "Maa-amet annab €/m² usaldusväärselt ainult korterite kohta. Maja ja maa tehingud on maa-pinna põhised — otsest €/m² võrdlust ei ole. Maja/maa hinnastatistika lisatakse eraldi (eraldi mõõdik: mediaan tehinguhind).",
-    });
-  }
+  // Segmendi võti: korter='T13', maja='T11:elamumaa', äripind='T11:ärimaa', maa='T12:<otstarve>'.
+  const segKey = ptype.metric === "price" ? ptype.code + ":" + ptype.segment : ptype.code;
 
   // Periood: eelmine täisaasta.
   const lastYear = new Date().getFullYear() - 1;
@@ -177,7 +197,7 @@ export async function POST(request: Request) {
     .eq("county", county.name)
     .eq("municipality", "")
     .eq("district", "")
-    .eq("property_type", ptype.code)
+    .eq("property_type", segKey)
     .eq("period_end", period_end)
     .maybeSingle();
 
@@ -186,56 +206,52 @@ export async function POST(request: Request) {
     return NextResponse.json({ source: "cache", data: cached });
   }
 
-  // 2) Päri Scrapfly kaudu.
+  // 2) Päri Scrapfly kaudu (sama stsenaarium, ainult aruande kood erineb).
   let html: string;
   try {
     html = await scrapflyFetch(ptype.code, county.code);
   } catch (e: any) {
-    // Kui värske puudus aga vana on olemas, tagasta vana + hoiatus.
     if (cached) return NextResponse.json({ source: "stale", data: cached, warning: "Värsket päringut ei õnnestunud teha: " + (e?.message || "viga") });
     return NextResponse.json({ error: e?.message || "Maa-ameti päring ebaõnnestus" }, { status: 502 });
   }
 
-  const parsed = parseKokku(html);
-  if (!parsed || parsed.tx_count == null) {
-    const ki = html.indexOf("KOKKU");
-    const debug = {
-      len: html.length,
-      hasKokku: ki >= 0,
-      hasPinnauhik: html.includes("Pinnaühiku"),
-      hasErrorPage: html.includes("HtrErrorPage"),
-      hasTable: html.includes("<table"),
-      hasMultiselect: html.includes("multiselect"),
-      kokkuContext: ki >= 0 ? html.slice(ki - 50, ki + 400).replace(/\s+/g, " ") : "",
-    };
-    return NextResponse.json({ error: "Tulemust ei õnnestunud lugeda (vorm muutus või andmeid napib)", debug }, { status: 502 });
+  // 3) Parsi õige mõõdiku järgi.
+  let row: any;
+  if (ptype.metric === "eur_m2") {
+    const p = parseKokku(html);
+    if (!p || !(Number(p.median_eur_m2) > 0) || !(Number(p.tx_count) > 0)) {
+      return NextResponse.json({ error: "Tulemust ei õnnestunud lugeda (vorm muutus või andmeid napib)", debug: { len: html.length, hasKokku: html.includes("KOKKU"), hasTable: html.includes("<table"), hasErrorPage: html.includes("HtrErrorPage") } }, { status: 502 });
+    }
+    row = { median_eur_m2: p.median_eur_m2, avg_eur_m2: p.avg_eur_m2, min_eur_m2: p.min_eur_m2, max_eur_m2: p.max_eur_m2, tx_count: p.tx_count, total_value: p.total_value };
+  } else {
+    const p = parsePriceRow(html, ptype.segment);
+    if (!p || !(Number(p.median_price) > 0) || !(Number(p.tx_count) > 0)) {
+      return NextResponse.json({ error: "Selles segmendis ('" + ptype.segment + "') ei õnnestunud usaldusväärset tehinguhinda lugeda (andmeid napib või vorm muutus).", debug: { len: html.length, hasSegment: html.toLowerCase().includes(ptype.segment), hasTable: html.includes("<table"), hasErrorPage: html.includes("HtrErrorPage") } }, { status: 502 });
+    }
+    row = { median_price: p.median_price, avg_price: p.avg_price, tx_count: p.tx_count, total_value: p.total_value };
   }
 
-  // 3) Salvesta (upsert segmendi võtmega).
-  const row = {
+  // 4) Salvesta.
+  const full = {
     county: county.name,
     municipality: "",
     district: "",
-    property_type: ptype.code,
+    property_type: segKey,
     property_label: ptype.label,
+    metric: ptype.metric,
+    segment: ptype.segment,
     period_start,
     period_end,
-    median_eur_m2: parsed.median_eur_m2,
-    avg_eur_m2: parsed.avg_eur_m2,
-    min_eur_m2: parsed.min_eur_m2,
-    max_eur_m2: parsed.max_eur_m2,
-    tx_count: parsed.tx_count,
-    total_value: parsed.total_value,
-    raw: parsed as any,
     source: "maaamet_htraru",
     fetched_at: new Date().toISOString(),
+    ...row,
   };
   const { data: saved, error: saveErr } = await admin
     .from("market_prices")
-    .upsert(row, { onConflict: "county,municipality,district,property_type,period_start,period_end" })
+    .upsert(full, { onConflict: "county,municipality,district,property_type,period_start,period_end" })
     .select()
     .maybeSingle();
-  if (saveErr) return NextResponse.json({ source: "fresh", data: row, warning: "Salvestus ebaõnnestus: " + saveErr.message });
+  if (saveErr) return NextResponse.json({ source: "fresh", data: full, warning: "Salvestus ebaõnnestus: " + saveErr.message });
 
-  return NextResponse.json({ source: "fresh", data: saved || row });
+  return NextResponse.json({ source: "fresh", data: saved || full });
 }
