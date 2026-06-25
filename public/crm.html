@@ -1475,13 +1475,38 @@ async function aiFetch(payload){
 // ============================================================
 function mpMsg(t){ return '<div style="font-size:10px;color:var(--tx2);background:var(--cd);border:1px solid var(--bd);border-radius:6px;padding:6px 8px">'+t+'</div>'; }
 
+// Kerge kliendipoolne maakonna-aimus (eeltäidab rippmenüü). Kasutaja kinnitab/parandab ise.
+function guessCounty(text){
+  var s = (text||'').toLowerCase();
+  var hints = [
+    [/tallinn|harju|maardu|saue|keila|saku|viimsi|\brae\b|kiili|jõelähtme|harku|kose|raasiku|anija|loksa|paldiski|mustamäe|lasnamäe|kesklinn|nõmme|pirita|haabersti|kristiine|põhja-tallinn/, 'Harju maakond'],
+    [/hiiu|kärdla|emmaste|käina|kõrgessaare/, 'Hiiu maakond'],
+    [/ida-?viru|narva|kohtla|jõhvi|sillamäe|kiviõli|toila/, 'Ida-Viru maakond'],
+    [/jõgeva|põltsamaa|mustvee/, 'Jõgeva maakond'],
+    [/järva|paide|türi|koeru/, 'Järva maakond'],
+    [/lääne maakond|haapsalu|lihula|ridala|vormsi/, 'Lääne maakond'],
+    [/lääne-?viru|rakvere|tapa|kunda|tamsalu|väike-maarja|kadrina/, 'Lääne-Viru maakond'],
+    [/põlva|räpina|kanepi/, 'Põlva maakond'],
+    [/pärnu|sindi|kilingi|tori|vändra|audru|paikuse/, 'Pärnu maakond'],
+    [/rapla|kohila|märjamaa|kehtna|järvakandi/, 'Rapla maakond'],
+    [/saare|kuressaare|saaremaa|orissaare|muhu/, 'Saare maakond'],
+    [/tartu|elva|tõravere|\bnõo\b|kambja|luunja/, 'Tartu maakond'],
+    [/valga|tõrva|otepää/, 'Valga maakond'],
+    [/viljandi|võhma|mõisaküla|suure-jaani|karksi/, 'Viljandi maakond'],
+    [/\bvõru\b|antsla|võrumaa/, 'Võru maakond']
+  ];
+  for(var i=0;i<hints.length;i++){ if(hints[i][0].test(s)) return hints[i][1]; }
+  return '';
+}
+
 async function loadMarketPrice(){
   var box = document.getElementById('mpResult');
   if(!box || !CURRENT) return;
   var l = CURRENT;
-  var region = (l.region || l.property_address || '').trim();
+  var sel = document.getElementById('mpCounty');
+  var region = (sel && sel.value) ? sel.value : (l.region || '').trim();
   var ptype = (l.property_type || '').trim();
-  if(!region){ box.innerHTML = mpMsg('Lisa aadress või piirkond, et turuhinda vaadata.'); return; }
+  if(!region){ box.innerHTML = mpMsg('Vali maakond rippmenüüst, siis saan piirkonna hinda näidata.'); return; }
   if(!ptype){ box.innerHTML = mpMsg('Vali objekti tüüp (Korter / Maja / Maa), siis saan piirkonna hinda näidata.'); return; }
   box.innerHTML = '<div style="font-size:10px;color:var(--tx2)">Pärin Maa-ametist… (esimesel korral selle piirkonna kohta ~20 s, edaspidi kohe)</div>';
   var payload = { region: region, propertyType: ptype };
@@ -2195,7 +2220,13 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:3px">
           ${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Hind + pindala puudu — €/m² ei arvuta</span>`}
-          <button class="btn-ghost" style="font-size:10px;margin-left:6px;padding:2px 8px" onclick="loadMarketPrice()">📊 Vaata turuhinda</button>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">
+            <select class="kv-inp" id="mpCounty" style="flex:0 1 150px;font-size:11px;padding:3px 6px">
+              <option value="">Vali maakond…</option>
+              ${['Harju','Hiiu','Ida-Viru','Jõgeva','Järva','Lääne','Lääne-Viru','Põlva','Pärnu','Rapla','Saare','Tartu','Valga','Viljandi','Võru'].map(c=>`<option value="${c} maakond"${guessCounty((l.region||'')+' '+(l.property_address||''))===c+' maakond'?' selected':''}>${c}</option>`).join('')}
+            </select>
+            <button class="btn-ghost" style="font-size:10px;padding:2px 8px" onclick="loadMarketPrice()">📊 Vaata turuhinda</button>
+          </div>
           <div id="mpResult" style="margin-top:6px"></div>
           <a href="https://www.maaamet.ee/kinnisvara/htraru/" target="_blank" rel="noopener" style="color:var(--ac);text-decoration:none;font-size:10px">Maa-amet tehinguhinnad →</a>
         </div></div>
