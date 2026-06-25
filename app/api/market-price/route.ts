@@ -129,12 +129,15 @@ function buildScenario(typeCode: string, countyCode: string): string {
     { execute: { script: "var e=document.getElementById('DDTrykis');e.value='G';e.dispatchEvent(new Event('change',{bubbles:true}));" } },
     { wait_for_selector: { selector: "#LBTrykis option[value='T13']", timeout: 15000 } },
     { execute: { script: `var l=document.getElementById('LBTrykis');l.value='${typeCode}';l.dispatchEvent(new Event('change',{bubbles:true}));` } },
-    { wait: 2500 },
+    // Oota, kuni report-postback on lõpetanud ja maakonna checkbox taas olemas (mitte fikseeritud viide)
+    { wait_for_selector: { selector: `.multiselect-container input[value='${countyCode}']`, timeout: 15000 } },
+    { wait: 1200 },
     { execute: { script: `var c=document.querySelectorAll('.multiselect-container')[0];var t='${countyCode}';var cb=[].slice.call(c.querySelectorAll('input[type=checkbox]')).filter(function(x){return x.value===t;})[0];if(cb){cb.click();}var rb=document.getElementById('RBLAeg_3');if(rb){rb.click();}` } },
-    { wait: 800 },
+    { wait: 1200 },
     { click: { selector: "#btnTryki" } },
+    { wait: 4000 },
     { wait_for_selector: { selector: "table", timeout: 15000 } },
-    { wait: 1500 },
+    { wait: 1000 },
   ];
   return Buffer.from(JSON.stringify(steps)).toString("base64");
 }
