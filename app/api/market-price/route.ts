@@ -42,8 +42,9 @@ const REGION_HINTS: Array<[RegExp, string]> = [
 function mapPropertyType(t: string): { code: string; label: string } | null {
   const s = (t || "").toLowerCase();
   if (/korter|eluruum|korteriomand/.test(s)) return { code: "T13", label: "Korteriomandid (eluruumid)" };
-  if (/maja|eramu|elamu|paaris|ridaelamu|talu|suvila/.test(s)) return { code: "T11", label: "Hoonestatud maa (elamud/majad)" };
+  if (/maja|majaosa|eramu|elamu|paaris|ridaelamu|talu|suvila/.test(s)) return { code: "T11", label: "Hoonestatud maa (elamud/majad)" };
   if (/krunt|maa|hoonestamata|põllu|metsa/.test(s)) return { code: "T12", label: "Hoonestamata maa (krundid)" };
+  if (/äri|büroo|kaubandus|ladu|tootmine|toitlustus|teenindus|majutus|garaa/.test(s)) return { code: "T11", label: "Äripind / muu" };
   return null; // tundmatu tüüp → ära päri valet segmenti
 }
 

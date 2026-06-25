@@ -1500,6 +1500,31 @@ function guessCounty(text){
 }
 
 // ============================================================
+// OBJEKTI TAKSONOOMIA — üks tõeallikas (vorm + import + Maa-amet + statistika)
+// KV.EE-põhine (kontrollitud 2026-06-25). Liik → otstarbe/alaliigi valikud.
+// ============================================================
+var PROPERTY_TAXONOMY = {
+  'Korter':    [],
+  'Maja':      ['Eramaja','Suvila','Talu','Muu'],
+  'Majaosa':   ['Ridaelamuboks','Paarismaja','Muu'],
+  'Maa/krunt': ['Elamumaa','Ärimaa','Tootmismaa','Maatulundusmaa','Metsamaa','Aiamaa'],
+  'Äripind':   ['Büroo','Kaubandus','Majutus','Teenindus','Ladu','Tootmine','Toitlustus','Ladu, tootmine','Määramata'],
+  'Garaaž':    []
+};
+// Tagasiühilduvus: vana 'Maa' → 'Maa/krunt'; ülejäänud vanad väärtused on juba taksonoomia võtmed.
+function normType(t){ if(t==='Maa') return 'Maa/krunt'; return t || ''; }
+// Täida Otstarve-rippmenüü valitud liigi järgi; preselect = salvestatud use_purpose.
+function onTypeChange(preselect){
+  var tEl=document.getElementById('lTuup'), row=document.getElementById('lOtstarveRow'), sel=document.getElementById('lOtstarve');
+  if(!tEl||!row||!sel) return;
+  var opts = PROPERTY_TAXONOMY[tEl.value] || [];
+  if(!opts.length){ row.style.display='none'; sel.innerHTML='<option value="">—</option>'; return; }
+  var cur = (preselect!=null && preselect!==undefined) ? preselect : sel.value;
+  sel.innerHTML = '<option value="">—</option>' + opts.map(function(o){ return '<option'+(o===cur?' selected':'')+'>'+o+'</option>'; }).join('');
+  row.style.display='';
+}
+
+// ============================================================
 // AADRESSI-AUTOCOMPLETE (Eesti in-ADS / inaadress) — struktuurne asukoht
 // Trüki → pakub ametlikke aadresse → vali → maakond/omavalitsus/linnaosa + koord auto.
 // ============================================================
@@ -2286,7 +2311,8 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Pindala m²</span><input class="kv-inp" id="lPindala" type="number" value="${l.area||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Tube</span><input class="kv-inp" id="lTube" type="number" min="0" value="${l.rooms||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup"><option value="">—</option>${['Korter','Maja','Äripind','Maa'].map(o => `<option${l.property_type===o?' selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup" onchange="onTypeChange()"><option value="">—</option>${Object.keys(PROPERTY_TAXONOMY).map(o => `<option${normType(l.property_type)===o?' selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="kv-row" id="lOtstarveRow" style="display:none"><span class="kv-lbl">Otstarve</span><select class="kv-inp" id="lOtstarve"><option value="">—</option></select></div>
         <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:3px">
           ${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Vali maakond ja vajuta — oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>`}
@@ -2330,6 +2356,7 @@ function openLead(id, defaultStatus) {
   var _sb = document.getElementById('leadSaveBtn'); if(_sb) _sb.textContent = isNew ? 'Lisa lead' : 'Salvesta';
 
   document.getElementById('leadModal').classList.add('open');
+  onTypeChange(l.use_purpose);   // täida Otstarve-rippmenüü salvestatud väärtusega
 }
 
 async function changeStatus(newKey) {
@@ -2366,6 +2393,7 @@ async function saveLead() {
     area:             parseFloat(document.getElementById('lPindala').value) || null,
     rooms:            parseInt(document.getElementById('lTube').value, 10)  || null,
     property_type:    document.getElementById('lTuup').value               || null,
+    use_purpose:      document.getElementById('lOtstarve')?.value           || null,
     deal_type:        document.getElementById('lTehing').value             || null,
     contact_method:   document.getElementById('lKontaktViis').value        || null,
     next_action_at:   document.getElementById('lNext').value               || null,
