@@ -1468,6 +1468,70 @@ async function aiFetch(payload){
   }catch(e){ return 'Viga: ' + e.message; }
 }
 
+// ============================================================
+// TURUHIND — Maa-ameti tehinguhinnad (/api/market-price)
+// Kiht 1: kontroll enne näitamist (blokk/struktuur/mõistlik number → ei näita faktina).
+// Kiht 2: nähtav teade, kui allikas ei anna usaldusväärset vastust.
+// ============================================================
+function mpMsg(t){ return '<div style="font-size:10px;color:var(--tx2);background:var(--cd);border:1px solid var(--bd);border-radius:6px;padding:6px 8px">'+t+'</div>'; }
+
+async function loadMarketPrice(){
+  var box = document.getElementById('mpResult');
+  if(!box || !CURRENT) return;
+  var l = CURRENT;
+  var region = (l.region || l.property_address || '').trim();
+  var ptype = (l.property_type || '').trim();
+  if(!region){ box.innerHTML = mpMsg('Lisa aadress või piirkond, et turuhinda vaadata.'); return; }
+  if(!ptype){ box.innerHTML = mpMsg('Vali objekti tüüp (Korter / Maja / Maa), siis saan piirkonna hinda näidata.'); return; }
+  box.innerHTML = '<div style="font-size:10px;color:var(--tx2)">Pärin Maa-ametist… (esimesel korral selle piirkonna kohta ~20 s, edaspidi kohe)</div>';
+  var payload = { region: region, propertyType: ptype };
+  try{
+    var token = await freshToken();
+    var doFetch = function(tok){ return fetch('/api/market-price', { method:'POST', headers:{'content-type':'application/json','authorization':'Bearer '+tok}, body: JSON.stringify(payload), signal: AbortSignal.timeout(60000) }); };
+    var r = await doFetch(token);
+    if(r.status === 401){ token = await freshToken(true); r = await doFetch(token); if(r.status===401){ sessionLost(); return; } }
+    var j = await r.json();
+    if(!r.ok){
+      // Kiht 1+2: ära esita faktina, anna selge teade
+      var why = (j && j.error) ? (' ('+j.error+')') : '';
+      box.innerHTML = mpMsg('Maa-ameti andmed pole hetkel usaldusväärselt kättesaadavad'+why+'. Proovi hiljem või vaata Maa-ameti lehel.');
+      return;
+    }
+    renderMarketPrice(box, j, l);
+  }catch(e){
+    box.innerHTML = mpMsg('Päring ebaõnnestus: '+(e && e.message ? e.message : 'tundmatu viga')+'.');
+  }
+}
+
+function renderMarketPrice(box, j, l){
+  var d = j.data || {};
+  var med = Number(d.median_eur_m2), avg = Number(d.avg_eur_m2), tx = Number(d.tx_count);
+  // Kiht 1: mõistlikkuse kontroll — ilma usaldusväärse numbrita ei näita
+  if(!(med > 0) || !(tx > 0)){
+    box.innerHTML = mpMsg('Maa-ametist ei saadud usaldusväärset hinda — selles segmendis on andmeid liiga vähe (alla 5 tehingu). Proovi laiemat piirkonda.');
+    return;
+  }
+  var own = (l.price && l.area) ? Math.round(l.price/l.area) : null;
+  var period = (d.period_start||'').slice(0,4);
+  var thin = tx < 30;
+  var hinnang;
+  if(own){
+    var diff = Math.round((own/med - 1)*100);
+    hinnang = 'Sinu objekt ('+own.toLocaleString('et-EE')+' €/m²) on piirkonna mediaanist '+(diff>0 ? diff+'% ÜLE' : diff<0 ? Math.abs(diff)+'% ALLA' : 'samal tasemel')+'.';
+  } else {
+    hinnang = 'Lisa hind ja pindala, et oma €/m² piirkonnaga võrrelda.';
+  }
+  var typeNote = /maja|maa|krunt|hoonestat/i.test(d.property_label||'') ? ' Maa/maja €/m² on maa-pinna põhine, mitte elupinna — tõlgenda vastavalt.' : '';
+  box.innerHTML =
+    '<div style="border:1px solid var(--bd);border-radius:6px;padding:8px;background:var(--cd)">'+
+      '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">Fakt — Maa-amet ('+esc(d.county||'')+', '+period+')</div>'+
+      '<div style="font-size:12px;margin:3px 0;color:var(--tx)">Mediaan <b>'+Math.round(med).toLocaleString('et-EE')+' €/m²</b> · keskmine '+Math.round(avg).toLocaleString('et-EE')+' €/m² · '+tx.toLocaleString('et-EE')+' tehingut</div>'+
+      '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-top:5px">Hinnang (arvutuslik)</div>'+
+      '<div style="font-size:12px;margin:3px 0;color:var(--tx)">'+hinnang+'</div>'+
+      '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Võrdlus on kogu maakonna tasemel (mitte linnaosa täpsusega).'+typeNote+(thin?' Andmebaas selle segmendi kohta on õhuke ('+tx+' tehingut) — tõlgenda ettevaatlikult.':'')+(j.source==='cache'?' · salvestatud baasist':j.source==='stale'?' · vana baas (värsket ei saanud)':'')+'</div>'+
+    '</div>';
+}
+
 var AI_STIIL = '\n\nSTIIL: Kirjuta eesti kirjakeeles, lihtsate selgete lausetega. Väldi ilukõnet, müügijuttu, emotsionaalsust, klišeesid ja korporatiivset keelt. Keskendu faktidele, loogikale ja reaalsele olukorrale. Ära kirjuta pikemalt kui vaja — iga lause peab andma väärtust. Kui midagi on ebaloogiline või teadmata, ütle see otse. Toon: rahulik, professionaalne, usaldusväärne, otsekohene, lugupidav, kindel aga mitte pealetükkiv. Ülesehitus: alusta kõige olulisemast, siis põhjendus, lõpeta konkreetse järelduse või järgmise sammuga; keeruline jaga punktideks; väldi pikki lõike. Ära kasuta hüüumärke ega emojisid. Ära kasuta vorminduse märke (*, #, nummerdatud loendid) — puhas tekst. Kliendikirjas räägi kui professionaalne nõustaja, mitte müüja: selgita olukorda nii nagu see on, näita võimalusi ja tagajärgi, ära suru otsust peale. Kinnisvaratekstis keskendu sellele, mis mõjutab ostja otsust, ja selgita miks; väldi sõnu unikaalne, suurepärane, ideaalne, fantastiline, eksklusiivne, luksuslik, kui puudub objektiivne põhjus. Tagasisides too välja tugevused ja probleemid, selgita mõju, anna soovitus. Ole kohe kasutatav ilma ümberkirjutamiseta; väldi pikki sissejuhatusi, moraalilugemist, liigseid hoiatusi ja sama mõtte kordamist. JURIIDIKA JA VASTUTUS: Ära luba kindlat tulemust, müügiaega ega -hinda; ära kasuta sõnu garanteerin, luban, kindlasti müüme. Ära tee kliendi nimel siduvaid pakkumisi ega kokkuleppeid (hind, vahendustasu, tähtaeg) — need lepitakse kokku eraldi ja kirjalikult. Ära nimeta konkreetset vahendustasu protsenti ega summat, kui seda pole sisendis antud. Ära esita hindu, protsente ega statistikat faktina, kui neid pole sisendis — ära mõtle numbreid välja; kui andmed puuduvad, ütle et täpsustamiseks on vaja lisainfot. Ära anna juriidilist, maksu- ega notariaalset nõu — sellistes küsimustes soovita pöörduda vastava spetsialisti (jurist, notar, maksunõustaja) poole. Ära kasuta survestavat keelt ega kunstlikku tähtajasurvet.';
 var LETTER_NAIDIS = '\n\nNÄIDIS (järgi selle tooni, pikkust ja sõnastust; sisu kohanda antud andmete järgi, ära kopeeri nime ega fakte):\nTere Kristjan,\ntänan teid kõne ja jagatud info eest.\nTeie maja oli müügis lühikest aega ja huvi jäi tagasihoidlikuks — üksikud huvilised ja paar madalat pakkumist. See viitab tavaliselt sellele, et kas hind, kuulutuse esitlus või nähtavus vajab üle vaatamist. Ühekordne hinnalangus ei pruugi probleemi lahendada, kui algpõhjus jääb selgusetuks.\nMeie müügispetsialist Meelis saab anda teile tasuta ja faktipõhise hinnangu — mis teie objekti puhul tegelikult müüki takistab ja mida saaks muuta. See ei kohusta teid millekski.\nKui soovite, leppige temaga sobiv aeg kokku. Tasustamise saab paika panna siis, kui koostöö tegelikult edasi liigub.\nLugupidamisega,\nMeelis Koroljov, Uus Maa';
 var LISTING_NAIDIS = '\n\nNÄIDIS (järgi selle tooni ja sõnastust; sisu kohanda antud andmete järgi):\nKuulutus on korrektne, kuid mõni koht võib müüki pidurdada.\nHind: üksikud huvilised ja madalad pakkumised viitavad, et ostjate jaoks on hind hetkel kõrge. Tasub võrrelda sarnaste müüdud objektidega.\nEsitlus: kui pilte on vähe või need on kehvad, kaob osa huvist juba enne vaatamist. Korralikud fotod ja selge kirjeldus tõstavad päringuid.\nKirjeldus: too välja konkreetsed plussid (seisukord, asukoha eelised), mitte üldsõnad.\nJärgmine samm: enne uut üleslaadimist vaata üle hind ja fotod — need kaks mõjutavad tulemust kõige rohkem.';
@@ -2129,7 +2193,12 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Tube</span><input class="kv-inp" id="lTube" type="number" min="0" value="${l.rooms||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup"><option value="">—</option>${['Korter','Maja','Äripind','Maa'].map(o => `<option${l.property_type===o?' selected':''}>${o}</option>`).join('')}</select></div>
         <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
-        <div class="kv-row"><span class="kv-lbl">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:5px">${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b> · ` : ''}<a href="https://www.maaamet.ee/kinnisvara/htraru/" target="_blank" rel="noopener" style="color:var(--ac);text-decoration:none">Maa-amet tehinguhinnad →</a></div></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:3px">
+          ${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Hind + pindala puudu — €/m² ei arvuta</span>`}
+          <button class="btn-ghost" style="font-size:10px;margin-left:6px;padding:2px 8px" onclick="loadMarketPrice()">📊 Vaata turuhinda</button>
+          <div id="mpResult" style="margin-top:6px"></div>
+          <a href="https://www.maaamet.ee/kinnisvara/htraru/" target="_blank" rel="noopener" style="color:var(--ac);text-decoration:none;font-size:10px">Maa-amet tehinguhinnad →</a>
+        </div></div>
         <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
           <select class="kv-inp" id="lKontaktViis">
             <option value="">—</option>
@@ -2935,8 +3004,11 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 3;
+var APP_BUILD = 4;
 var CHANGELOG = [
+  { v:4, major:true, date:'25.06.2026', title:'Turuhind — Maa-ameti tehinguhinnad',
+    why:'Leadi aknas saad nupuga "Vaata turuhinda" piirkonna €/m² (Maa-ameti tehingute mediaan) ja võrdluse oma objektiga. Faktid ja arvutuslik hinnang on eraldi; kui andmeid napib, ütleb seda otse.',
+    viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → Turuhind rida → "Vaata turuhinda".' },
   { v:3, major:true, date:'24.06.2026', title:'Juhtimine — müügitoru ülevaade',
     why:'Uus vahekaart "Juhtimine": näed toru väärtust, prognoosi ja mis vajab täna tähelepanu — ühe pilguga.',
     viewKey:'manager', tabLabel:'Juhtimine' },
