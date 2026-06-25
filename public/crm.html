@@ -1480,6 +1480,14 @@ function addrPick(i){
   var mp = document.getElementById('mpCounty'); if(mp && a.maakond){ mp.value = a.maakond; }
 }
 function addrHideSuggest(){ var s=document.getElementById('lAddrSuggest'); if(s) s.style.display='none'; }
+// Impordil: struktureeri aadress automaatselt. Fail-safe: auto-vali AINULT kui täpselt 1 vaste; muidu jäta kasutajale kinnitada.
+async function addrStructureFromText(q){
+  if(!q || q.trim().length<3) return;
+  await addrDoSearch(q.trim());
+  var list = window._addrResults || [];
+  if(list.length===1){ addrPick(0); }
+  // 0 või mitu vastet → jäta pakutud nimekiri kasutajale (ei oleta)
+}
 
 async function loadMarketPrice(){
   var box = document.getElementById('mpResult');
@@ -1781,7 +1789,7 @@ async function storeLeadImage(srcUrl){
 async function importExtractAI(d){
   var st=document.getElementById('lUrlStatus');
   if(st){ st.style.color='var(--tx2)'; st.textContent='AI loeb kuulutust…'; }
-  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","deal":"","price":"","area":"","rooms":"","name":"","phone":"","email":""}. addr=objekti aadress (tänav number, linnaosa, linn). type=üks sõna: Korter, Maja, Äripind või Maa. deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). rooms=tubade arv (mitu tuba), ainult number. name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
+  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","purpose":"","deal":"","price":"","area":"","rooms":"","name":"","phone":"","email":""}. addr=objekti aadress (tänav number, linnaosa, linn). type=ÜKS järgnevatest: Korter, Maja, Majaosa, Maa/krunt, Äripind, Garaaž. purpose=alaliik/otstarve vastavalt tüübile: Maja→Eramaja/Suvila/Talu/Muu; Majaosa→Ridaelamuboks/Paarismaja/Muu; Maa/krunt→Elamumaa/Ärimaa/Tootmismaa/Maatulundusmaa/Metsamaa/Aiamaa; Äripind→Büroo/Kaubandus/Majutus/Teenindus/Ladu/Tootmine/Toitlustus/Määramata; Korter ja Garaaž→jäta "". deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). rooms=tubade arv, ainult number. name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
   var user='Pealkiri: '+(d.ogTitle||'')+'\nKirjeldus: '+(d.ogDesc||'')+'\nHinnavihje: '+(d.priceHint||'')+'\nTelefon: '+(d.tel||'')+'\nE-post: '+(d.email||'')+'\nTekst: '+(d.text||'');
   try{
     var ans=await aiFetch({ system:sys, max_tokens:300, messages:[{role:'user',content:user}] });
@@ -1789,12 +1797,14 @@ async function importExtractAI(d){
     var r=jm?JSON.parse(jm[0]):{};
     var oe = !!window._importOnlyEmpty;
     var set=function(id,val){ var el=document.getElementById(id); if(!el||val==null||val==='') return; if(oe && el.value && String(el.value).trim()!=='') return; el.value=val; };
-    set('lAadress',r.addr); set('lTuup',r.type); set('lTehing',r.deal);
+    set('lAadress',r.addr); set('lTuup',normType(r.type)); set('lTehing',r.deal);
+    onTypeChange(r.purpose);   // täida Otstarve taksonoomia järgi + eeltäida purpose
     var _ph=((d.tel||'').split(',')[0]||'').trim()||r.phone; var _em=((d.email||'').split(',')[0]||'').trim()||r.email;
     set('lNimi',r.name); set('lTel',_ph); set('lEmail',_em);
     if(r.price) set('lHind',String(r.price).replace(/[^\d]/g,''));
     if(r.area) set('lPindala',String(r.area).replace(/[^\d.,]/g,'').replace(',','.'));
     if(r.rooms) set('lTube',String(r.rooms).replace(/[^\d]/g,''));
+    if(r.addr) await addrStructureFromText(document.getElementById('lAadress').value); // struktureeri asukoht (maakond/linnaosa)
     if(st){ st.style.color='var(--ac)'; st.textContent='AI luges kuulutuse — kontrolli ja salvesta. (Kui telefon puudub: vajuta kuulutusel Näita numbrit ja klõpsa nuppu uuesti.)'; }
   }catch(e){ if(st){ st.style.color='var(--red)'; st.textContent='AI ei suutnud lugeda — täida käsitsi'; } }
 }
@@ -2559,6 +2569,11 @@ function renderStats(){
   var n = CALLS.length;
   var objN = new Set(CALLS.map(function(c){ return c.lead_id; })).size;
   var html = '<button class="btn-sm" style="width:100%;margin-bottom:12px" onclick="statsAnalyze()">AI turuanalüüs</button><div id="statsAiOut" style="display:none;margin-bottom:14px;background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:12px"></div><div class="stat-summary">Kõnesid kokku: <b>'+n+'</b> · objekte: <b>'+objN+'</b></div>';
+  // Objektid tüübi järgi (taksonoomia normType) — leadipõhine, mitte kõnepõhine
+  var tc={}; LEADS.forEach(function(l){ var t=normType(l.property_type)||'Määramata'; tc[t]=(tc[t]||0)+1; });
+  var tcTot=LEADS.length||1;
+  var tcRows=Object.keys(tc).sort(function(a,b){return tc[b]-tc[a];}).map(function(k){var pct=Math.round(tc[k]/tcTot*100);return '<div class="stat-row"><div class="stat-bar" style="width:'+pct+'%"></div><span class="stat-lbl">'+kabiEsc(k)+'</span><span class="stat-val">'+tc[k]+' · '+pct+'%</span></div>';}).join('');
+  html += '<div class="stat-block"><div class="stat-title">Objektid tüübi järgi ('+LEADS.length+')</div>'+(tcRows||'<div class="stat-empty">Andmeid pole.</div>')+'</div>';
   html += statsBlock('Veel müügis', statsCount('still_listed', false));
   html += statsBlock('Aeg turul', statsCount('time_on_market', false));
   html += statsBlock('Miks omanikud ise müüvad', statsCount('no_broker_reason', true));
