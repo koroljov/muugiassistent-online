@@ -2945,23 +2945,62 @@ let MELL_HISTORY = [];
 
 function mellLeadContext(){
   const l = CURRENT; if(!l) return '';
-  return [
+  var loc = [l.county, l.municipality, l.district].filter(Boolean).join(', ');
+  var base = [
     l.property_address && ('Aadress: ' + l.property_address),
-    l.property_type && ('Tüüp: ' + l.property_type),
+    loc && ('Asukoht (struktuurne): ' + loc),
+    l.property_type && ('Tüüp: ' + l.property_type + (l.use_purpose ? ' / ' + l.use_purpose : '')),
     l.deal_type && ('Tehing: ' + l.deal_type),
     l.client_type && ('Kliendi tüüp: ' + l.client_type),
     (l.price != null) && ('Hind: ' + l.price + ' €'),
     (l.area != null) && ('Pindala: ' + l.area + ' m²'),
-    l.region && ('Piirkond: ' + l.region),
+    (l.rooms != null) && ('Tube: ' + l.rooms),
+    (l.price && l.area) && ('Objekti €/m²: ' + Math.round(l.price/l.area)),
     l.status && ('Staatus: ' + l.status),
     l.contact_name && ('Kontakt: ' + l.contact_name),
     l.phone && ('Telefon: ' + l.phone),
-    l.last_call_result && ('Viimase kõne tulemus: ' + l.last_call_result),
     l.listing_note && ('Kuulutuse märkus: ' + l.listing_note),
     l.lead_comment && ('Kommentaar: ' + l.lead_comment),
     l.business_need && ('Ärivajadus: ' + l.business_need),
     l.ai_summary && ('Varasem AI kokkuvõte: ' + l.ai_summary)
   ].filter(Boolean).join('\n');
+  // Kõnede ajalugu (CALLS mälust) — Mell näeb nüüd kogu pilti, mitte ainult viimast tulemust
+  var calls = (typeof CALLS!=='undefined'?CALLS:[]).filter(function(c){return c.lead_id===l.id;})
+    .sort(function(a,b){return new Date(b.call_time||b.created_at||0)-new Date(a.call_time||a.created_at||0);}).slice(0,6);
+  if(calls.length){
+    var ch = calls.map(function(c){
+      var d=(c.call_time||c.created_at||'').slice(0,10);
+      var parts=[
+        c.still_listed && ('müügis: '+c.still_listed),
+        c.time_on_market && ('turul: '+c.time_on_market),
+        c.personality_type && ('inimtüüp: '+c.personality_type),
+        c.obstacle && ('takistus: '+c.obstacle),
+        c.buyer_feedback && ('ostja tagasiside: '+c.buyer_feedback),
+        c.price_change && ('hind: '+c.price_change),
+        c.next_step && ('järgmine samm: '+c.next_step)
+      ].filter(Boolean).join('; ');
+      return '- '+d+(parts?(' — '+parts):'')+(c.ai_feedback?('\n  AI: '+String(c.ai_feedback).slice(0,280)):'');
+    }).join('\n');
+    base += '\n\nKÕNEDE AJALUGU ('+calls.length+' viimast):\n'+ch;
+  }
+  return base;
+}
+
+// Maa-ameti turuhind Melli konteksti (FAKT) — AINULT juba kogutud baasist (ei käivita Scrapflyt).
+async function mellMarketLine(l){
+  if(!l || !l.county) return '';
+  var t=(l.property_type||'').toLowerCase();
+  var code = /korter|eluruum/.test(t) ? 'T13' : /maja|majaosa|eramu|elamu|ridaelamu|talu|suvila/.test(t) ? 'T11'
+    : /krunt|maa|hoonestamata|metsa|põllu/.test(t) ? 'T12'
+    : /äri|büroo|kaubandus|ladu|tootmine|toitlustus|teenindus|majutus|garaa/.test(t) ? 'T11' : '';
+  if(!code) return '';
+  try{
+    var resp = await sb.from('market_prices').select('median_eur_m2,avg_eur_m2,tx_count,period_end')
+      .eq('county', l.county).eq('property_type', code).order('period_end',{ascending:false}).limit(1).maybeSingle();
+    var d = resp.data; if(!d || !d.median_eur_m2) return '';
+    var own = (l.price && l.area) ? Math.round(l.price/l.area) : null;
+    return '\n\nMAA-AMETI TURUHIND (FAKT, '+l.county+', '+String(d.period_end||'').slice(0,4)+'): mediaan '+Math.round(d.median_eur_m2)+' €/m², '+d.tx_count+' tehingut'+(own?('; selle objekti €/m² '+own):'')+'. NB: piirkonna keskmine, ei arvesta seisukorda/korrust.';
+  }catch(e){ return ''; }
 }
 
 async function openMell(){
@@ -3015,7 +3054,8 @@ async function sendMell(){
   const btn = document.getElementById('mellSend'); btn.disabled = true;
   const thinking = mellAddMsg('a', '...');
   MELL_HISTORY.push({ role:'user', content:q });
-  const system = 'Oled "Mell", Uus Maa kinnisvarabüroo müügiassistent. Vastad eesti keeles, otsekohe, lühidalt ja praktiliselt. Aitad müügispetsialisti selle konkreetse leadiga: anna konkreetne järgmine samm, mitte üldine jutt. Kui kasutaja palub sõnumi, anna valmis, kohe saadetav tekst ilma emojideta.' + AI_STIIL + '\n\nLEADI ANDMED:\n' + mellLeadContext();
+  const marketLine = await mellMarketLine(CURRENT);
+  const system = 'Oled "Mell", Uus Maa kinnisvarabüroo müügiassistent. Vastad eesti keeles, otsekohe, lühidalt ja praktiliselt. Aitad müügispetsialisti selle konkreetse leadiga: anna konkreetne järgmine samm, mitte üldine jutt. Kui kasutaja palub sõnumi, anna valmis, kohe saadetav tekst ilma emojideta.' + AI_STIIL + '\n\nLEADI ANDMED:\n' + mellLeadContext() + marketLine;
   try{
     const ans = await aiFetch({ system: system, messages: MELL_HISTORY, max_tokens:700 });
     thinking.textContent = ans;
@@ -3181,13 +3221,16 @@ async function kabiAI(system, user, model){
 
 function kabiContext(){
   var l = CURRENT || {};
+  var loc = [l.county, l.municipality, l.district].filter(Boolean).join(', ');
   var lines = [
     l.property_address && ('Aadress: '+l.property_address),
-    l.property_type && ('Tüüp: '+l.property_type),
+    loc && ('Asukoht (struktuurne): '+loc),
+    l.property_type && ('Tüüp: '+l.property_type + (l.use_purpose ? ' / '+l.use_purpose : '')),
     l.deal_type && ('Tehing: '+l.deal_type),
     (l.price!=null) && ('Hind: '+l.price+' €'),
     (l.area!=null) && ('Pindala: '+l.area+' m²'),
-    l.region && ('Piirkond: '+l.region),
+    (l.rooms!=null) && ('Tube: '+l.rooms),
+    (l.price && l.area) && ('Objekti €/m²: '+Math.round(l.price/l.area)),
     l.contact_name && ('Kontakt: '+l.contact_name),
     l.listing_note && ('Kuulutuse märkus: '+l.listing_note)
   ];
@@ -3212,15 +3255,16 @@ function kabiCopy(btn){
 async function kabiGen(kind){
   var sys, title;
   if(kind==='summary'){ title='Kõne kokkuvõte'; sys='Oled Uus Maa müügiassistent. Tee selle kõne lühike struktureeritud kokkuvõte eesti keeles. Kasuta AINULT antud andmeid, ära midagi juurde mõtle. Lõpus üks konkreetne järgmine samm.'; }
-  else if(kind==='listing'){ title='Kuulutuse tagasiside'; sys='Oled Uus Maa müügiassistent. Anna lühike aus professionaalne tagasiside selle kuulutuse kohta — mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel, ära väida fakte mida pole. Ära leiuta turuandmeid, hindu ega numbreid, ega väida et tunned piirkonna turgu. Korrektne eesti kirjakeel. Ilma hämata. Kuiv ja konkreetne.'; }
-  else if(kind==='letter'){ title='Kiri kliendile'; sys='Oled Uus Maa müügiassistent. Koosta kliendile saadetav lühike viisakas kiri eesti keeles: tänu kõne eest, lühike kokkuvõte, aus tagasiside kuulutuse kohta, ja sujuv suunamine müügispetsialist Meelisele ning paindlikule koostööle ja tasustamisele. Alusta tervitusega "Tere [eesnimi]", mitte "Kallim". Kasuta teie-vormi, klient on võõras. Omanik müüb ise — ära väida, et Uus Maa on midagi teinud (nt hinda muutnud). Ära ole pealetükkiv ega survesta. Kirjuta korrektses eesti kirjakeeles, lühidalt (max 120 sõna). Ära leiuta numbreid, hindu, aega ega turuandmeid. Ära hinda, kas hind on hea või halb, ega väida et tunned piirkonna turgu. Kasuta täpselt antud sõnastust, ära tee numbritest oma tõlgendusi. Põhine AINULT antud andmetel, ära midagi välja mõtle. Ilma emojideta, kohe saadetav.'; }
+  else if(kind==='listing'){ title='Kuulutuse tagasiside'; sys='Oled Uus Maa müügiassistent. Anna lühike aus professionaalne tagasiside selle kuulutuse kohta — mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel, ära väida fakte mida pole. Ära leiuta turuandmeid, hindu ega numbreid. KUI andmetes on antud Maa-ameti turuhind (FAKT), võid sellele faktipõhiselt viidata — märgi selgelt, et see on piirkonna keskmine ega arvesta seisukorda/korrust; ära tee oletusi numbritega mida pole. Korrektne eesti kirjakeel. Ilma hämata. Kuiv ja konkreetne.'; }
+  else if(kind==='letter'){ title='Kiri kliendile'; sys='Oled Uus Maa müügiassistent. Koosta kliendile saadetav lühike viisakas kiri eesti keeles: tänu kõne eest, lühike kokkuvõte, aus tagasiside kuulutuse kohta, ja sujuv suunamine müügispetsialist Meelisele ning paindlikule koostööle ja tasustamisele. Alusta tervitusega "Tere [eesnimi]", mitte "Kallim". Kasuta teie-vormi, klient on võõras. Omanik müüb ise — ära väida, et Uus Maa on midagi teinud (nt hinda muutnud). Ära ole pealetükkiv ega survesta. Kirjuta korrektses eesti kirjakeeles, lühidalt (max 120 sõna). Ära leiuta numbreid, hindu, aega ega turuandmeid. KUI andmetes on antud Maa-ameti turuhind (FAKT), võid seda faktina mainida (piirkonna keskmine, ei arvesta seisukorda); ära tee sellest survestavaid järeldusi. Kasuta täpselt antud sõnastust, ära tee numbritest oma tõlgendusi. Põhine AINULT antud andmetel, ära midagi välja mõtle. Ilma emojideta, kohe saadetav.'; }
   else { title='AI soovitus'; sys='Oled Uus Maa müügiassistent. Anna selle kõne andmete põhjal üks lühike konkreetne soovitus, mida järgmisena teha. 2-3 lauset, eesti keeles, otsekohe.'; }
   sys += AI_STIIL;
   if(kind === 'letter') sys += LETTER_NAIDIS;
   else if(kind === 'listing') sys += LISTING_NAIDIS;
   var model = (kind === 'letter' || kind === 'listing') ? 'claude-sonnet-4-6' : undefined;
   kabiShowOut(title, 'Genereerin...');
-  var out = await kabiAI(sys, 'Andmed:\n' + kabiContext(), model);
+  var marketLine = await mellMarketLine(CURRENT);   // sama Maa-ameti FAKT mis Mellil — kooskõla
+  var out = await kabiAI(sys, 'Andmed:\n' + kabiContext() + marketLine, model);
   if(out === null) kabiShowOut(title, 'AI ei vastanud. Kontrolli, kas Anthropic API võti on Seadetes (AI ja kõneabi) salvestatud ja kontol on krediit.');
   else { kabiShowOut(title, out); if(window._kabiOutputs) window._kabiOutputs[kind] = out; }
 }
