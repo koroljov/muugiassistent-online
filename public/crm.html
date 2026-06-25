@@ -1529,6 +1529,15 @@ async function loadMarketPrice(){
   }
 }
 
+// Oma €/m² — loe LIVE väljadelt (lHind/lPindala), et töötaks ka salvestamata; varuks CURRENT.
+function mpOwnEurM2(l){
+  function num(v){ if(v==null) return null; var n=parseFloat(String(v).replace(/\s/g,'').replace(',','.')); return isNaN(n)?null:n; }
+  var hv=document.getElementById('lHind'), av=document.getElementById('lPindala');
+  var price = (hv && hv.value!=='') ? num(hv.value) : (l ? l.price : null);
+  var area  = (av && av.value!=='') ? num(av.value) : (l ? l.area  : null);
+  return (price>0 && area>0) ? Math.round(price/area) : null;
+}
+
 function renderMarketPrice(box, j, l){
   var d = j.data || {};
   var med = Number(d.median_eur_m2), avg = Number(d.avg_eur_m2), tx = Number(d.tx_count);
@@ -1537,8 +1546,9 @@ function renderMarketPrice(box, j, l){
     box.innerHTML = mpMsg('Maa-ametist ei saadud usaldusväärset hinda — selles segmendis on andmeid liiga vähe (alla 5 tehingu). Proovi laiemat piirkonda.');
     return;
   }
-  var own = (l.price && l.area) ? Math.round(l.price/l.area) : null;
-  var period = (d.period_start||'').slice(0,4);
+  var own = mpOwnEurM2(l);
+  var yr = (d.period_start||'').slice(0,4);
+  var period = yr ? yr + ' (eelmine täisaasta)' : 'eelmine täisaasta';
   var thin = tx < 30;
   var hinnang;
   if(own){
@@ -1554,7 +1564,7 @@ function renderMarketPrice(box, j, l){
       '<div style="font-size:12px;margin:3px 0;color:var(--tx)">Mediaan <b>'+Math.round(med).toLocaleString('et-EE')+' €/m²</b> · keskmine '+Math.round(avg).toLocaleString('et-EE')+' €/m² · '+tx.toLocaleString('et-EE')+' tehingut</div>'+
       '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-top:5px">Hinnang (arvutuslik)</div>'+
       '<div style="font-size:12px;margin:3px 0;color:var(--tx)">'+hinnang+'</div>'+
-      '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Võrdlus on kogu maakonna tasemel (mitte linnaosa täpsusega).'+typeNote+(thin?' Andmebaas selle segmendi kohta on õhuke ('+tx+' tehingut) — tõlgenda ettevaatlikult.':'')+(j.source==='cache'?' · salvestatud baasist':j.source==='stale'?' · vana baas (värsket ei saanud)':'')+'</div>'+
+      '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Ei arvesta seisukorda, korrust ega vaadet — see on piirkonna keskmine, mitte objekti hinnang. Võrdlus on kogu maakonna tasemel (mitte linnaosa täpsusega).'+typeNote+(thin?' Andmebaas selle segmendi kohta on õhuke ('+tx+' tehingut) — tõlgenda ettevaatlikult.':'')+(j.source==='cache'?' · salvestatud baasist':j.source==='stale'?' · vana baas (värsket ei saanud)':'')+'</div>'+
     '</div>';
 }
 
@@ -2220,7 +2230,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup"><option value="">—</option>${['Korter','Maja','Äripind','Maa'].map(o => `<option${l.property_type===o?' selected':''}>${o}</option>`).join('')}</select></div>
         <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:3px">
-          ${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Hind + pindala puudu — €/m² ei arvuta</span>`}
+          ${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Vali maakond ja vajuta — oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>`}
           <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">
             <select class="kv-inp" id="mpCounty" style="flex:0 1 150px;font-size:11px;padding:3px 6px">
               <option value="">Vali maakond…</option>
