@@ -90,15 +90,15 @@ function parseKokku(html: string): {
 // Ehita Scrapfly js_scenario, mis juhib htraru-vormi nagu päris kasutaja.
 function buildScenario(typeCode: string, countyCode: string): string {
   const steps = [
-    { wait_for_selector: { selector: "#DDTrykis", timeout: 20000 } },
+    { wait_for_selector: { selector: "#DDTrykis", timeout: 15000 } },
     { execute: { script: "document.getElementById('DDTrykis').value='G';__doPostBack('DDTrykis','');" } },
-    { wait_for_selector: { selector: "#LBTrykis option[value='T13']", timeout: 20000 } },
+    { wait_for_selector: { selector: "#LBTrykis option[value='T13']", timeout: 15000 } },
     { execute: { script: `var l=document.getElementById('LBTrykis');l.value='${typeCode}';__doPostBack('LBTrykis','');` } },
     { wait: 2500 },
     { execute: { script: `var c=document.querySelectorAll('.multiselect-container')[0];var t='${countyCode}';var cb=[].slice.call(c.querySelectorAll('input[type=checkbox]')).filter(function(x){return x.value===t;})[0];if(cb){cb.click();}document.getElementById('RBLAeg_3').checked=true;` } },
     { wait: 800 },
     { click: { selector: "#btnTryki" } },
-    { wait_for_selector: { selector: "table", timeout: 20000 } },
+    { wait_for_selector: { selector: "table", timeout: 15000 } },
     { wait: 1500 },
   ];
   return Buffer.from(JSON.stringify(steps)).toString("base64");
@@ -179,7 +179,16 @@ export async function POST(request: Request) {
 
   const parsed = parseKokku(html);
   if (!parsed || parsed.tx_count == null) {
-    return NextResponse.json({ error: "Tulemust ei õnnestunud lugeda (vorm muutus või andmeid napib)", debugLen: html.length }, { status: 502 });
+    const debug = {
+      len: html.length,
+      hasKokku: html.includes("KOKKU"),
+      hasPinnauhik: html.includes("Pinnaühiku"),
+      hasErrorPage: /HtrErrorPage|error/i.test(html),
+      hasTable: html.includes("<table"),
+      hasMultiselect: html.includes("multiselect"),
+      tail: html.replace(/\s+/g, " ").slice(-600),
+    };
+    return NextResponse.json({ error: "Tulemust ei õnnestunud lugeda (vorm muutus või andmeid napib)", debug }, { status: 502 });
   }
 
   // 3) Salvesta (upsert segmendi võtmega).
