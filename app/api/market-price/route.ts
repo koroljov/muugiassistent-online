@@ -155,6 +155,15 @@ export async function POST(request: Request) {
   if (!county) return NextResponse.json({ error: "Piirkonda ei tuvastatud", needs: "region" }, { status: 422 });
   if (!ptype) return NextResponse.json({ error: "Objekti tüüpi ei tuvastatud (toetatud: korter, maja, krunt)", needs: "propertyType" }, { status: 422 });
 
+  // AUS PIIRANG: Maa-amet annab €/m² usaldusväärselt ainult korterite kohta (T13, elupinna €/m²).
+  // Maja/maa (T11/T12) tehingud on maa-pinna põhised, ilma €/m² veeru ja KOKKU-reata → ei esita valet.
+  if (ptype.code !== "T13") {
+    return NextResponse.json({
+      unsupported: true,
+      message: "Maa-amet annab €/m² usaldusväärselt ainult korterite kohta. Maja ja maa tehingud on maa-pinna põhised — otsest €/m² võrdlust ei ole. Maja/maa hinnastatistika lisatakse eraldi (eraldi mõõdik: mediaan tehinguhind).",
+    });
+  }
+
   // Periood: eelmine täisaasta.
   const lastYear = new Date().getFullYear() - 1;
   const period_start = `${lastYear}-01-01`;

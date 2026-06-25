@@ -1516,6 +1516,7 @@ async function loadMarketPrice(){
     var r = await doFetch(token);
     if(r.status === 401){ token = await freshToken(true); r = await doFetch(token); if(r.status===401){ sessionLost(); return; } }
     var j = await r.json();
+    if(j && j.unsupported){ box.innerHTML = mpMsg(j.message || 'See objekti tüüp pole turuhinna võrdluseks toetatud.'); return; }
     if(!r.ok){
       // Kiht 1+2: ära esita faktina, anna selge teade
       var why = (j && j.error) ? (' ('+j.error+')') : '';
