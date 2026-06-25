@@ -1816,6 +1816,24 @@ async function storeLeadImage(srcUrl){
   }catch(e){ return srcUrl; }
 }
 
+// Käsitsi URL → AI: loe kuulutus serverist (Scrapfly) ja anna samale import-AI-le. Kasuta kui järjehoidjat pole.
+async function readListingAI(){
+  var url=(document.getElementById('lUrl').value||'').trim();
+  var st=document.getElementById('lUrlStatus');
+  if(!/^https?:\/\//i.test(url) && url){ url='https://'+url; }
+  if(!/^https?:\/\//i.test(url)){ if(st){st.style.color='var(--red)';st.textContent='Lisa korrektne kuulutuse URL (kv.ee / kinnisvara24 / city24).';} return; }
+  if(st){st.style.color='var(--tx2)';st.textContent='Loen kuulutust serverist (Scrapfly)… ~15 s';}
+  try{
+    var token=await freshToken();
+    var doF=function(t){ return fetch('/api/read-listing',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({url:url}),signal:AbortSignal.timeout(60000)}); };
+    var r=await doF(token);
+    if(r.status===401){ token=await freshToken(true); r=await doF(token); if(r.status===401){ sessionLost(); return; } }
+    var j=await r.json();
+    if(!r.ok){ if(st){st.style.color='var(--red)';st.textContent='Ei õnnestunud lugeda: '+(j.error||r.status);} return; }
+    await importExtractAI({ ogTitle:j.ogTitle||'', ogDesc:j.ogDesc||'', priceHint:'', tel:j.tel||'', email:j.email||'', text:j.text||'' });
+  }catch(e){ if(st){st.style.color='var(--red)';st.textContent='Viga: '+(e&&e.message?e.message:'tundmatu');} }
+}
+
 async function importExtractAI(d){
   var st=document.getElementById('lUrlStatus');
   if(st){ st.style.color='var(--tx2)'; st.textContent='AI loeb kuulutust…'; }
@@ -2283,7 +2301,7 @@ function openLead(id, defaultStatus) {
           </select>
         </div>
         <div class="kv-row"><span class="kv-lbl">Järgmine tegevus</span><input class="kv-inp" id="lNext" type="date" value="${l.next_action_at||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Kuulutuse URL</span><div style="display:flex;gap:6px;flex:1"><input class="kv-inp" id="lUrl" placeholder="https://www.kv.ee/..." value="${l.listing_note&&l.listing_note.startsWith('http')?esc(l.listing_note):''}" style="flex:1"></div></div>
+        <div class="kv-row"><span class="kv-lbl">Kuulutuse URL</span><div style="display:flex;gap:6px;flex:1"><input class="kv-inp" id="lUrl" placeholder="https://www.kv.ee/..." value="${l.listing_note&&l.listing_note.startsWith('http')?esc(l.listing_note):''}" style="flex:1"><button class="btn-ghost" style="font-size:10px;padding:2px 8px;white-space:nowrap" onclick="readListingAI()">🔎 Loe AI-ga</button></div></div>
         <div id="lUrlStatus" style="font-size:9px;color:var(--tx2);margin-bottom:4px;min-height:12px;padding-left:100px"></div>
         <div id="lImgPreview" style="display:${l.img_url?'block':'none'};width:calc(100% - 108px);margin-left:100px;height:80px;background-size:cover;background-position:center;border-radius:6px;margin-bottom:8px;border:1px solid var(--bd);background-image:url('${esc(l.img_url)}')"></div>
         <input type="hidden" id="lImgUrl" value="${esc(l.img_url)}">
