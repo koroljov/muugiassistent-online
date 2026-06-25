@@ -1819,7 +1819,7 @@ async function storeLeadImage(srcUrl){
 async function importExtractAI(d){
   var st=document.getElementById('lUrlStatus');
   if(st){ st.style.color='var(--tx2)'; st.textContent='AI loeb kuulutust…'; }
-  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","purpose":"","deal":"","price":"","area":"","rooms":"","name":"","phone":"","email":""}. addr=objekti aadress (tänav number, linnaosa, linn). type=ÜKS järgnevatest: Korter, Maja, Majaosa, Maa/krunt, Äripind, Garaaž. purpose=alaliik/otstarve vastavalt tüübile: Maja→Eramaja/Suvila/Talu/Muu; Majaosa→Ridaelamuboks/Paarismaja/Muu; Maa/krunt→Elamumaa/Ärimaa/Tootmismaa/Maatulundusmaa/Metsamaa/Aiamaa; Äripind→Büroo/Kaubandus/Majutus/Teenindus/Ladu/Tootmine/Toitlustus/Määramata; Korter ja Garaaž→jäta "". deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). rooms=tubade arv, ainult number. name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
+  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","purpose":"","condition":"","deal":"","price":"","area":"","rooms":"","name":"","phone":"","email":""}. condition=seisukord, ÜKS järgnevatest kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". addr=objekti aadress (tänav number, linnaosa, linn). type=ÜKS järgnevatest: Korter, Maja, Majaosa, Maa/krunt, Äripind, Garaaž. purpose=alaliik/otstarve vastavalt tüübile: Maja→Eramaja/Suvila/Talu/Muu; Majaosa→Ridaelamuboks/Paarismaja/Muu; Maa/krunt→Elamumaa/Ärimaa/Tootmismaa/Maatulundusmaa/Metsamaa/Aiamaa; Äripind→Büroo/Kaubandus/Majutus/Teenindus/Ladu/Tootmine/Toitlustus/Määramata; Korter ja Garaaž→jäta "". deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). rooms=tubade arv, ainult number. name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
   var user='Pealkiri: '+(d.ogTitle||'')+'\nKirjeldus: '+(d.ogDesc||'')+'\nHinnavihje: '+(d.priceHint||'')+'\nTelefon: '+(d.tel||'')+'\nE-post: '+(d.email||'')+'\nTekst: '+(d.text||'');
   try{
     var ans=await aiFetch({ system:sys, max_tokens:300, messages:[{role:'user',content:user}] });
@@ -1827,7 +1827,7 @@ async function importExtractAI(d){
     var r=jm?JSON.parse(jm[0]):{};
     var oe = !!window._importOnlyEmpty;
     var set=function(id,val){ var el=document.getElementById(id); if(!el||val==null||val==='') return; if(oe && el.value && String(el.value).trim()!=='') return; el.value=val; };
-    set('lAadress',r.addr); set('lTuup',normType(r.type)); set('lTehing',r.deal);
+    set('lAadress',r.addr); set('lTuup',normType(r.type)); set('lTehing',r.deal); set('lSeisukord',r.condition);
     onTypeChange(r.purpose);   // täida Otstarve taksonoomia järgi + eeltäida purpose
     var _ph=((d.tel||'').split(',')[0]||'').trim()||r.phone; var _em=((d.email||'').split(',')[0]||'').trim()||r.email;
     set('lNimi',r.name); set('lTel',_ph); set('lEmail',_em);
@@ -2263,6 +2263,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup" onchange="onTypeChange()"><option value="">—</option>${Object.keys(PROPERTY_TAXONOMY).map(o => `<option${normType(l.property_type)===o?' selected':''}>${o}</option>`).join('')}</select></div>
         <div class="kv-row" id="lOtstarveRow" style="display:none"><span class="kv-lbl">Otstarve</span><select class="kv-inp" id="lOtstarve"><option value="">—</option></select></div>
         <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
+        <div class="kv-row"><span class="kv-lbl">Seisukord</span><select class="kv-inp" id="lSeisukord"><option value="">—</option>${['Uusarendus','Uus','Renoveeritud','Heas korras','San. remont tehtud','Keskmine','Vajab san. remonti','Vajab renoveerimist'].map(o=>`<option${l.condition===o?' selected':''}>${o}</option>`).join('')}</select></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:3px">
           ${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Vali maakond ja vajuta — oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>`}
           <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">
@@ -2343,6 +2344,7 @@ async function saveLead() {
     rooms:            parseInt(document.getElementById('lTube').value, 10)  || null,
     property_type:    document.getElementById('lTuup').value               || null,
     use_purpose:      document.getElementById('lOtstarve')?.value           || null,
+    condition:        document.getElementById('lSeisukord')?.value          || null,
     deal_type:        document.getElementById('lTehing').value             || null,
     contact_method:   document.getElementById('lKontaktViis').value        || null,
     next_action_at:   document.getElementById('lNext').value               || null,
@@ -2971,6 +2973,7 @@ function mellLeadContext(){
     l.property_address && ('Aadress: ' + l.property_address),
     loc && ('Asukoht (struktuurne): ' + loc),
     l.property_type && ('Tüüp: ' + l.property_type + (l.use_purpose ? ' / ' + l.use_purpose : '')),
+    l.condition && ('Seisukord: ' + l.condition),
     l.deal_type && ('Tehing: ' + l.deal_type),
     l.client_type && ('Kliendi tüüp: ' + l.client_type),
     (l.price != null) && ('Hind: ' + l.price + ' €'),
@@ -3255,6 +3258,7 @@ function kabiContext(){
     l.property_address && ('Aadress: '+l.property_address),
     loc && ('Asukoht (struktuurne): '+loc),
     l.property_type && ('Tüüp: '+l.property_type + (l.use_purpose ? ' / '+l.use_purpose : '')),
+    l.condition && ('Seisukord: '+l.condition),
     l.deal_type && ('Tehing: '+l.deal_type),
     (l.price!=null) && ('Hind: '+l.price+' €'),
     (l.area!=null) && ('Pindala: '+l.area+' m²'),
