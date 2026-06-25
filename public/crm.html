@@ -1478,6 +1478,7 @@ function addrPick(i){
   addrHideSuggest();
   // sünkroni Turuhinna maakond, kui väli olemas
   var mp = document.getElementById('mpCounty'); if(mp && a.maakond){ mp.value = a.maakond; }
+  window._leadDirty = true; // aadressi valik = salvestamata muudatus
 }
 function addrHideSuggest(){ var s=document.getElementById('lAddrSuggest'); if(s) s.style.display='none'; }
 // Impordil: struktureeri aadress automaatselt. Fail-safe: auto-vali AINULT kui täpselt 1 vaste; muidu jäta kasutajale kinnitada.
@@ -1655,6 +1656,7 @@ async function doLogin() {
 }
 
 async function doLogout() {
+  if(!confirm('Logid välja?')) return;
   await sb.auth.signOut();
   document.getElementById('app').style.display = 'none';
   document.getElementById('addBtn').style.display = 'none';
@@ -1855,8 +1857,37 @@ async function importExtractAI(d){
     if(r.area) set('lPindala',String(r.area).replace(/[^\d.,]/g,'').replace(',','.'));
     if(r.rooms) set('lTube',String(r.rooms).replace(/[^\d]/g,''));
     if(r.addr) await addrStructureFromText(document.getElementById('lAadress').value); // struktureeri asukoht (maakond/linnaosa)
+    window._leadDirty = true;
     if(st){ st.style.color='var(--ac)'; st.textContent='AI luges kuulutuse — kontrolli ja salvesta. (Kui telefon puudub: vajuta kuulutusel Näita numbrit ja klõpsa nuppu uuesti.)'; }
+    genImportFeedback();   // genereeri AI tagasiside kuulutuse kohta (täidab "AI tagasiside" välja)
   }catch(e){ if(st){ st.style.color='var(--red)'; st.textContent='AI ei suutnud lugeda — täida käsitsi'; } }
+}
+
+// Genereeri lühike AI tagasiside imporditud kuulutuse kohta → "AI tagasiside" väli (lAiSummary).
+// Põhineb vormi väljadel + Maa-ameti turuhinnal (kui kogutud baasis). Ei kirjuta üle olemasolevat.
+async function genImportFeedback(){
+  var ai=document.getElementById('lAiSummary'); if(!ai) return;
+  if(ai.value && ai.value.trim()) return;
+  var f=function(id){ var e=document.getElementById(id); return e?e.value.trim():''; };
+  var lines=[
+    f('lAadress')&&('Aadress: '+f('lAadress')),
+    f('lTuup')&&('Tüüp: '+f('lTuup')+(f('lOtstarve')?' / '+f('lOtstarve'):'')),
+    f('lSeisukord')&&('Seisukord: '+f('lSeisukord')),
+    f('lHind')&&('Hind: '+f('lHind')+' €'),
+    f('lPindala')&&('Pindala: '+f('lPindala')+' m²'),
+    f('lTube')&&('Tube: '+f('lTube')),
+    f('lMarkus')&&('Kuulutuse märkus: '+f('lMarkus'))
+  ].filter(Boolean).join('\n');
+  if(!lines){ return; }
+  var market='';
+  try{ market = await mellMarketLine({ county:f('lCounty'), property_type:f('lTuup'), use_purpose:f('lOtstarve'), price:parseFloat(f('lHind'))||null, area:parseFloat(f('lPindala'))||null }); }catch(e){}
+  ai.value='AI koostab tagasisidet…';
+  var sys='Oled Uus Maa müügiassistent. Anna selle kuulutuse kohta lühike aus professionaalne tagasiside (3-5 lauset): mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel; ära leiuta numbreid ega fakte. KUI andmetes on Maa-ameti turuhind (FAKT), võid sellele faktipõhiselt viidata (märgi et see on piirkonna keskmine, ei arvesta seisukorda). Kuiv, konkreetne, korrektne eesti kirjakeel, ilma emojideta.'+AI_STIIL;
+  try{
+    var out=await aiFetch({ system:sys, max_tokens:350, model:'claude-sonnet-4-6', messages:[{role:'user', content:'Andmed:\n'+lines+market}] });
+    if(out && out.indexOf('Viga')!==0 && out.indexOf('Sessioon aegus')!==0){ ai.value=out; window._leadDirty=true; }
+    else { ai.value=''; }
+  }catch(e){ ai.value=''; }
 }
 
 // ============================================================
@@ -2327,6 +2358,8 @@ function openLead(id, defaultStatus) {
 
   document.getElementById('leadModal').classList.add('open');
   onTypeChange(l.use_purpose);   // täida Otstarve-rippmenüü salvestatud väärtusega
+  window._leadDirty = false;     // andmekao kaitse: jälgi muudatusi
+  var _lb = document.getElementById('leadBody'); if(_lb) _lb.oninput = function(){ window._leadDirty = true; };
 }
 
 async function changeStatus(newKey) {
@@ -2385,6 +2418,7 @@ async function saveLead() {
     LEADS.unshift(data); CURRENT = data;
     if (typeof addXP === 'function') addXP(20);
     toast('✅ Lead lisatud');
+    window._leadDirty = false;
     closeModal('leadModal');
     render();
     return;
@@ -2395,6 +2429,7 @@ async function saveLead() {
   const idx = LEADS.findIndex(l => l.id === CURRENT.id);
   if (idx >= 0) Object.assign(LEADS[idx], patch);
   toast('✓ Salvestatud');
+  window._leadDirty = false;
   closeModal('leadModal');
   render();
 }
@@ -2405,6 +2440,7 @@ async function archiveLead() {
   if (error) { toast('❌ ' + error.message); return; }
   LEADS = LEADS.filter(l => l.id !== CURRENT.id);
   toast('📦 Arhiveeritud');
+  window._leadDirty = false;
   closeModal('leadModal');
   render();
 }
@@ -2861,7 +2897,13 @@ document.addEventListener('click', e => {
 // ============================================================
 // MODALS
 // ============================================================
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  // Andmekao kaitse: leadi aknas salvestamata muudatuste korral küsi kinnitust
+  if(id==='leadModal' && window._leadDirty){
+    if(!confirm('Sul on salvestamata muudatused selles aknas. Sulgen ilma salvestamata?')) return;
+  }
+  document.getElementById(id).classList.remove('open');
+}
 
 // "?" Abi — kontekstipõhine AI küsi-vastus CRM-i kasutamise kohta
 function openHelp(ctx){
@@ -2950,7 +2992,7 @@ function newsGo(i){
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape')
-    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id)); // läbi closeModal → andmekao kaitse
 });
 
 document.querySelectorAll('.modal-overlay').forEach(el => {
