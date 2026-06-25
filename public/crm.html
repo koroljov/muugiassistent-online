@@ -1504,7 +1504,7 @@ async function loadMarketPrice(){
   var l = CURRENT;
   var sel = document.getElementById('mpCounty');
   var region = (sel && sel.value) ? sel.value : (l.region || '').trim();
-  var ptype = (l.property_type || '').trim();
+  var ptype = ((document.getElementById('lTuup') && document.getElementById('lTuup').value) || l.property_type || '').trim();
   if(!region){ box.innerHTML = mpMsg('Vali maakond rippmenüüst, siis saan piirkonna hinda näidata.'); return; }
   if(!ptype){ box.innerHTML = mpMsg('Vali objekti tüüp (Korter / Maja / Maa), siis saan piirkonna hinda näidata.'); return; }
   box.innerHTML = '<div style="font-size:10px;color:var(--tx2)">Pärin Maa-ametist… (esimesel korral selle piirkonna kohta ~20 s, edaspidi kohe)</div>';
