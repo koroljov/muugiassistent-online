@@ -1843,6 +1843,8 @@ async function importExtractAI(d){
     var ans=await aiFetch({ system:sys, max_tokens:300, messages:[{role:'user',content:user}] });
     var jm=(ans||'').match(/\{[\s\S]*\}/);
     var r=jm?JSON.parse(jm[0]):{};
+    // Fail-safe: kui AI ei leidnud ühtegi sisulist välja, ütle otse (ära teeskle õnnestumist)
+    if(!r.addr && !r.type && !r.price && !r.area && !r.name){ if(st){ st.style.color='var(--red)'; st.textContent='AI ei leidnud kuulutusest andmeid — kontrolli URL-i/teksti või täida käsitsi.'; } return; }
     var oe = !!window._importOnlyEmpty;
     var set=function(id,val){ var el=document.getElementById(id); if(!el||val==null||val==='') return; if(oe && el.value && String(el.value).trim()!=='') return; el.value=val; };
     set('lAadress',r.addr); set('lTuup',normType(r.type)); set('lTehing',r.deal); set('lSeisukord',r.condition);
@@ -2890,8 +2892,14 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 4;
+var APP_BUILD = 6;
 var CHANGELOG = [
+  { v:6, major:true, date:'25.06.2026', title:'Turuhind ja aadress — täpsem ja kõigile tüüpidele',
+    why:'Aadressi trükkides täidab süsteem maakonna/linnaosa ise (ametlik aadressiotsing). Turuhind töötab nüüd ka maja, krundi ja äripinna kohta (mediaan tehinguhind, mitte ainult korteri €/m²). Objekti tüübid laienesid (Korter/Maja/Majaosa/Maa-krunt/Äripind/Garaaž) + otstarve + seisukord. Kuulutuse saad nüüd lugeda ka URL-i kleepides nupuga "Loe AI-ga".',
+    viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → täida aadress (vali pakutust) + tüüp → vajuta "Vaata turuhinda".' },
+  { v:5, major:true, date:'25.06.2026', title:'AI näeb nüüd tervikpilti',
+    why:'Mell ja Kõneabi arvestavad nüüd kõnede ajalugu, struktuurset asukohta, objekti andmeid ja Maa-ameti turuhinda — annavad konkreetsema ja faktipõhise soovituse, mitte üldist juttu.',
+    viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → Küsi Mellilt või Kõneabi.' },
   { v:4, major:true, date:'25.06.2026', title:'Turuhind — Maa-ameti tehinguhinnad',
     why:'Leadi aknas saad nupuga "Vaata turuhinda" piirkonna €/m² (Maa-ameti tehingute mediaan) ja võrdluse oma objektiga. Faktid ja arvutuslik hinnang on eraldi; kui andmeid napib, ütleb seda otse.',
     viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → Turuhind rida → "Vaata turuhinda".' },
