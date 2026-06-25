@@ -1499,6 +1499,54 @@ function guessCounty(text){
   return '';
 }
 
+// ============================================================
+// AADRESSI-AUTOCOMPLETE (Eesti in-ADS / inaadress) — struktuurne asukoht
+// Trüki → pakub ametlikke aadresse → vali → maakond/omavalitsus/linnaosa + koord auto.
+// ============================================================
+var _addrTimer = null, _addrSeq = 0;
+function addrSearch(val){
+  var sug = document.getElementById('lAddrSuggest'); if(!sug) return;
+  clearTimeout(_addrTimer);
+  if(!val || val.trim().length < 3){ sug.style.display='none'; return; }
+  _addrTimer = setTimeout(function(){ addrDoSearch(val.trim()); }, 300);
+}
+async function addrDoSearch(q){
+  var sug = document.getElementById('lAddrSuggest'); if(!sug) return;
+  var seq = ++_addrSeq;
+  try{
+    var r = await fetch('https://inaadress.maaamet.ee/inaadress/gazetteer?address=' + encodeURIComponent(q) + '&results=7', { headers:{'accept':'application/json'} });
+    var j = await r.json();
+    if(seq !== _addrSeq) return; // aegunud vastus
+    var list = (j.addresses || []);
+    if(!list.length){ sug.style.display='none'; return; }
+    window._addrResults = list;
+    sug.innerHTML = list.map(function(a,i){
+      var loc = [a.maakond,a.omavalitsus,a.asustusyksus].filter(Boolean).join(', ');
+      return '<div class="addr-opt" data-i="'+i+'" style="padding:6px 8px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--bd)">'+esc(a.ipikkaadress||a.pikkaadress||a.aadresstekst||'')+'<div style="font-size:9px;color:var(--tx2)">'+esc(loc)+'</div></div>';
+    }).join('');
+    [].slice.call(sug.querySelectorAll('.addr-opt')).forEach(function(el){
+      el.onmousedown = function(){ addrPick(parseInt(el.getAttribute('data-i'),10)); };
+    });
+    sug.style.display = 'block';
+  }catch(e){ sug.style.display='none'; }
+}
+function addrPick(i){
+  var a = (window._addrResults||[])[i]; if(!a) return;
+  var set = function(id,v){ var e=document.getElementById(id); if(e) e.value = v || ''; };
+  set('lAadress', a.ipikkaadress || a.pikkaadress || a.aadresstekst);
+  set('lCounty', a.maakond);
+  set('lMunicipality', a.omavalitsus);
+  set('lDistrict', a.asustusyksus);
+  set('lLat', a.viitepunkt_b);  // laius (lat)
+  set('lLng', a.viitepunkt_l);  // pikkus (lng)
+  var info = document.getElementById('lAddrInfo');
+  if(info) info.textContent = '📍 ' + [a.maakond,a.omavalitsus,a.asustusyksus].filter(Boolean).join(', ');
+  addrHideSuggest();
+  // sünkroni Turuhinna maakond, kui väli olemas
+  var mp = document.getElementById('mpCounty'); if(mp && a.maakond){ mp.value = a.maakond; }
+}
+function addrHideSuggest(){ var s=document.getElementById('lAddrSuggest'); if(s) s.style.display='none'; }
+
 async function loadMarketPrice(){
   var box = document.getElementById('mpResult');
   if(!box || !CURRENT) return;
@@ -2223,7 +2271,18 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Kontakti nimi</span><input class="kv-inp" id="lNimi" value="${esc(l.contact_name)}"></div>
         <div class="kv-row"><span class="kv-lbl">Telefon</span><input class="kv-inp" id="lTel" value="${esc(l.phone)}"></div>
         <div class="kv-row"><span class="kv-lbl">E-post</span><input class="kv-inp" id="lEmail" value="${esc(l.email)}"></div>
-        <div class="kv-row"><span class="kv-lbl">Aadress</span><input class="kv-inp" id="lAadress" value="${esc(l.property_address)}"></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Aadress</span>
+          <div style="flex:1;position:relative">
+            <input class="kv-inp" id="lAadress" autocomplete="off" value="${esc(l.property_address)}" oninput="addrSearch(this.value)" onblur="setTimeout(addrHideSuggest,200)" style="width:100%">
+            <div id="lAddrSuggest" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;background:var(--sf);border:1px solid var(--bd);border-radius:6px;max-height:190px;overflow:auto;box-shadow:0 6px 16px rgba(0,0,0,.25)"></div>
+            <div id="lAddrInfo" style="font-size:9px;color:var(--tx2);margin-top:2px">${l.county ? '📍 '+esc([l.county,l.municipality,l.district].filter(Boolean).join(', ')) : 'Trüki aadress → vali pakutust, siis maakond/linnaosa täidetakse automaatselt.'}</div>
+            <input type="hidden" id="lCounty" value="${esc(l.county)}">
+            <input type="hidden" id="lMunicipality" value="${esc(l.municipality)}">
+            <input type="hidden" id="lDistrict" value="${esc(l.district)}">
+            <input type="hidden" id="lLat" value="${l.addr_lat||''}">
+            <input type="hidden" id="lLng" value="${l.addr_lng||''}">
+          </div>
+        </div>
         <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Pindala m²</span><input class="kv-inp" id="lPindala" type="number" value="${l.area||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Tube</span><input class="kv-inp" id="lTube" type="number" min="0" value="${l.rooms||''}"></div>
@@ -2234,7 +2293,7 @@ function openLead(id, defaultStatus) {
           <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">
             <select class="kv-inp" id="mpCounty" style="flex:0 1 150px;font-size:11px;padding:3px 6px">
               <option value="">Vali maakond…</option>
-              ${['Harju','Hiiu','Ida-Viru','Jõgeva','Järva','Lääne','Lääne-Viru','Põlva','Pärnu','Rapla','Saare','Tartu','Valga','Viljandi','Võru'].map(c=>`<option value="${c} maakond"${guessCounty((l.region||'')+' '+(l.property_address||''))===c+' maakond'?' selected':''}>${c}</option>`).join('')}
+              ${['Harju','Hiiu','Ida-Viru','Jõgeva','Järva','Lääne','Lääne-Viru','Põlva','Pärnu','Rapla','Saare','Tartu','Valga','Viljandi','Võru'].map(c=>`<option value="${c} maakond"${(l.county || guessCounty((l.region||'')+' '+(l.property_address||'')))===c+' maakond'?' selected':''}>${c}</option>`).join('')}
             </select>
             <button class="btn-ghost" style="font-size:10px;padding:2px 8px" onclick="loadMarketPrice()">📊 Vaata turuhinda</button>
           </div>
@@ -2298,6 +2357,11 @@ async function saveLead() {
     phone:            document.getElementById('lTel').value.trim()         || null,
     email:            document.getElementById('lEmail').value.trim()       || null,
     property_address: document.getElementById('lAadress').value.trim()     || null,
+    county:           document.getElementById('lCounty')?.value.trim()       || null,
+    municipality:     document.getElementById('lMunicipality')?.value.trim() || null,
+    district:         document.getElementById('lDistrict')?.value.trim()     || null,
+    addr_lat:         parseFloat(document.getElementById('lLat')?.value)      || null,
+    addr_lng:         parseFloat(document.getElementById('lLng')?.value)      || null,
     price:            parseFloat(document.getElementById('lHind').value)   || null,
     area:             parseFloat(document.getElementById('lPindala').value) || null,
     rooms:            parseInt(document.getElementById('lTube').value, 10)  || null,
