@@ -1547,7 +1547,7 @@ function renderMarketPrice(box, j, l){
     var yrP=(d.period_start||'').slice(0,4); var periodP=yrP?yrP+' (eelmine täisaasta)':'eelmine täisaasta';
     var mpv=Number(d.median_price), apv=Number(d.avg_price);
     if(!(mpv>0)||!(tx>0)){ box.innerHTML=mpMsg('Maa-ametist ei saadud usaldusväärset tehinguhinda — selles segmendis andmeid napib.'); return; }
-    var ownP=(l&&l.price)?Number(l.price):null;
+    var _hv=document.getElementById('lHind'); var ownP=(_hv&&_hv.value!=='')?parseFloat(String(_hv.value).replace(/\s/g,'').replace(',','.')):((l&&l.price)?Number(l.price):null); if(!(ownP>0)) ownP=null;
     var hinnangP;
     if(ownP){ var dfp=Math.round((ownP/mpv-1)*100); hinnangP='Sinu objekt ('+Math.round(ownP).toLocaleString('et-EE')+' €) on piirkonna mediaanist '+(dfp>0?dfp+'% ÜLE':dfp<0?Math.abs(dfp)+'% ALLA':'samal tasemel')+'.'; }
     else { hinnangP='Lisa objekti hind, et piirkonna mediaaniga võrrelda.'; }
