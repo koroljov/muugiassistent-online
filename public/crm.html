@@ -1499,6 +1499,27 @@ async function addrStructureFromText(q){
   addrHideSuggest();
 }
 
+// Tüüp+otstarve → market_prices segmendi võti + mõõdik (sama loogika mis endpoint). Üks tõeallikas.
+function leadSegKey(propertyType, usePurpose){
+  var t=(propertyType||'').toLowerCase(), pp=(usePurpose||'').toLowerCase();
+  if(/korter|eluruum/.test(t)) return {segKey:'T13', metric:'eur_m2'};
+  if(/maja|majaosa|eramu|elamu|ridaelamu|talu|suvila/.test(t)) return {segKey:'T11:elamumaa', metric:'price'};
+  if(/äri|büroo|kaubandus|ladu|tootmine|toitlustus|teenindus|majutus|garaa/.test(t)) return {segKey:'T11:ärimaa', metric:'price'};
+  if(/krunt|maa|hoonestamata|metsa|põllu/.test(t)){ var seg=/äri/.test(pp)?'ärimaa':/tootmis/.test(pp)?'tootmismaa':/maatulundus|põllu/.test(pp)?'maatulundusmaa':'elamumaa'; return {segKey:'T12:'+seg, metric:'price'}; }
+  return {segKey:'', metric:''};
+}
+
+// Leadi avamisel: kui maakond+tüüp teada ja segment juba BAASIS, näita turuhinda kohe (ilma Scrapflyta, ilma nupuvajutuseta).
+async function autoLoadMarketPrice(l){
+  var box=document.getElementById('mpResult'); if(!box || !l || !l.county) return;
+  var sk=leadSegKey(l.property_type, l.use_purpose); if(!sk.segKey) return;
+  var yr=new Date().getFullYear()-1;
+  try{
+    var resp=await sb.from('market_prices').select('*').eq('county',l.county).eq('property_type',sk.segKey).eq('period_end',yr+'-12-31').maybeSingle();
+    if(resp.data){ renderMarketPrice(box, {source:'cache', data:resp.data}, l); }
+  }catch(e){}
+}
+
 async function loadMarketPrice(){
   var box = document.getElementById('mpResult');
   if(!box || !CURRENT) return;
@@ -2360,6 +2381,7 @@ function openLead(id, defaultStatus) {
   onTypeChange(l.use_purpose);   // täida Otstarve-rippmenüü salvestatud väärtusega
   window._leadDirty = false;     // andmekao kaitse: jälgi muudatusi
   var _lb = document.getElementById('leadBody'); if(_lb) _lb.oninput = function(){ window._leadDirty = true; };
+  autoLoadMarketPrice(l);        // näita turuhinda kohe, kui segment juba baasis (ilma Scrapflyta)
 }
 
 async function changeStatus(newKey) {
@@ -2409,6 +2431,16 @@ async function saveLead() {
   if (!CURRENT.id) {
     // UUS lead → insert
     if (!patch.contact_name) { toast('Kontakti nimi on kohustuslik'); return; }
+    // DUBLEERIMISE HOIATUS: sama kuulutus (URL) või aadress juba CRM-is?
+    var _k = (patch.listing_note && /^https?:\/\//i.test(patch.listing_note)) ? listingKey(patch.listing_note) : '';
+    var _dup = (LEADS||[]).find(function(l){
+      if(_k && l.listing_note && listingKey(l.listing_note)===_k) return true;
+      if(patch.property_address && l.property_address && l.property_address.trim().toLowerCase()===patch.property_address.trim().toLowerCase()) return true;
+      return false;
+    });
+    if(_dup && confirm('Sarnane objekt on juba CRM-is: "'+((_dup.contact_name||_dup.property_address||'olemasolev lead')).slice(0,50)+'". Avan selle asemel? (Tühista = lisa siiski uus)')){
+      window._leadDirty=false; CURRENT=_dup; openLead(_dup.id); return;
+    }
     patch.status = CURRENT.status || 'uus';
     patch.status_changed_at = new Date().toISOString();
     patch.created_by  = (typeof USER!=='undefined' && USER) ? USER.id : null;
@@ -3081,13 +3113,8 @@ function mellLeadContext(){
 // Maa-ameti turuhind Melli konteksti (FAKT) — AINULT juba kogutud baasist (ei käivita Scrapflyt).
 async function mellMarketLine(l){
   if(!l || !l.county) return '';
-  var t=(l.property_type||'').toLowerCase(), pp=(l.use_purpose||'').toLowerCase();
-  var segKey, metric;
-  if(/korter|eluruum/.test(t)){ segKey='T13'; metric='eur_m2'; }
-  else if(/maja|majaosa|eramu|elamu|ridaelamu|talu|suvila/.test(t)){ segKey='T11:elamumaa'; metric='price'; }
-  else if(/äri|büroo|kaubandus|ladu|tootmine|toitlustus|teenindus|majutus|garaa/.test(t)){ segKey='T11:ärimaa'; metric='price'; }
-  else if(/krunt|maa|hoonestamata|metsa|põllu/.test(t)){ var seg=/äri/.test(pp)?'ärimaa':/tootmis/.test(pp)?'tootmismaa':/maatulundus|põllu/.test(pp)?'maatulundusmaa':'elamumaa'; segKey='T12:'+seg; metric='price'; }
-  else return '';
+  var _sk=leadSegKey(l.property_type, l.use_purpose); var segKey=_sk.segKey, metric=_sk.metric;
+  if(!segKey) return '';
   try{
     var resp = await sb.from('market_prices').select('median_eur_m2,median_price,tx_count,period_end,segment')
       .eq('county', l.county).eq('property_type', segKey).order('period_end',{ascending:false}).limit(1).maybeSingle();
