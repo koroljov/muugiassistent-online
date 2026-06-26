@@ -1844,6 +1844,10 @@ async function startApp() {
 // See funktsioon jookseb portaali lehel (bookmarkletina). Peab olema iseseisev, ilma CRM-i globaalideta.
 function _crmGrab(){
   if(!/kv\.ee|kinnisvara24\.ee|city24\.ee|facebook\.com/.test(location.hostname)){ alert('Ava kõigepealt kuulutuse leht (kv.ee, kinnisvara24, city24 või Facebook Marketplace).'); return; }
+  // KRIITILINE: ava aken KOHE kliki hetkel (kasutaja-žesti sees). Kui avada hiljem (setTimeout järel),
+  // blokeerib brauseri hüpikakna-blokeerija selle vaikselt → "midagi ei juhtu". Täidame akna pärast.
+  var w=window.open('about:blank','ma_crm_import');
+  if(w){ try{ w.document.write('<p style="font:14px sans-serif;padding:20px">Loen kuulutust…</p>'); }catch(_){} }
   function m(p){ var e=document.querySelector('meta[property="'+p+'"]'); return e?e.content:''; }
   var cands=[].slice.call(document.querySelectorAll('a,button,div,span')).filter(function(e){ var t=(e.textContent||'').trim(); return t.length>0 && t.length<40 && /näita\s*(numbrit|telefoni|nr)/i.test(t); });
   cands.sort(function(a,b){ return a.textContent.length-b.textContent.length; });
@@ -1857,9 +1861,10 @@ function _crmGrab(){
     var txt=(document.body?document.body.innerText:'').replace(/\s+/g,' ').slice(0,7000);
     var d={ v:2, url:location.href, ogTitle:m('og:title')||document.title||'', ogDesc:m('og:description')||'', img:m('og:image')||'', priceHint:priceHint, tel:tels.join(', '), email:mails.join(', '), text:txt };
     var b64=btoa(unescape(encodeURIComponent(JSON.stringify(d))));
-    // Nimega aken 'ma_crm_import' → korduv "Lisa kuulutus" kasutab SAMA akent (ei kuhju uusi tabe). Põhi-CRM tab jääb puutumata.
-    var w=window.open('https://muugiassistent-online.vercel.app/crm.html#import='+encodeURIComponent(b64),'ma_crm_import');
-    if(!w){ alert('Luba hüpikaknad selle saidi jaoks ja proovi uuesti.'); } else { try{ w.focus(); }catch(_){} }
+    var url='https://muugiassistent-online.vercel.app/crm.html#import='+encodeURIComponent(b64);
+    // Aken juba avatud kliki ajal → navigeeri see importi (popup-blokeerija ei sega). Tagavara, kui aken jäi avamata.
+    if(w){ try{ w.location.href=url; w.focus(); }catch(_){ window.open(url,'ma_crm_import'); } }
+    else { var w2=window.open(url,'ma_crm_import'); if(!w2){ alert('Luba hüpikaknad selle saidi jaoks (aadressiriba ikoon) ja proovi uuesti — VÕI kopeeri kuulutuse URL ja kasuta CRM-is nuppu "Loe AI-ga".'); } }
   }, didReveal ? 1500 : 0);
 }
 function setBookmarkletLink(){
