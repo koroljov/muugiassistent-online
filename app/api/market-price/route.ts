@@ -141,7 +141,7 @@ function parseKokku(html: string): {
 
 // Ehita Scrapfly js_scenario, mis juhib htraru-vormi nagu päris kasutaja.
 // omavCode (valikuline) = Tallinna linnaosa kood (DDOmavalitsus), nt 298 Kesklinn → linnaosa-täpne päring.
-function buildScenario(typeCode: string, countyCode: string, omavCode?: string): string {
+function buildScenario(typeCode: string, countyCode: string, omavCode?: string, asumName?: string): string {
   // NB: dropdownid value+change (vallandab AutoPostBack); maakond ja periood vajavad .click()
   // (sündmustega) — .checked=true EI tööta. Omavalitsuse cascade: __doPostBack('DDMaakond',''). Submit päris-klõpsuga.
   const steps: any[] = [
@@ -159,6 +159,14 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string):
     steps.push({ wait_for_selector: { selector: `#DDOmavalitsus option[value='${omavCode}']`, timeout: 15000 } });
     steps.push({ execute: { script: `var o=document.getElementById('DDOmavalitsus');if(o){o.value='${omavCode}';}` } });
     steps.push({ wait: 600 });
+    if (asumName) {
+      // Asumi tase: käivita 3. cascade ja vali asum NIME järgi (DDKyla koodid on dünaamilised)
+      const aN = asumName.replace(/'/g, "");
+      steps.push({ execute: { script: "try{__doPostBack('DDOmavalitsus','');}catch(e){}" } });
+      steps.push({ wait: 2500 });
+      steps.push({ execute: { script: `var k=document.getElementById('DDKyla');if(k){var o=[].slice.call(k.options).filter(function(x){return x.text.toLowerCase().indexOf('${aN.toLowerCase()}')>=0;})[0];if(o){k.value=o.value;}}` } });
+      steps.push({ wait: 500 });
+    }
   }
   steps.push({ execute: { script: "var rb=document.getElementById('RBLAeg_3');if(rb){rb.click();}" } });
   steps.push({ wait: 1000 });
@@ -169,7 +177,7 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string):
   return Buffer.from(JSON.stringify(steps)).toString("base64");
 }
 
-async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: string): Promise<string> {
+async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: string, asumName?: string): Promise<string> {
   const key = process.env.SCRAPFLY_KEY;
   if (!key) throw new Error("SCRAPFLY_KEY puudub serveris");
   const params = new URLSearchParams({
@@ -179,7 +187,7 @@ async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: st
     asp: "true", // Anti Scraping Protection (Cloudflare bypass)
     country: "ee",
     rendering_wait: "3000",
-    js_scenario: buildScenario(typeCode, countyCode, omavCode),
+    js_scenario: buildScenario(typeCode, countyCode, omavCode, asumName),
   });
   const r = await fetch("https://api.scrapfly.io/scrape?" + params.toString(), {
     signal: AbortSignal.timeout(55000),
@@ -213,10 +221,17 @@ export async function POST(request: Request) {
   if (!county) return NextResponse.json({ error: "Piirkonda ei tuvastatud", needs: "region" }, { status: 422 });
   if (!ptype) return NextResponse.json({ unsupported: true, message: "Selle objekti tüübi (nt garaaž) kohta Maa-amet hinnastatistikat ei anna." });
 
-  // Tallinna linnaosa-täpsus (ainult Harju): kui leadi district on Tallinna ametlik linnaosa, päri linnaosa tasemel.
+  const asum = (body?.asum || "").toString().trim();
+
+  // Tallinna täpsus (ainult Harju). Tasemed kõige täpsemast → üldisemani:
+  //   asum (nt Kalamaja) → linnaosa (nt Põhja-Tallinn) → maakond (Harju).
+  // Kui täpsemas tasemes on liiga vähe tehinguid (Maa-amet peidab <5), langeme automaatselt järgmisele.
   const lo = county.code === "0037" ? tallinnDistrictCode(district) : null;
-  const omavCode = lo ? lo.code : undefined;
-  const districtUsed = lo ? lo.label : "";
+  type Level = { kind: "asum" | "linnaosa" | "maakond"; district: string; omavCode?: string; asumName?: string };
+  const levels: Level[] = [];
+  if (lo && asum) levels.push({ kind: "asum", district: asum, omavCode: lo.code, asumName: asum });
+  if (lo) levels.push({ kind: "linnaosa", district: lo.label, omavCode: lo.code });
+  levels.push({ kind: "maakond", district: "" });
 
   // Segmendi võti: korter='T13', maja='T11:elamumaa', äripind='T11:ärimaa', maa='T12:<otstarve>'.
   const segKey = ptype.metric === "price" ? ptype.code + ":" + ptype.segment : ptype.code;
@@ -225,69 +240,95 @@ export async function POST(request: Request) {
   const lastYear = new Date().getFullYear() - 1;
   const period_start = `${lastYear}-01-01`;
   const period_end = `${lastYear}-12-31`;
-
-  // 1) Vaata DB-st (värske = fetched_at < 180 päeva).
-  const { data: cached } = await admin
-    .from("market_prices")
-    .select("*")
-    .eq("county", county.name)
-    .eq("municipality", "")
-    .eq("district", districtUsed)
-    .eq("property_type", segKey)
-    .eq("period_end", period_end)
-    .maybeSingle();
-
   const FRESH_MS = 180 * 24 * 3600 * 1000;
-  if (cached && cached.fetched_at && Date.now() - new Date(cached.fetched_at).getTime() < FRESH_MS) {
-    return NextResponse.json({ source: "cache", data: cached });
-  }
 
-  // 2) Päri Scrapfly kaudu (sama stsenaarium, ainult aruande kood erineb).
-  let html: string;
-  try {
-    html = await scrapflyFetch(ptype.code, county.code, omavCode);
-  } catch (e: any) {
-    if (cached) return NextResponse.json({ source: "stale", data: cached, warning: "Värsket päringut ei õnnestunud teha: " + (e?.message || "viga") });
-    return NextResponse.json({ error: e?.message || "Maa-ameti päring ebaõnnestus" }, { status: 502 });
-  }
-
-  // 3) Parsi õige mõõdiku järgi.
-  let row: any;
-  if (ptype.metric === "eur_m2") {
-    const p = parseKokku(html);
-    if (!p || !(Number(p.median_eur_m2) > 0) || !(Number(p.tx_count) > 0)) {
-      return NextResponse.json({ error: "Tulemust ei õnnestunud lugeda (vorm muutus või andmeid napib)", debug: { len: html.length, hasKokku: html.includes("KOKKU"), hasTable: html.includes("<table"), hasErrorPage: html.includes("HtrErrorPage") } }, { status: 502 });
+  // Parsib HTML-i õige mõõdiku järgi. Tagastab rea VÕI null (andmeid napib / vorm muutus).
+  function parseRow(html: string): any | null {
+    if (ptype.metric === "eur_m2") {
+      const p = parseKokku(html);
+      if (!p || !(Number(p.median_eur_m2) > 0) || !(Number(p.tx_count) > 0)) return null;
+      return { median_eur_m2: p.median_eur_m2, avg_eur_m2: p.avg_eur_m2, min_eur_m2: p.min_eur_m2, max_eur_m2: p.max_eur_m2, tx_count: p.tx_count, total_value: p.total_value };
     }
-    row = { median_eur_m2: p.median_eur_m2, avg_eur_m2: p.avg_eur_m2, min_eur_m2: p.min_eur_m2, max_eur_m2: p.max_eur_m2, tx_count: p.tx_count, total_value: p.total_value };
-  } else {
     const p = parsePriceRow(html, ptype.segment);
-    if (!p || !(Number(p.median_price) > 0) || !(Number(p.tx_count) > 0)) {
-      return NextResponse.json({ error: "Selles segmendis ('" + ptype.segment + "') ei õnnestunud usaldusväärset tehinguhinda lugeda (andmeid napib või vorm muutus).", debug: { len: html.length, hasSegment: html.toLowerCase().includes(ptype.segment), hasTable: html.includes("<table"), hasErrorPage: html.includes("HtrErrorPage") } }, { status: 502 });
-    }
-    row = { median_price: p.median_price, avg_price: p.avg_price, tx_count: p.tx_count, total_value: p.total_value };
+    if (!p || !(Number(p.median_price) > 0) || !(Number(p.tx_count) > 0)) return null;
+    return { median_price: p.median_price, avg_price: p.avg_price, tx_count: p.tx_count, total_value: p.total_value };
   }
 
-  // 4) Salvesta.
-  const full = {
-    county: county.name,
-    municipality: "",
-    district: districtUsed,
-    property_type: segKey,
-    property_label: ptype.label + (districtUsed ? " — " + districtUsed : ""),
-    metric: ptype.metric,
-    segment: ptype.segment,
-    period_start,
-    period_end,
-    source: "maaamet_htraru",
-    fetched_at: new Date().toISOString(),
-    ...row,
-  };
-  const { data: saved, error: saveErr } = await admin
-    .from("market_prices")
-    .upsert(full, { onConflict: "county,municipality,district,property_type,period_start,period_end" })
-    .select()
-    .maybeSingle();
-  if (saveErr) return NextResponse.json({ source: "fresh", data: full, warning: "Salvestus ebaõnnestus: " + saveErr.message });
+  // 1) Vaata DB-st (värske = fetched_at < 180 päeva). Kontrolli kõige täpsemast tasemest.
+  //    tx_count=0 = "sentinel" (varem kontrollitud, andmeid napib) → liigu üldisemale tasemele, ÄRA päri uuesti.
+  //    Kui tase pole üldse cache'is → katkesta ja päri (alates kõige täpsemast).
+  let mustFetch = false;
+  for (const lv of levels) {
+    const { data: cached } = await admin
+      .from("market_prices")
+      .select("*")
+      .eq("county", county.name)
+      .eq("municipality", "")
+      .eq("district", lv.district)
+      .eq("property_type", segKey)
+      .eq("period_end", period_end)
+      .maybeSingle();
+    if (cached && cached.fetched_at && Date.now() - new Date(cached.fetched_at).getTime() < FRESH_MS) {
+      if (Number(cached.tx_count) > 0) return NextResponse.json({ source: "cache", data: cached, level: lv.kind });
+      continue; // sentinel: see tase on teadaolevalt hõre → proovi üldisemat
+    }
+    mustFetch = true; // see tase pole värske cache'is → vaja Scrapflyt
+    break;
+  }
 
-  return NextResponse.json({ source: "fresh", data: saved || full });
+  // 2) Päri Scrapfly kaudu, kõige täpsemast tasemest. Kui napib → salvesta sentinel ja lange järgmisele.
+  let lastErr = "";
+  let staleFallback: any = null;
+  for (let i = 0; mustFetch && i < levels.length; i++) {
+    const lv = levels[i];
+    let html: string;
+    try {
+      html = await scrapflyFetch(ptype.code, county.code, lv.omavCode, lv.asumName);
+    } catch (e: any) {
+      lastErr = e?.message || "päring ebaõnnestus";
+      continue; // proovi üldisemat taset
+    }
+    const row = parseRow(html);
+    if (!row) {
+      lastErr = "andmeid napib tasemel '" + lv.kind + "'";
+      // Salvesta sentinel (tx_count=0), et seda hõredat taset uuesti ei päriks.
+      if (lv.kind !== "maakond") {
+        await admin.from("market_prices").upsert({
+          county: county.name, municipality: "", district: lv.district, property_type: segKey,
+          property_label: ptype.label + " — " + lv.district + " (andmeid napib)",
+          metric: ptype.metric, segment: ptype.segment, period_start, period_end,
+          source: "maaamet_htraru", fetched_at: new Date().toISOString(), tx_count: 0,
+        }, { onConflict: "county,municipality,district,property_type,period_start,period_end" });
+      }
+      continue; // <5 tehingut vms → langeme üldisemale tasemele
+    }
+
+    // 3) Salvesta selle taseme tulemus.
+    const full: any = {
+      county: county.name,
+      municipality: "",
+      district: lv.district,
+      property_type: segKey,
+      property_label: ptype.label + (lv.district ? " — " + lv.district : ""),
+      metric: ptype.metric,
+      segment: ptype.segment,
+      period_start,
+      period_end,
+      source: "maaamet_htraru",
+      fetched_at: new Date().toISOString(),
+      ...row,
+    };
+    const { data: saved, error: saveErr } = await admin
+      .from("market_prices")
+      .upsert(full, { onConflict: "county,municipality,district,property_type,period_start,period_end" })
+      .select()
+      .maybeSingle();
+    const fellBack = i > 0 ? levels[0].kind : null; // küsiti täpsemat, anti üldisem
+    if (saveErr) return NextResponse.json({ source: "fresh", data: full, level: lv.kind, fellBackFrom: fellBack, warning: "Salvestus ebaõnnestus: " + saveErr.message });
+    return NextResponse.json({ source: "fresh", data: saved || full, level: lv.kind, fellBackFrom: fellBack });
+  }
+
+  // 4) Kõik tasemed ebaõnnestusid.
+  if (staleFallback) return NextResponse.json({ source: "stale", data: staleFallback, warning: "Värsket päringut ei õnnestunud teha." });
+  return NextResponse.json({ error: "Maa-ameti päring ebaõnnestus (" + lastErr + ")" }, { status: 502 });
 }

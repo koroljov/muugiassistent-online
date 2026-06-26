@@ -1471,6 +1471,7 @@ function addrPick(i){
   set('lCounty', a.maakond);
   set('lMunicipality', a.omavalitsus);
   set('lDistrict', a.asustusyksus);
+  set('lAsum', a.asum);
   set('lLat', a.viitepunkt_b);  // laius (lat)
   set('lLng', a.viitepunkt_l);  // pikkus (lng)
   var info = document.getElementById('lAddrInfo');
@@ -1519,15 +1520,27 @@ function leadSegKey(propertyType, usePurpose){
   return {segKey:'', metric:''};
 }
 
+// Leadi täpsuse-tasemed cache-otsinguks: asum → linnaosa → maakond (kõige täpsem enne).
+function leadMarketLevels(l){
+  var levels=[];
+  var dl=leadDistrictLabel(l); // Tallinna linnaosa silt või ''
+  if(dl && (l.asum||'').trim()) levels.push((l.asum||'').trim()); // asumi tase
+  if(dl) levels.push(dl);                                         // linnaosa tase
+  levels.push('');                                                // maakond
+  return levels;
+}
+
 // Leadi avamisel: kui maakond+tüüp teada ja segment juba BAASIS, näita turuhinda kohe (ilma Scrapflyta, ilma nupuvajutuseta).
 async function autoLoadMarketPrice(l){
   var box=document.getElementById('mpResult'); if(!box || !l || !l.county) return;
   var sk=leadSegKey(l.property_type, l.use_purpose); if(!sk.segKey) return;
   var yr=new Date().getFullYear()-1;
-  var dist=leadDistrictLabel(l); // Tallinna linnaosa silt või ''
+  var levels=leadMarketLevels(l);
   try{
-    var resp=await sb.from('market_prices').select('*').eq('county',l.county).eq('municipality','').eq('district',dist).eq('property_type',sk.segKey).eq('period_end',yr+'-12-31').maybeSingle();
-    if(resp.data){ renderMarketPrice(box, {source:'cache', data:resp.data}, l); }
+    for(var i=0;i<levels.length;i++){
+      var resp=await sb.from('market_prices').select('*').eq('county',l.county).eq('municipality','').eq('district',levels[i]).eq('property_type',sk.segKey).eq('period_end',yr+'-12-31').maybeSingle();
+      if(resp.data && Number(resp.data.tx_count)>0){ renderMarketPrice(box, {source:'cache', data:resp.data}, l); return; } // näita kõige täpsem OLEMASOLEV (jäta hõredad sentinelid vahele)
+    }
   }catch(e){}
 }
 
@@ -1542,7 +1555,7 @@ async function loadMarketPrice(){
   if(!ptype){ box.innerHTML = mpMsg('Vali objekti tüüp (Korter / Maja / Maa), siis saan piirkonna hinda näidata.'); return; }
   box.innerHTML = '<div style="font-size:10px;color:var(--tx2)">Pärin Maa-ametist… (esimesel korral selle piirkonna kohta ~20 s, edaspidi kohe)</div>';
   var usePurpose = (document.getElementById('lOtstarve') && document.getElementById('lOtstarve').value) || (l.use_purpose || '');
-  var payload = { region: region, propertyType: ptype, usePurpose: usePurpose, district: (l.district||'') };
+  var payload = { region: region, propertyType: ptype, usePurpose: usePurpose, district: (l.district||''), asum: (l.asum||'') };
   try{
     var token = await freshToken();
     var doFetch = function(tok){ return fetch('/api/market-price', { method:'POST', headers:{'content-type':'application/json','authorization':'Bearer '+tok}, body: JSON.stringify(payload), signal: AbortSignal.timeout(60000) }); };
@@ -1571,6 +1584,14 @@ function mpOwnEurM2(l){
   return (price>0 && area>0) ? Math.round(price/area) : null;
 }
 
+// Täpsuse-taseme märge kuvateatesse: asum (kõige täpsem) / linnaosa / maakond.
+function mpLevelNote(district){
+  var d=(district||'').trim();
+  if(!d) return 'Võrdlus on kogu maakonna tasemel (mitte linnaosa täpsusega).';
+  if(/linnaosa/i.test(d)) return 'Võrdlus on linnaosa tasemel ('+esc(d)+').';
+  return 'Võrdlus on asumi tasemel ('+esc(d)+') — kõige täpsem.';
+}
+
 function renderMarketPrice(box, j, l){
   var d = j.data || {};
   var tx = Number(d.tx_count);
@@ -1589,7 +1610,7 @@ function renderMarketPrice(box, j, l){
       '<div style="font-size:12px;margin:3px 0;color:var(--tx)">Mediaan tehinguhind <b>'+Math.round(mpv).toLocaleString('et-EE')+' €</b> · keskmine '+Math.round(apv||0).toLocaleString('et-EE')+' € · '+tx.toLocaleString('et-EE')+' tehingut</div>'+
       '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-top:5px">Hinnang (arvutuslik)</div>'+
       '<div style="font-size:12px;margin:3px 0;color:var(--tx)">'+hinnangP+'</div>'+
-      '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Maa-pinna tehingute mediaanHIND (sihtotstarve: '+esc(d.segment||'')+'), mitte €/m² ega objekti väärtus. Ei arvesta hoone seisukorda/suurust. Maakonna tase.'+(tx<30?' Õhuke andmebaas ('+tx+') — tõlgenda ettevaatlikult.':'')+srcP+'</div>'+
+      '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Maa-pinna tehingute mediaanHIND (sihtotstarve: '+esc(d.segment||'')+'), mitte €/m² ega objekti väärtus. Ei arvesta hoone seisukorda/suurust. '+mpLevelNote(d.district)+(tx<30?' Õhuke andmebaas ('+tx+') — tõlgenda ettevaatlikult.':'')+srcP+'</div>'+
     '</div>';
     return;
   }
@@ -1617,7 +1638,7 @@ function renderMarketPrice(box, j, l){
       '<div style="font-size:12px;margin:3px 0;color:var(--tx)">Mediaan <b>'+Math.round(med).toLocaleString('et-EE')+' €/m²</b> · keskmine '+Math.round(avg).toLocaleString('et-EE')+' €/m² · '+tx.toLocaleString('et-EE')+' tehingut</div>'+
       '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-top:5px">Hinnang (arvutuslik)</div>'+
       '<div style="font-size:12px;margin:3px 0;color:var(--tx)">'+hinnang+'</div>'+
-      '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Ei arvesta seisukorda, korrust ega vaadet — see on piirkonna keskmine, mitte objekti hinnang. '+(d.district?('Võrdlus on linnaosa tasemel ('+esc(d.district)+').'):'Võrdlus on kogu maakonna tasemel (mitte linnaosa täpsusega).')+typeNote+(thin?' Andmebaas selle segmendi kohta on õhuke ('+tx+' tehingut) — tõlgenda ettevaatlikult.':'')+(j.source==='cache'?' · salvestatud baasist':j.source==='stale'?' · vana baas (värsket ei saanud)':'')+'</div>'+
+      '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Ei arvesta seisukorda, korrust ega vaadet — see on piirkonna keskmine, mitte objekti hinnang. '+mpLevelNote(d.district)+typeNote+(thin?' Andmebaas selle segmendi kohta on õhuke ('+tx+' tehingut) — tõlgenda ettevaatlikult.':'')+(j.source==='cache'?' · salvestatud baasist':j.source==='stale'?' · vana baas (värsket ei saanud)':'')+'</div>'+
     '</div>';
 }
 
@@ -2336,6 +2357,7 @@ function openLead(id, defaultStatus) {
             <input type="hidden" id="lCounty" value="${esc(l.county)}">
             <input type="hidden" id="lMunicipality" value="${esc(l.municipality)}">
             <input type="hidden" id="lDistrict" value="${esc(l.district)}">
+            <input type="hidden" id="lAsum" value="${esc(l.asum)}">
             <input type="hidden" id="lLat" value="${l.addr_lat||''}">
             <input type="hidden" id="lLng" value="${l.addr_lng||''}">
           </div>
@@ -2423,6 +2445,7 @@ async function saveLead() {
     county:           document.getElementById('lCounty')?.value.trim()       || null,
     municipality:     document.getElementById('lMunicipality')?.value.trim() || null,
     district:         document.getElementById('lDistrict')?.value.trim()     || null,
+    asum:             document.getElementById('lAsum')?.value.trim()          || null,
     addr_lat:         parseFloat(document.getElementById('lLat')?.value)      || null,
     addr_lng:         parseFloat(document.getElementById('lLng')?.value)      || null,
     price:            parseFloat(document.getElementById('lHind').value)   || null,
@@ -2977,8 +3000,11 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 6;
+var APP_BUILD = 7;
 var CHANGELOG = [
+  { v:7, major:true, date:'26.06.2026', title:'Turuhind nüüd asumi täpsusega (Tallinn)',
+    why:'Kui leadi aadress on Tallinna asumis (nt Kalamaja, Telliskivi), näitab Turuhind selle asumi tehinguhinda — kõige täpsem tase. Kui asumis on liiga vähe tehinguid, langeb automaatselt linnaosa ja siis maakonna tasemele, ning ütleb selgelt, mis tasemel number on. Hõredat asumit ei pärita korduvalt (säästab ressurssi).',
+    viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → vali aadress pakutust (asum täitub) → "Vaata turuhinda".' },
   { v:6, major:true, date:'25.06.2026', title:'Turuhind ja aadress — täpsem ja kõigile tüüpidele',
     why:'Aadressi trükkides täidab süsteem maakonna/linnaosa ise (ametlik aadressiotsing). Turuhind töötab nüüd ka maja, krundi ja äripinna kohta (mediaan tehinguhind, mitte ainult korteri €/m²). Objekti tüübid laienesid (Korter/Maja/Majaosa/Maa-krunt/Äripind/Garaaž) + otstarve + seisukord. Kuulutuse saad nüüd lugeda ka URL-i kleepides nupuga "Loe AI-ga".',
     viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → täida aadress (vali pakutust) + tüüp → vajuta "Vaata turuhinda".' },
@@ -3127,16 +3153,21 @@ async function mellMarketLine(l){
   var _sk=leadSegKey(l.property_type, l.use_purpose); var segKey=_sk.segKey, metric=_sk.metric;
   if(!segKey) return '';
   try{
-    var resp = await sb.from('market_prices').select('median_eur_m2,median_price,tx_count,period_end,segment,district')
-      .eq('county', l.county).eq('municipality','').eq('district', leadDistrictLabel(l)).eq('property_type', segKey).order('period_end',{ascending:false}).limit(1).maybeSingle();
-    var d = resp.data; if(!d) return '';
+    var levels=leadMarketLevels(l); var d=null;
+    for(var i=0;i<levels.length;i++){ // kõige täpsem olemasolev tase
+      var resp = await sb.from('market_prices').select('median_eur_m2,median_price,tx_count,period_end,segment,district')
+        .eq('county', l.county).eq('municipality','').eq('district', levels[i]).eq('property_type', segKey).order('period_end',{ascending:false}).limit(1).maybeSingle();
+      if(resp.data && Number(resp.data.tx_count)>0){ d=resp.data; break; } // jäta hõredad sentinelid vahele
+    }
+    if(!d) return '';
+    var loc = l.county + (d.district?(' · '+d.district):'');
     if(metric==='eur_m2'){
       if(!d.median_eur_m2) return '';
       var own = (l.price && l.area) ? Math.round(l.price/l.area) : null;
-      return '\n\nMAA-AMETI TURUHIND (FAKT, '+l.county+', '+String(d.period_end||'').slice(0,4)+'): mediaan '+Math.round(d.median_eur_m2)+' €/m², '+d.tx_count+' tehingut'+(own?('; selle objekti €/m² '+own):'')+'. NB: piirkonna keskmine, ei arvesta seisukorda/korrust.';
+      return '\n\nMAA-AMETI TURUHIND (FAKT, '+loc+', '+String(d.period_end||'').slice(0,4)+'): mediaan '+Math.round(d.median_eur_m2)+' €/m², '+d.tx_count+' tehingut'+(own?('; selle objekti €/m² '+own):'')+'. NB: piirkonna keskmine, ei arvesta seisukorda/korrust.';
     } else {
       if(!d.median_price) return '';
-      return '\n\nMAA-AMETI TURUHIND (FAKT, '+l.county+', '+(d.segment||'')+', '+String(d.period_end||'').slice(0,4)+'): mediaan tehinguhind '+Math.round(d.median_price)+' €, '+d.tx_count+' tehingut. NB: maa-pinna tehingute mediaanhind, mitte €/m² ega objekti väärtus.';
+      return '\n\nMAA-AMETI TURUHIND (FAKT, '+loc+', '+(d.segment||'')+', '+String(d.period_end||'').slice(0,4)+'): mediaan tehinguhind '+Math.round(d.median_price)+' €, '+d.tx_count+' tehingut. NB: maa-pinna tehingute mediaanhind, mitte €/m² ega objekti väärtus.';
     }
   }catch(e){ return ''; }
 }
