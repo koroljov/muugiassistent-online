@@ -1609,6 +1609,12 @@ function mpOwnEurM2(l){
   var area  = (av && av.value!=='') ? num(av.value) : (l ? l.area  : null);
   return (price>0 && area>0) ? Math.round(price/area) : null;
 }
+// Uuenda "Sinu objekt: X €/m²" rida reaalajas, kui hind/pindala muutub (ka salvestamata) — ühtib Turuhind-kastiga.
+function updateOwnEurLine(){
+  var el=document.getElementById('mpOwnLine'); if(!el) return;
+  var v=mpOwnEurM2(CURRENT);
+  el.innerHTML = v ? ('Sinu objekt: <b>'+v.toLocaleString('et-EE')+' €/m²</b>') : '<span style="color:var(--tx2)">Vali maakond ja vajuta — oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>';
+}
 
 // Täpsuse-taseme märge kuvateatesse: asum (kõige täpsem) / linnaosa / maakond.
 function mpLevelNote(district){
@@ -2428,7 +2434,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
         <div class="kv-row"><span class="kv-lbl">Seisukord</span><select class="kv-inp" id="lSeisukord"><option value="">—</option>${['Uusarendus','Uus','Renoveeritud','Heas korras','San. remont tehtud','Keskmine','Vajab san. remonti','Vajab renoveerimist'].map(o=>`<option${l.condition===o?' selected':''}>${o}</option>`).join('')}</select></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:3px">
-          ${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Vali maakond ja vajuta — oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>`}
+          <span id="mpOwnLine">${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Vali maakond ja vajuta — oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>`}</span>
           <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">
             <select class="kv-inp" id="mpCounty" style="flex:0 1 150px;font-size:11px;padding:3px 6px">
               <option value="">Vali maakond…</option>
@@ -2473,7 +2479,7 @@ function openLead(id, defaultStatus) {
   document.getElementById('leadModal').classList.add('open');
   onTypeChange(l.use_purpose);   // täida Otstarve-rippmenüü salvestatud väärtusega
   window._leadDirty = false;     // andmekao kaitse: jälgi muudatusi
-  var _lb = document.getElementById('leadBody'); if(_lb) _lb.oninput = function(){ window._leadDirty = true; };
+  var _lb = document.getElementById('leadBody'); if(_lb) _lb.oninput = function(){ window._leadDirty = true; updateOwnEurLine(); };
   autoLoadMarketPrice(l);        // näita turuhinda kohe, kui segment juba baasis (ilma Scrapflyta)
 }
 
