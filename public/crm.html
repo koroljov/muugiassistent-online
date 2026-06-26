@@ -1962,6 +1962,15 @@ async function importExtractAI(d){
   }catch(e){ if(st){ st.style.color='var(--red)'; st.textContent='AI ei suutnud lugeda — täida käsitsi'; } }
 }
 
+// Värskenda AI tagasiside: kustuta vana (mis võib olla aegunud — objekti hind/pindala või turuhinna tase muutus)
+// ja genereeri uuesti praeguste väljade + linnaosa/asumi turuhinna põhjal. Lahendab "numbrid ei klapi Turuhinnaga".
+async function refreshAiFeedback(){
+  var ai=document.getElementById('lAiSummary'); if(!ai) return;
+  ai.value='';                 // tühjenda, et genImportFeedback regenereeriks (muidu jätab vana alles)
+  window._leadDirty=true;
+  await genImportFeedback();
+}
+
 // Genereeri lühike AI tagasiside imporditud kuulutuse kohta → "AI tagasiside" väli (lAiSummary).
 // Põhineb vormi väljadel + Maa-ameti turuhinnal (kui kogutud baasis). Ei kirjuta üle olemasolevat.
 async function genImportFeedback(){
@@ -1980,7 +1989,8 @@ async function genImportFeedback(){
   ].filter(Boolean).join('\n');
   if(!lines){ return; }
   var market='';
-  try{ market = await mellMarketLine({ county:f('lCounty'), property_type:f('lTuup'), use_purpose:f('lOtstarve'), price:parseFloat(f('lHind'))||null, area:parseFloat(f('lPindala'))||null }); }catch(e){}
+  // NB: anna district+asum → AI tagasiside kasutab SAMA taset mis Turuhind (linnaosa/asum), mitte maakonda. Muidu numbrid ei klapi.
+  try{ market = await mellMarketLine({ county:f('lCounty'), district:f('lDistrict'), asum:f('lAsum'), property_type:f('lTuup'), use_purpose:f('lOtstarve'), price:parseFloat(f('lHind'))||null, area:parseFloat(f('lPindala'))||null }); }catch(e){}
   ai.value='AI koostab tagasisidet…';
   var sys='Oled Uus Maa müügiassistent. Anna selle kuulutuse kohta lühike aus professionaalne tagasiside (3-5 lauset): mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel; ära leiuta numbreid ega fakte. KUI andmetes on Maa-ameti turuhind (FAKT), võid sellele faktipõhiselt viidata (märgi et see on piirkonna keskmine, ei arvesta seisukorda). Kuiv, konkreetne, korrektne eesti kirjakeel, ilma emojideta.'+AI_STIIL;
   try{
@@ -2441,7 +2451,7 @@ function openLead(id, defaultStatus) {
         <div id="lImgPreview" style="display:${l.img_url?'block':'none'};width:calc(100% - 108px);margin-left:100px;height:80px;background-size:cover;background-position:center;border-radius:6px;margin-bottom:8px;border:1px solid var(--bd);background-image:url('${esc(l.img_url)}')"></div>
         <input type="hidden" id="lImgUrl" value="${esc(l.img_url)}">
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?esc(l.listing_note):''}</textarea></div>
-        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">AI tagasiside</span><textarea class="kv-inp" id="lAiSummary" rows="5" placeholder="AI tagasiside — täitub kuulutuse importimisel; täienda Küsi Mellilt kaudu" style="font-size:11px;line-height:1.5">${esc(l.ai_summary)}</textarea></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">AI tagasiside<button type="button" class="btn-ghost" style="display:block;margin-top:6px;font-size:10px;padding:2px 6px" onclick="refreshAiFeedback()" title="Genereeri uuesti praeguste andmete + linnaosa/asumi turuhinna põhjal">↻ Värskenda</button></span><textarea class="kv-inp" id="lAiSummary" rows="5" placeholder="AI tagasiside — täitub kuulutuse importimisel; täienda Küsi Mellilt kaudu" style="font-size:11px;line-height:1.5">${esc(l.ai_summary)}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${esc(l.lead_comment)}</textarea></div>
       </div>
 
