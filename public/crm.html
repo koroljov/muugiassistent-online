@@ -1287,7 +1287,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     </div>
     <div class="modal-body" id="leadBody"></div>
     <div class="modal-foot">
-      <button class="btn-danger" id="leadArchiveBtn" onclick="archiveLead()">Arhiveeri</button>
+      <button class="btn-danger" id="leadArchiveBtn" onclick="openArchive()">Arhiveeri</button>
       <button class="btn-danger" id="leadDeleteBtn" onclick="deleteLead()" style="display:none" title="Kustuta jäädavalt (ainult sina)">Kustuta</button>
       <button class="btn-ghost" id="leadMellBtn" onclick="openMell()">Küsi Mellilt</button>
       <button class="btn-ghost" id="leadKabiBtn" onclick="openKabi()">Kõneabi</button>
@@ -1326,6 +1326,26 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     </div>
     <div class="modal-body">
       <div id="newsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ARHIVEERIMINE — MÜÜGITULEMUS -->
+<div class="modal-overlay" id="archiveModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <div class="modal-title">Objekt arhiivi — mis sai?</div>
+      <button class="modal-x" onclick="closeModal('archiveModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;line-height:1.5">Vali tulemus. See ei kao statistikast — aitab hiljem mõista, mis töötab. Objekt liigub arhiivi.</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn-ghost" style="text-align:left" onclick="archiveLead('müüdud_meie')">Müüdud — meie kaudu</button>
+        <button class="btn-ghost" style="text-align:left" onclick="archiveLead('müüdud_mujal')">Müüdud — mujal / teine maakler</button>
+        <button class="btn-ghost" style="text-align:left" onclick="archiveLead('omanik_loobus')">Omanik loobus müügist</button>
+        <button class="btn-ghost" style="text-align:left" onclick="archiveLead('aegus')">Aegus / pole enam aktiivne</button>
+        <button class="btn-ghost" style="text-align:left" onclick="archiveLead('muu')">Muu — lihtsalt arhiveeri</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1902,7 +1922,7 @@ async function readListingAI(){
 async function importExtractAI(d){
   var st=document.getElementById('lUrlStatus');
   if(st){ st.style.color='var(--tx2)'; st.textContent='AI loeb kuulutust…'; }
-  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","purpose":"","condition":"","deal":"","price":"","area":"","rooms":"","name":"","phone":"","email":""}. condition=seisukord, ÜKS järgnevatest kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". addr=objekti aadress (tänav number, linnaosa, linn). type=ÜKS järgnevatest: Korter, Maja, Majaosa, Maa/krunt, Äripind, Garaaž. purpose=alaliik/otstarve vastavalt tüübile: Maja→Eramaja/Suvila/Talu/Muu; Majaosa→Ridaelamuboks/Paarismaja/Muu; Maa/krunt→Elamumaa/Ärimaa/Tootmismaa/Maatulundusmaa/Metsamaa/Aiamaa; Äripind→Büroo/Kaubandus/Majutus/Teenindus/Ladu/Tootmine/Toitlustus/Määramata; Korter ja Garaaž→jäta "". deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). rooms=tubade arv, ainult number. name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
+  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","purpose":"","condition":"","deal":"","price":"","area":"","rooms":"","buildYear":"","name":"","phone":"","email":""}. buildYear=hoone ehitusaasta, ainult 4-kohaline number (nt 1998) kui kuulutusel olemas, muidu "". condition=seisukord, ÜKS järgnevatest kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". addr=objekti aadress (tänav number, linnaosa, linn). type=ÜKS järgnevatest: Korter, Maja, Majaosa, Maa/krunt, Äripind, Garaaž. purpose=alaliik/otstarve vastavalt tüübile: Maja→Eramaja/Suvila/Talu/Muu; Majaosa→Ridaelamuboks/Paarismaja/Muu; Maa/krunt→Elamumaa/Ärimaa/Tootmismaa/Maatulundusmaa/Metsamaa/Aiamaa; Äripind→Büroo/Kaubandus/Majutus/Teenindus/Ladu/Tootmine/Toitlustus/Määramata; Korter ja Garaaž→jäta "". deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). rooms=tubade arv, ainult number. name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
   var user='Pealkiri: '+(d.ogTitle||'')+'\nKirjeldus: '+(d.ogDesc||'')+'\nHinnavihje: '+(d.priceHint||'')+'\nTelefon: '+(d.tel||'')+'\nE-post: '+(d.email||'')+'\nTekst: '+(d.text||'');
   try{
     var ans=await aiFetch({ system:sys, max_tokens:300, messages:[{role:'user',content:user}] });
@@ -1919,7 +1939,8 @@ async function importExtractAI(d){
     if(r.price) set('lHind',String(r.price).replace(/[^\d]/g,''));
     if(r.area) set('lPindala',String(r.area).replace(/[^\d.,]/g,'').replace(',','.'));
     if(r.rooms) set('lTube',String(r.rooms).replace(/[^\d]/g,''));
-    if(r.addr) await addrStructureFromText(document.getElementById('lAadress').value); // struktureeri asukoht (maakond/linnaosa)
+    if(r.buildYear){ var _by=String(r.buildYear).replace(/[^\d]/g,'').slice(0,4); if(_by.length===4) set('lEhitusaasta',_by); }
+    if(r.addr) await addrStructureFromText(document.getElementById('lAadress').value); // struktureeri asukoht (maakond/linnaosa/asum)
     window._leadDirty = true;
     if(st){ st.style.color='var(--ac)'; st.textContent='AI luges kuulutuse — kontrolli ja salvesta. (Kui telefon puudub: vajuta kuulutusel Näita numbrit ja klõpsa nuppu uuesti.)'; }
     genImportFeedback();   // genereeri AI tagasiside kuulutuse kohta (täidab "AI tagasiside" välja)
@@ -1939,6 +1960,7 @@ async function genImportFeedback(){
     f('lHind')&&('Hind: '+f('lHind')+' €'),
     f('lPindala')&&('Pindala: '+f('lPindala')+' m²'),
     f('lTube')&&('Tube: '+f('lTube')),
+    f('lEhitusaasta')&&('Ehitusaasta: '+f('lEhitusaasta')),
     f('lMarkus')&&('Kuulutuse märkus: '+f('lMarkus'))
   ].filter(Boolean).join('\n');
   if(!lines){ return; }
@@ -2363,7 +2385,7 @@ function openLead(id, defaultStatus) {
           <div style="flex:1;position:relative">
             <input class="kv-inp" id="lAadress" autocomplete="off" value="${esc(l.property_address)}" oninput="addrSearch(this.value)" onblur="setTimeout(addrHideSuggest,200)" style="width:100%">
             <div id="lAddrSuggest" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;background:var(--sf);border:1px solid var(--bd);border-radius:6px;max-height:190px;overflow:auto;box-shadow:0 6px 16px rgba(0,0,0,.25)"></div>
-            <div id="lAddrInfo" style="font-size:9px;color:var(--tx2);margin-top:2px">${l.county ? '📍 '+esc([l.county,l.municipality,l.district].filter(Boolean).join(', ')) : 'Trüki aadress → vali pakutust, siis maakond/linnaosa täidetakse automaatselt.'}</div>
+            <div id="lAddrInfo" style="font-size:9px;color:var(--tx2);margin-top:2px">${l.county ? '📍 '+esc([l.county,l.municipality,l.district,l.asum].filter(Boolean).join(', ')) : 'Trüki aadress → vali pakutust, siis maakond/linnaosa/asum täidetakse automaatselt.'}</div>
             <input type="hidden" id="lCounty" value="${esc(l.county)}">
             <input type="hidden" id="lMunicipality" value="${esc(l.municipality)}">
             <input type="hidden" id="lDistrict" value="${esc(l.district)}">
@@ -2375,6 +2397,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Pindala m²</span><input class="kv-inp" id="lPindala" type="number" value="${l.area||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Tube</span><input class="kv-inp" id="lTube" type="number" min="0" value="${l.rooms||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Ehitusaasta</span><input class="kv-inp" id="lEhitusaasta" type="number" min="1800" max="2100" placeholder="nt 1998" value="${l.build_year||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup" onchange="onTypeChange()"><option value="">—</option>${Object.keys(PROPERTY_TAXONOMY).map(o => `<option${normType(l.property_type)===o?' selected':''}>${o}</option>`).join('')}</select></div>
         <div class="kv-row" id="lOtstarveRow" style="display:none"><span class="kv-lbl">Otstarve</span><select class="kv-inp" id="lOtstarve"><option value="">—</option></select></div>
         <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
@@ -2463,6 +2486,7 @@ async function saveLead() {
     price:            parseFloat(document.getElementById('lHind').value)   || null,
     area:             parseFloat(document.getElementById('lPindala').value) || null,
     rooms:            parseInt(document.getElementById('lTube').value, 10)  || null,
+    build_year:       parseInt(document.getElementById('lEhitusaasta')?.value, 10) || null,
     property_type:    document.getElementById('lTuup').value               || null,
     use_purpose:      document.getElementById('lOtstarve')?.value           || null,
     condition:        document.getElementById('lSeisukord')?.value          || null,
@@ -2512,9 +2536,18 @@ async function saveLead() {
   render();
 }
 
-async function archiveLead() {
-  if (!CURRENT || !confirm('Arhiveerid selle leadi?')) return;
-  const { error } = await sb.from('leads').update({ archived_at: new Date().toISOString() }).eq('id', CURRENT.id);
+// Ava tulemuse-valik (Müüdud meie/mujal, Omanik loobus, Aegus, Muu).
+function openArchive() {
+  if (!CURRENT) return;
+  document.getElementById('archiveModal').classList.add('open');
+}
+// Arhiveeri tulemusega. Säilitab leadi (ei kustuta) — statistika jaoks. outcome = tulemuse kood.
+async function archiveLead(outcome) {
+  if (!CURRENT) return;
+  closeModal('archiveModal');
+  const patch = { archived_at: new Date().toISOString() };
+  if (outcome) patch.outcome = outcome;
+  const { error } = await sb.from('leads').update(patch).eq('id', CURRENT.id);
   if (error) { toast('❌ ' + error.message); return; }
   LEADS = LEADS.filter(l => l.id !== CURRENT.id);
   toast('📦 Arhiveeritud');
@@ -3030,8 +3063,11 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 7;
+var APP_BUILD = 8;
 var CHANGELOG = [
+  { v:8, major:true, date:'26.06.2026', title:'Objektihaldus: müügitulemus, ehitusaasta, asum',
+    why:'Arhiveerimisel valid nüüd tulemuse (müüdud meie kaudu / mujal / omanik loobus / aegus) — objekt ei kao statistikast, vaid annab õppesignaali. Lisandus Ehitusaasta väli (import täidab kuulutusest) ja asum on aadressi all nähtav — mõlemad toetavad hinnastamist. Kuulutuse kiirnupp ei kuhja enam uusi aknaid (kasutab üht). Salvestamata muudatuse korral hoiatab enne akna sulgemist.',
+    viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → "Arhiveeri" annab nüüd tulemuse valiku; Ehitusaasta on Tube-välja all.' },
   { v:7, major:true, date:'26.06.2026', title:'Turuhind nüüd asumi täpsusega (Tallinn)',
     why:'Kui leadi aadress on Tallinna asumis (nt Kalamaja, Telliskivi), näitab Turuhind selle asumi tehinguhinda — kõige täpsem tase. Kui asumis on liiga vähe tehinguid, langeb automaatselt linnaosa ja siis maakonna tasemele, ning ütleb selgelt, mis tasemel number on. Hõredat asumit ei pärita korduvalt (säästab ressurssi).',
     viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → vali aadress pakutust (asum täitub) → "Vaata turuhinda".' },
@@ -3049,35 +3085,51 @@ var CHANGELOG = [
     viewKey:'manager', tabLabel:'Juhtimine' },
   { v:2, major:true, date:'24.06.2026', title:'Kõneabi AI-analüüsid jäävad alles',
     why:'Kõne kokkuvõte ja tagasiside salvestuvad nüüd leadi külge — ei kao enam pärast akna sulgemist.',
-    viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → näed neid ajaloos ja "AI tagasiside" väljal.' }
+    viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → näed neid ajaloos ja "AI tagasiside" väljal.' },
+  { v:1, major:false, date:'Põhituumik', title:'CRM-i alus — töövoog, Kõneabi, kontaktid',
+    why:'Müügitoru (Töövoog/Nimekiri), kontaktide haldus, Ülesanded (järelkõned), Kõneabi (kõne ajal tugi) ja Statistika. Need on aluseks kõigele ülaltoodule.',
+    viewKey:'kanban', tabLabel:'Töövoog', hint:'Lisa kontakt "+ Uus kontakt" või kuulutuse kiirnupuga (Seaded).' }
 ];
-function newsSeenKey(){ return 'ma_news_seen_' + (typeof USER !== 'undefined' && USER && USER.id ? USER.id : 'anon'); }
-function newsSeen(){ try{ return parseInt(localStorage.getItem(newsSeenKey()) || '0', 10) || 0; }catch(e){ return 0; } }
+// Loetud-olek: hulk nähtud versioone (mitte üks number) → saab märkida eraldi VÕI kõik korraga.
+function newsSeenKey(){ return 'ma_news_seen_v2_' + (typeof USER !== 'undefined' && USER && USER.id ? USER.id : 'anon'); }
+function newsSeenSet(){ try{ var a=JSON.parse(localStorage.getItem(newsSeenKey())||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function newsSaveSet(a){ try{ localStorage.setItem(newsSeenKey(), JSON.stringify(a)); }catch(e){} }
 function checkWhatsNew(){
   var dot = document.getElementById('newsDot'); if(!dot) return;
-  var seen = newsSeen();
-  var unseenMajor = CHANGELOG.some(function(e){ return e.v > seen && e.major; });
+  var seen = newsSeenSet();
+  var unseenMajor = CHANGELOG.some(function(e){ return e.major && seen.indexOf(e.v)<0; });
   dot.style.display = unseenMajor ? 'block' : 'none';
 }
+// Märgi üks uuendus loetuks (ei märgi teisi). Re-render + uuenda täpp.
+function newsMarkSeen(v){ var s=newsSeenSet(); if(s.indexOf(v)<0){ s.push(v); newsSaveSet(s); } openNews(); checkWhatsNew(); }
+// Märgi kõik loetuks korraga.
+function newsMarkAllSeen(){ newsSaveSet(CHANGELOG.map(function(e){ return e.v; })); openNews(); checkWhatsNew(); }
 function openNews(){
   var list = document.getElementById('newsList'); if(!list) return;
-  var seen = newsSeen();
-  list.innerHTML = CHANGELOG.map(function(e, i){
-    var isNew = e.v > seen;
+  var seen = newsSeenSet();
+  var anyUnseen = CHANGELOG.some(function(e){ return seen.indexOf(e.v)<0; });
+  var head = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+    + '<span style="font-size:11px;color:var(--tx2)">Iga uuenduse saad märkida loetuks eraldi või kõik korraga.</span>'
+    + (anyUnseen ? '<button class="btn-sm" style="font-size:11px;white-space:nowrap" onclick="newsMarkAllSeen()">Märgi kõik loetuks</button>' : '<span style="font-size:10px;color:var(--ac)">Kõik loetud ✓</span>')
+    + '</div>';
+  list.innerHTML = head + CHANGELOG.map(function(e, i){
+    var isNew = seen.indexOf(e.v)<0;
     return '<div style="padding:11px 0;border-bottom:1px solid var(--bd)">'
       + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
       + (isNew ? '<span style="font-size:9px;font-weight:700;color:#fff;background:var(--ac);padding:1px 6px;border-radius:10px">UUS</span>' : '')
       + '<span style="font-weight:600;font-size:13px">' + kabiEsc(e.title) + '</span>'
       + '<span style="font-size:10px;color:var(--tx2);margin-left:auto;white-space:nowrap">' + e.date + '</span></div>'
+      + '<div style="font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Mis muutus</div>'
       + '<div style="font-size:12px;color:var(--tx2);line-height:1.5">' + kabiEsc(e.why) + '</div>'
-      + (e.hint ? '<div style="font-size:11px;color:var(--tx2);opacity:.85;margin-top:4px">' + kabiEsc(e.hint) + '</div>' : '')
-      + (e.tabLabel ? '<button class="btn-sm" style="margin-top:8px;font-size:11px" onclick="newsGo(' + i + ')">Näita kus</button>' : '')
+      + (e.hint ? '<div style="font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-top:6px">Kuidas kasutada</div><div style="font-size:11px;color:var(--tx2);opacity:.9">' + kabiEsc(e.hint) + '</div>' : '')
+      + '<div style="display:flex;gap:6px;margin-top:8px">'
+      + (e.tabLabel ? '<button class="btn-sm" style="font-size:11px" onclick="newsGo(' + i + ')">Näita kus</button>' : '')
+      + (isNew ? '<button class="btn-ghost" style="font-size:11px" onclick="newsMarkSeen(' + e.v + ')">✓ Loetud</button>' : '')
+      + '</div>'
       + '</div>';
   }).join('');
   document.getElementById('newsModal').classList.add('open');
-  // Nähtuks märkimine: avades on kasutaja uudised näinud → täpp kaob (ei tüüta enam).
-  try{ localStorage.setItem(newsSeenKey(), String(APP_BUILD)); }catch(e){}
-  checkWhatsNew();
+  // EI märgi automaatselt loetuks — kasutaja otsustab (loogilisem: täpp püsib kuni märgid).
 }
 function newsGo(i){
   var e = CHANGELOG[i]; if(!e) return;
@@ -3135,12 +3187,13 @@ let MELL_HISTORY = [];
 
 function mellLeadContext(){
   const l = CURRENT; if(!l) return '';
-  var loc = [l.county, l.municipality, l.district].filter(Boolean).join(', ');
+  var loc = [l.county, l.municipality, l.district, l.asum].filter(Boolean).join(', ');
   var base = [
     l.property_address && ('Aadress: ' + l.property_address),
     loc && ('Asukoht (struktuurne): ' + loc),
     l.property_type && ('Tüüp: ' + l.property_type + (l.use_purpose ? ' / ' + l.use_purpose : '')),
     l.condition && ('Seisukord: ' + l.condition),
+    (l.build_year != null) && ('Ehitusaasta: ' + l.build_year),
     l.deal_type && ('Tehing: ' + l.deal_type),
     l.client_type && ('Kliendi tüüp: ' + l.client_type),
     (l.price != null) && ('Hind: ' + l.price + ' €'),
@@ -3420,12 +3473,13 @@ async function kabiAI(system, user, model){
 
 function kabiContext(){
   var l = CURRENT || {};
-  var loc = [l.county, l.municipality, l.district].filter(Boolean).join(', ');
+  var loc = [l.county, l.municipality, l.district, l.asum].filter(Boolean).join(', ');
   var lines = [
     l.property_address && ('Aadress: '+l.property_address),
     loc && ('Asukoht (struktuurne): '+loc),
     l.property_type && ('Tüüp: '+l.property_type + (l.use_purpose ? ' / '+l.use_purpose : '')),
     l.condition && ('Seisukord: '+l.condition),
+    (l.build_year!=null) && ('Ehitusaasta: '+l.build_year),
     l.deal_type && ('Tehing: '+l.deal_type),
     (l.price!=null) && ('Hind: '+l.price+' €'),
     (l.area!=null) && ('Pindala: '+l.area+' m²'),
