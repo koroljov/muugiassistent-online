@@ -19,6 +19,25 @@ const COUNTY_CODES: Record<string, string> = {
   "0071": "Rapla maakond", "0074": "Saare maakond", "0079": "Tartu maakond",
   "0081": "Valga maakond", "0084": "Viljandi maakond", "0087": "Võru maakond",
 };
+// Tallinna ametlikud linnaosad → htraru DDOmavalitsus kood (linnaosa-täpne €/m²).
+const TALLINN_LINNAOSA: Record<string, { code: string; label: string }> = {
+  "haabersti": { code: "176", label: "Haabersti linnaosa" },
+  "kesklinn": { code: "298", label: "Kesklinna linnaosa" },
+  "kristiine": { code: "339", label: "Kristiine linnaosa" },
+  "lasnamäe": { code: "387", label: "Lasnamäe linnaosa" },
+  "mustamäe": { code: "482", label: "Mustamäe linnaosa" },
+  "nõmme": { code: "524", label: "Nõmme linnaosa" },
+  "pirita": { code: "596", label: "Pirita linnaosa" },
+  "põhja-tallinn": { code: "614", label: "Põhja-Tallinna linnaosa" },
+};
+function tallinnDistrictCode(district: string): { code: string; label: string } | null {
+  const d = (district || "").toLowerCase();
+  for (const key of Object.keys(TALLINN_LINNAOSA)) {
+    if (d.indexOf(key) >= 0) return TALLINN_LINNAOSA[key];
+  }
+  return null;
+}
+
 // Märksõnad regiooni tekstist → koodi. Linnad mappitakse oma maakonda.
 const REGION_HINTS: Array<[RegExp, string]> = [
   [/tallinn|harju|maardu|saue|keila|saku|viimsi|rae|kiili|jõelähtme|harku|kose|raasiku|anija|loksa|paldiski/i, "0037"],
@@ -121,28 +140,36 @@ function parseKokku(html: string): {
 }
 
 // Ehita Scrapfly js_scenario, mis juhib htraru-vormi nagu päris kasutaja.
-function buildScenario(typeCode: string, countyCode: string): string {
+// omavCode (valikuline) = Tallinna linnaosa kood (DDOmavalitsus), nt 298 Kesklinn → linnaosa-täpne päring.
+function buildScenario(typeCode: string, countyCode: string, omavCode?: string): string {
   // NB: dropdownid value+change (vallandab AutoPostBack); maakond ja periood vajavad .click()
-  // (sündmustega) — .checked=true EI tööta (server ei näe valikut). Submit päris-klõpsuga.
-  const steps = [
+  // (sündmustega) — .checked=true EI tööta. Omavalitsuse cascade: __doPostBack('DDMaakond',''). Submit päris-klõpsuga.
+  const steps: any[] = [
     { wait_for_selector: { selector: "#DDTrykis", timeout: 15000 } },
     { execute: { script: "var e=document.getElementById('DDTrykis');e.value='G';e.dispatchEvent(new Event('change',{bubbles:true}));" } },
     { wait_for_selector: { selector: "#LBTrykis option[value='T13']", timeout: 15000 } },
     { execute: { script: `var l=document.getElementById('LBTrykis');l.value='${typeCode}';l.dispatchEvent(new Event('change',{bubbles:true}));` } },
-    // Oota, kuni report-postback on lõpetanud ja maakonna checkbox taas olemas (mitte fikseeritud viide)
     { wait_for_selector: { selector: `.multiselect-container input[value='${countyCode}']`, timeout: 15000 } },
     { wait: 1200 },
-    { execute: { script: `var c=document.querySelectorAll('.multiselect-container')[0];var t='${countyCode}';var cb=[].slice.call(c.querySelectorAll('input[type=checkbox]')).filter(function(x){return x.value===t;})[0];if(cb){cb.click();}var rb=document.getElementById('RBLAeg_3');if(rb){rb.click();}` } },
-    { wait: 1200 },
-    { click: { selector: "#btnTryki" } },
-    { wait: 4000 },
-    { wait_for_selector: { selector: "table", timeout: 15000 } },
-    { wait: 1000 },
+    { execute: { script: `var c=document.querySelectorAll('.multiselect-container')[0];var t='${countyCode}';var cb=[].slice.call(c.querySelectorAll('input[type=checkbox]')).filter(function(x){return x.value===t;})[0];if(cb){cb.click();}` } },
   ];
+  if (omavCode) {
+    // Tallinna linnaosa: käivita omavalitsuse cascade ja vali linnaosa
+    steps.push({ execute: { script: "try{__doPostBack('DDMaakond','');}catch(e){}" } });
+    steps.push({ wait_for_selector: { selector: `#DDOmavalitsus option[value='${omavCode}']`, timeout: 15000 } });
+    steps.push({ execute: { script: `var o=document.getElementById('DDOmavalitsus');if(o){o.value='${omavCode}';}` } });
+    steps.push({ wait: 600 });
+  }
+  steps.push({ execute: { script: "var rb=document.getElementById('RBLAeg_3');if(rb){rb.click();}" } });
+  steps.push({ wait: 1000 });
+  steps.push({ click: { selector: "#btnTryki" } });
+  steps.push({ wait: 4000 });
+  steps.push({ wait_for_selector: { selector: "table", timeout: 15000 } });
+  steps.push({ wait: 1000 });
   return Buffer.from(JSON.stringify(steps)).toString("base64");
 }
 
-async function scrapflyFetch(typeCode: string, countyCode: string): Promise<string> {
+async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: string): Promise<string> {
   const key = process.env.SCRAPFLY_KEY;
   if (!key) throw new Error("SCRAPFLY_KEY puudub serveris");
   const params = new URLSearchParams({
@@ -152,7 +179,7 @@ async function scrapflyFetch(typeCode: string, countyCode: string): Promise<stri
     asp: "true", // Anti Scraping Protection (Cloudflare bypass)
     country: "ee",
     rendering_wait: "3000",
-    js_scenario: buildScenario(typeCode, countyCode),
+    js_scenario: buildScenario(typeCode, countyCode, omavCode),
   });
   const r = await fetch("https://api.scrapfly.io/scrape?" + params.toString(), {
     signal: AbortSignal.timeout(55000),
@@ -179,11 +206,17 @@ export async function POST(request: Request) {
   const region = (body?.region || "").toString();
   const propertyType = (body?.propertyType || body?.property_type || "").toString();
   const usePurpose = (body?.usePurpose || body?.use_purpose || "").toString();
+  const district = (body?.district || "").toString();
 
   const county = regionToCounty(region);
   const ptype = mapPropertyType(propertyType, usePurpose);
   if (!county) return NextResponse.json({ error: "Piirkonda ei tuvastatud", needs: "region" }, { status: 422 });
   if (!ptype) return NextResponse.json({ unsupported: true, message: "Selle objekti tüübi (nt garaaž) kohta Maa-amet hinnastatistikat ei anna." });
+
+  // Tallinna linnaosa-täpsus (ainult Harju): kui leadi district on Tallinna ametlik linnaosa, päri linnaosa tasemel.
+  const lo = county.code === "0037" ? tallinnDistrictCode(district) : null;
+  const omavCode = lo ? lo.code : undefined;
+  const districtUsed = lo ? lo.label : "";
 
   // Segmendi võti: korter='T13', maja='T11:elamumaa', äripind='T11:ärimaa', maa='T12:<otstarve>'.
   const segKey = ptype.metric === "price" ? ptype.code + ":" + ptype.segment : ptype.code;
@@ -199,7 +232,7 @@ export async function POST(request: Request) {
     .select("*")
     .eq("county", county.name)
     .eq("municipality", "")
-    .eq("district", "")
+    .eq("district", districtUsed)
     .eq("property_type", segKey)
     .eq("period_end", period_end)
     .maybeSingle();
@@ -212,7 +245,7 @@ export async function POST(request: Request) {
   // 2) Päri Scrapfly kaudu (sama stsenaarium, ainult aruande kood erineb).
   let html: string;
   try {
-    html = await scrapflyFetch(ptype.code, county.code);
+    html = await scrapflyFetch(ptype.code, county.code, omavCode);
   } catch (e: any) {
     if (cached) return NextResponse.json({ source: "stale", data: cached, warning: "Värsket päringut ei õnnestunud teha: " + (e?.message || "viga") });
     return NextResponse.json({ error: e?.message || "Maa-ameti päring ebaõnnestus" }, { status: 502 });
@@ -238,9 +271,9 @@ export async function POST(request: Request) {
   const full = {
     county: county.name,
     municipality: "",
-    district: "",
+    district: districtUsed,
     property_type: segKey,
-    property_label: ptype.label,
+    property_label: ptype.label + (districtUsed ? " — " + districtUsed : ""),
     metric: ptype.metric,
     segment: ptype.segment,
     period_start,
