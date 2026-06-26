@@ -244,12 +244,12 @@ export async function POST(request: Request) {
 
   // Parsib HTML-i õige mõõdiku järgi. Tagastab rea VÕI null (andmeid napib / vorm muutus).
   function parseRow(html: string): any | null {
-    if (ptype.metric === "eur_m2") {
+    if (ptype!.metric === "eur_m2") {
       const p = parseKokku(html);
       if (!p || !(Number(p.median_eur_m2) > 0) || !(Number(p.tx_count) > 0)) return null;
       return { median_eur_m2: p.median_eur_m2, avg_eur_m2: p.avg_eur_m2, min_eur_m2: p.min_eur_m2, max_eur_m2: p.max_eur_m2, tx_count: p.tx_count, total_value: p.total_value };
     }
-    const p = parsePriceRow(html, ptype.segment);
+    const p = parsePriceRow(html, ptype!.segment);
     if (!p || !(Number(p.median_price) > 0) || !(Number(p.tx_count) > 0)) return null;
     return { median_price: p.median_price, avg_price: p.avg_price, tx_count: p.tx_count, total_value: p.total_value };
   }
