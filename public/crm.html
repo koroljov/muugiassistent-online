@@ -1845,6 +1845,16 @@ window.addEventListener('beforeunload', function(e){
   if(window._leadDirty){ e.preventDefault(); e.returnValue = ''; return ''; }
 });
 
+// NB: kui bookmarklet taaskasutab sama akent (ma_crm_import) ja muutub AINULT hash,
+// brauser EI lae lehte uuesti → importFromHash() ei jookseks. Seepärast kuula hashchange't.
+window.addEventListener('hashchange', function(){
+  if(!/[#&]import=/.test(location.hash||'')) return;
+  if(window._leadDirty && !confirm('Sul on salvestamata objekt avatud. Kas asendada uue imporditud kuulutusega?')){
+    history.replaceState(null,'',location.pathname+location.search); return;
+  }
+  if(typeof importFromHash==='function') importFromHash();
+});
+
 // Kuulutuse normaliseeritud võti (host + objekti ID) — sama objekti eri URL-id (lühike vs slug) annavad sama võtme.
 function listingKey(url){
   if(!url) return '';
