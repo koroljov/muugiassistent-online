@@ -279,6 +279,7 @@ export async function POST(request: Request) {
   // 2) Päri Scrapfly kaudu, kõige täpsemast tasemest. Kui napib → salvesta sentinel ja lange järgmisele.
   let lastErr = "";
   let staleFallback: any = null;
+  let structural = false; // true = Maa-amet muutis vormi/struktuuri (mitte ajutine viga ega hõredus)
   for (let i = 0; mustFetch && i < levels.length; i++) {
     const lv = levels[i];
     let html: string;
@@ -291,6 +292,12 @@ export async function POST(request: Request) {
     const row = parseRow(html);
     if (!row) {
       lastErr = "andmeid napib tasemel '" + lv.kind + "'";
+      // Maakonna tasemel on ALATI tuhandeid tehinguid → parse null seal = Maa-amet muutis vormi/struktuuri
+      // (mitte hõredus). Märgi allikas 'degraded' (teavitus) ja eralda see ausast "andmeid napib" juhust.
+      if (lv.kind === "maakond" && html && html.length > 500) {
+        structural = true;
+        try { await admin.from("source_health").upsert({ source: "maaamet_htraru", status: "degraded", detail: "Maakonna-tase: tulemust ei loetud (vorm võis muutuda). seg=" + segKey, checked_at: new Date().toISOString() }, { onConflict: "source" }); } catch (e) {}
+      }
       // Salvesta sentinel (tx_count=0), et seda hõredat taset uuesti ei päriks.
       if (lv.kind !== "maakond") {
         await admin.from("market_prices").upsert({
@@ -323,6 +330,8 @@ export async function POST(request: Request) {
       .upsert(full, { onConflict: "county,municipality,district,property_type,period_start,period_end" })
       .select()
       .maybeSingle();
+    // Õnnestus → märgi allikas terveks (kustutab varasema 'degraded' staatuse).
+    try { await admin.from("source_health").upsert({ source: "maaamet_htraru", status: "ok", detail: null, checked_at: new Date().toISOString() }, { onConflict: "source" }); } catch (e) {}
     const fellBack = i > 0 ? levels[0].kind : null; // küsiti täpsemat, anti üldisem
     if (saveErr) return NextResponse.json({ source: "fresh", data: full, level: lv.kind, fellBackFrom: fellBack, warning: "Salvestus ebaõnnestus: " + saveErr.message });
     return NextResponse.json({ source: "fresh", data: saved || full, level: lv.kind, fellBackFrom: fellBack });
@@ -330,5 +339,7 @@ export async function POST(request: Request) {
 
   // 4) Kõik tasemed ebaõnnestusid.
   if (staleFallback) return NextResponse.json({ source: "stale", data: staleFallback, warning: "Värsket päringut ei õnnestunud teha." });
+  // Struktuurne tõrge (maakonna-tase ei lugenud) = Maa-amet muutis lehte → eristatud teade, mitte "andmeid napib".
+  if (structural) return NextResponse.json({ error: "Maa-ameti andmestruktuur võis muutuda — automaatne lugemine ebaõnnestus. Probleem on märgitud; kontrolli vajadusel Maa-ameti lehel käsitsi.", sourceIssue: true }, { status: 502 });
   return NextResponse.json({ error: "Maa-ameti päring ebaõnnestus (" + lastErr + ")" }, { status: 502 });
 }

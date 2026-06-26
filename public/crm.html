@@ -1585,6 +1585,11 @@ async function loadMarketPrice(){
     var j = await r.json();
     if(j && j.unsupported){ box.innerHTML = mpMsg(j.message || 'See objekti tüüp pole turuhinna võrdluseks toetatud.'); return; }
     if(!r.ok){
+      // Kiht 3: struktuurne tõrge (Maa-amet muutis lehte) → eristatud, selgem teade
+      if(j && j.sourceIssue){
+        box.innerHTML = mpMsg('⚠ Maa-ameti andmestruktuur võis muutuda — automaatne lugemine ei õnnestunud. Probleem on süsteemis märgitud. Vajadusel vaata number käsitsi Maa-ameti lehel; ära kasuta vana numbrit faktina.');
+        return;
+      }
       // Kiht 1+2: ära esita faktina, anna selge teade
       var why = (j && j.error) ? (' ('+j.error+')') : '';
       box.innerHTML = mpMsg('Maa-ameti andmed pole hetkel usaldusväärselt kättesaadavad'+why+'. Proovi hiljem või vaata Maa-ameti lehel.');
