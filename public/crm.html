@@ -1503,21 +1503,43 @@ function addrPick(i){
   window._leadDirty = true; // aadressi valik = salvestamata muudatus
 }
 function addrHideSuggest(){ var s=document.getElementById('lAddrSuggest'); if(s) s.style.display='none'; }
-// Impordil: struktureeri aadress automaatselt. Fail-safe: auto-vali AINULT kui täpselt 1 vaste; muidu jäta kasutajale kinnitada.
+// Kuulutuse aadressist in-ADS päringu kandidaadid (kõige täpsem → lihtsam).
+// NB: kv.ee aadress "J. Vilmsi tn 47-4, Kesklinn, Kadriorg, Tallinn" ei leia in-ADS-ist (korterinumber + liigsed osad).
+// Lihtsustus "J. Vilmsi tn 47, Tallinn" leiab → Harju, Kesklinna linnaosa, Kadrioru asum.
+function addrCandidates(raw){
+  var out=[raw];
+  var parts=raw.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if(parts.length){
+    var street=parts[0].replace(/\s*-\s*\d+\w?$/,'');  // eemalda korterinumber: "47-4" → "47"
+    var cities=['Tallinn','Tartu','Pärnu','Narva','Kohtla-Järve','Viljandi','Rakvere','Maardu','Kuressaare','Sillamäe','Valga','Võru','Haapsalu','Jõhvi','Paide','Keila','Elva','Rapla','Jõgeva','Saue','Põlva','Türi','Põltsamaa','Paldiski','Tapa','Kunda','Tõrva'];
+    var city=parts.filter(function(p){return cities.some(function(c){return p.toLowerCase()===c.toLowerCase();});})[0] || '';
+    if(city) out.push(street+', '+city);
+    out.push(street);
+  }
+  return out.filter(function(v,i,a){return v && a.indexOf(v)===i;});
+}
+// Impordil: struktureeri aadress automaatselt. Fail-safe: täida AINULT kokkulepitud tasemed. Ei kirjuta üle kuulutuse aadressi.
 async function addrStructureFromText(q){
   if(!q || q.trim().length<3) return;
-  await addrDoSearch(q.trim());
-  var list = window._addrResults || [];
+  var cands=addrCandidates(q.trim());
+  var list=[];
+  for(var i=0;i<cands.length;i++){
+    window._addrResults=[];           // nulli: addrDoSearch ei tühjenda tühja vastuse korral
+    await addrDoSearch(cands[i]);
+    list=window._addrResults||[];
+    if(list.length) break;            // esimene kandidaat, mis annab vasteid
+  }
   if(!list.length){ addrHideSuggest(); return; }
-  if(list.length===1){ addrPick(0); addrHideSuggest(); return; }
-  // Mitu vastet → täida AINULT tasemed, milles KÕIK vasted kokku lepivad (fail-safe, ei oleta maja).
-  function agree(key){ var v=list[0][key]; return list.every(function(a){return a[key]===v;}) ? v : ''; }
-  var mk=agree('maakond'), ov=agree('omavalitsus'), as=agree('asustusyksus');
+  // 1 vaste → kõik selle järgi; mitu → ainult tasemed, milles KÕIK vasted kokku lepivad (ei oleta).
+  function pick(key){ if(list.length===1) return list[0][key]||''; var v=list[0][key]; return list.every(function(a){return a[key]===v;}) ? (v||'') : ''; }
+  var mk=pick('maakond'), ov=pick('omavalitsus'), as=pick('asustusyksus'), asu=pick('asum');
+  var lat=list.length===1?list[0].viitepunkt_b:'', lng=list.length===1?list[0].viitepunkt_l:'';
   var set=function(id,val){ var e=document.getElementById(id); if(e && val) e.value=val; };
   if(mk){ set('lCounty',mk); var mp=document.getElementById('mpCounty'); if(mp) mp.value=mk; }
-  set('lMunicipality',ov); set('lDistrict',as);
+  set('lMunicipality',ov); set('lDistrict',as); set('lAsum',asu);
+  if(lat) set('lLat',lat); if(lng) set('lLng',lng);
   var info=document.getElementById('lAddrInfo');
-  if(info && mk) info.textContent='📍 '+[mk,ov,as].filter(Boolean).join(', ')+(as?'':' · täpsusta maja, trükkides aadressi uuesti');
+  if(info && mk) info.textContent='📍 '+[mk,ov,as,asu].filter(Boolean).join(', ')+(as?'':' · täpsusta linnaosa, trükkides aadressi uuesti');
   addrHideSuggest();
 }
 
