@@ -1288,6 +1288,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     <div class="modal-body" id="leadBody"></div>
     <div class="modal-foot">
       <button class="btn-danger" id="leadArchiveBtn" onclick="archiveLead()">Arhiveeri</button>
+      <button class="btn-danger" id="leadDeleteBtn" onclick="deleteLead()" style="display:none" title="Kustuta jäädavalt (ainult sina)">Kustuta</button>
       <button class="btn-ghost" id="leadMellBtn" onclick="openMell()">Küsi Mellilt</button>
       <button class="btn-ghost" id="leadKabiBtn" onclick="openKabi()">Kõneabi</button>
       <button class="btn-ghost" onclick="closeModal('leadModal')">Sulge</button>
@@ -1682,6 +1683,8 @@ let TASKS = [];
 let CALLS = [];
 let CURRENT = null;
 let USER = null;
+// Meelise konto uid (sama mis DB poliitika "leads delete mell only") — jäädav kustutus ainult talle.
+const MELL_UID = 'c0e7873e-8a33-4def-86d8-ae989abfe4b5';
 let XP   = parseInt(localStorage.getItem('ma_xp')     || '0');
 let STREAK = parseInt(localStorage.getItem('ma_streak')|| '0');
 
@@ -1801,14 +1804,21 @@ function _crmGrab(){
     var txt=(document.body?document.body.innerText:'').replace(/\s+/g,' ').slice(0,7000);
     var d={ v:2, url:location.href, ogTitle:m('og:title')||document.title||'', ogDesc:m('og:description')||'', img:m('og:image')||'', priceHint:priceHint, tel:tels.join(', '), email:mails.join(', '), text:txt };
     var b64=btoa(unescape(encodeURIComponent(JSON.stringify(d))));
-    var w=window.open('https://muugiassistent-online.vercel.app/crm.html#import='+encodeURIComponent(b64),'_blank');
-    if(!w){ alert('Luba hüpikaknad selle saidi jaoks ja proovi uuesti.'); }
+    // Nimega aken 'ma_crm_import' → korduv "Lisa kuulutus" kasutab SAMA akent (ei kuhju uusi tabe). Põhi-CRM tab jääb puutumata.
+    var w=window.open('https://muugiassistent-online.vercel.app/crm.html#import='+encodeURIComponent(b64),'ma_crm_import');
+    if(!w){ alert('Luba hüpikaknad selle saidi jaoks ja proovi uuesti.'); } else { try{ w.focus(); }catch(_){} }
   }, didReveal ? 1500 : 0);
 }
 function setBookmarkletLink(){
   var a = document.getElementById('bmLink');
   if(a){ a.setAttribute('href', 'javascript:(' + _crmGrab.toString() + ')();'); }
 }
+
+// Andmekao kaitse: kui leadis on salvestamata muudatusi ja aken suletakse/navigeeritakse
+// (sh bookmarkleti aknataaskasutus), hoiatab brauser enne lahkumist.
+window.addEventListener('beforeunload', function(e){
+  if(window._leadDirty){ e.preventDefault(); e.returnValue = ''; return ''; }
+});
 
 // Kuulutuse normaliseeritud võti (host + objekti ID) — sama objekti eri URL-id (lühike vs slug) annavad sama võtme.
 function listingKey(url){
@@ -2408,6 +2418,8 @@ function openLead(id, defaultStatus) {
   // Jaluse nupud: uue leadi puhul peida Arhiveeri/Mell/Kõneabi (vajavad salvestatud leadi); Salvesta → "Lisa lead"
   var _fb = function(id, show){ var e=document.getElementById(id); if(e) e.style.display = show ? '' : 'none'; };
   _fb('leadArchiveBtn', !isNew); _fb('leadMellBtn', !isNew); _fb('leadKabiBtn', !isNew);
+  // Kustuta (jäädav) ainult Meelisele (uid = sama mis DB "leads delete mell only" poliitika) — paindlikkus katsetamiseks
+  _fb('leadDeleteBtn', !isNew && USER && USER.id === MELL_UID);
   var _sb = document.getElementById('leadSaveBtn'); if(_sb) _sb.textContent = isNew ? 'Lisa lead' : 'Salvesta';
 
   document.getElementById('leadModal').classList.add('open');
@@ -2506,6 +2518,24 @@ async function archiveLead() {
   if (error) { toast('❌ ' + error.message); return; }
   LEADS = LEADS.filter(l => l.id !== CURRENT.id);
   toast('📦 Arhiveeritud');
+  window._leadDirty = false;
+  closeModal('leadModal');
+  render();
+}
+
+// Jäädav kustutus — AINULT Meelisele (nupp peidetud teistele). Eemaldab leadi + seotud kõned/ülesanded.
+async function deleteLead() {
+  if (!CURRENT) return;
+  if (!USER || USER.id !== MELL_UID) { toast('Kustutamine pole lubatud'); return; }
+  var nimi = CURRENT.property_address || CURRENT.contact_name || 'see lead';
+  if (!confirm('KUSTUTA JÄÄDAVALT: ' + nimi + '\n\nSeda ei saa tagasi võtta (erinevalt arhiveerimisest). Jätka?')) return;
+  if (!confirm('Kindel? Kustutan leadi ja kõik selle kõned/ülesanded.')) return;
+  try { await sb.from('calls').delete().eq('lead_id', CURRENT.id); } catch(e){}
+  try { await sb.from('tasks').delete().eq('lead_id', CURRENT.id); } catch(e){}
+  const { error } = await sb.from('leads').delete().eq('id', CURRENT.id);
+  if (error) { toast('❌ ' + error.message); return; }
+  LEADS = LEADS.filter(l => l.id !== CURRENT.id);
+  toast('🗑 Kustutatud');
   window._leadDirty = false;
   closeModal('leadModal');
   render();
