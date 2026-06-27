@@ -258,6 +258,7 @@ export async function POST(request: Request) {
   //    tx_count=0 = "sentinel" (varem kontrollitud, andmeid napib) → liigu üldisemale tasemele, ÄRA päri uuesti.
   //    Kui tase pole üldse cache'is → katkesta ja päri (alates kõige täpsemast).
   let mustFetch = false;
+  let staleFallback: { data: any; level: string } | null = null; // viimane teadaolev väärtus (ka aegunud) — varuks, kui värske päring kukub
   for (const lv of levels) {
     const { data: cached } = await admin
       .from("market_prices")
@@ -268,6 +269,7 @@ export async function POST(request: Request) {
       .eq("property_type", segKey)
       .eq("period_end", period_end)
       .maybeSingle();
+    if (cached && Number(cached.tx_count) > 0 && !staleFallback) staleFallback = { data: cached, level: lv.kind };
     if (cached && cached.fetched_at && Date.now() - new Date(cached.fetched_at).getTime() < FRESH_MS) {
       if (Number(cached.tx_count) > 0) return NextResponse.json({ source: "cache", data: cached, level: lv.kind });
       continue; // sentinel: see tase on teadaolevalt hõre → proovi üldisemat
@@ -275,10 +277,16 @@ export async function POST(request: Request) {
     mustFetch = true; // see tase pole värske cache'is → vaja Scrapflyt
     break;
   }
+  // Varuks: kui täpsemalt tasemelt ei leitud, võta maakonna-tase (district='') kui kunagi salvestatud — peaaegu alati olemas.
+  if (mustFetch && !staleFallback) {
+    const { data: cf } = await admin.from("market_prices").select("*")
+      .eq("county", county.name).eq("municipality", "").eq("district", "")
+      .eq("property_type", segKey).eq("period_end", period_end).maybeSingle();
+    if (cf && Number(cf.tx_count) > 0) staleFallback = { data: cf, level: "maakond" };
+  }
 
   // 2) Päri Scrapfly kaudu, kõige täpsemast tasemest. Kui napib → salvesta sentinel ja lange järgmisele.
   let lastErr = "";
-  let staleFallback: any = null;
   let structural = false; // true = Maa-amet muutis vormi/struktuuri (mitte ajutine viga ega hõredus)
   for (let i = 0; mustFetch && i < levels.length; i++) {
     const lv = levels[i];
@@ -289,7 +297,11 @@ export async function POST(request: Request) {
       lastErr = e?.message || "päring ebaõnnestus";
       continue; // proovi üldisemat taset
     }
-    const row = parseRow(html);
+    let row = parseRow(html);
+    if (!row) {
+      // Ajutine Cloudflare/tõrge võib anda vale lehe → proovi ÜKS kord uuesti enne alla-andmist (töökindlus).
+      try { await new Promise((r) => setTimeout(r, 1200)); html = await scrapflyFetch(ptype.code, county.code, lv.omavCode, lv.asumName); row = parseRow(html); } catch (e) {}
+    }
     if (!row) {
       lastErr = "andmeid napib tasemel '" + lv.kind + "'";
       // Maakonna tasemel on ALATI tuhandeid tehinguid → parse null seal = Maa-amet muutis vormi/struktuuri
@@ -337,9 +349,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ source: "fresh", data: saved || full, level: lv.kind, fellBackFrom: fellBack });
   }
 
-  // 4) Kõik tasemed ebaõnnestusid.
-  if (staleFallback) return NextResponse.json({ source: "stale", data: staleFallback, warning: "Värsket päringut ei õnnestunud teha." });
-  // Struktuurne tõrge (maakonna-tase ei lugenud) = Maa-amet muutis lehte → eristatud teade, mitte "andmeid napib".
+  // 4) Kõik tasemed ebaõnnestusid. EELISTA viimast teadaolevat väärtust (töökindlus) — alarm ainult kui fallbackit pole.
+  if (staleFallback) return NextResponse.json({ source: "stale", data: staleFallback.data, level: staleFallback.level, warning: "Värsket Maa-ameti päringut ei õnnestunud teha — näitan viimast teadaolevat väärtust (ei pruugi olla värske)." });
+  // Struktuurne tõrge JA fallbackit pole → eristatud aus teade.
   if (structural) return NextResponse.json({ error: "Maa-ameti andmestruktuur võis muutuda — automaatne lugemine ebaõnnestus. Probleem on märgitud; kontrolli vajadusel Maa-ameti lehel käsitsi.", sourceIssue: true }, { status: 502 });
   return NextResponse.json({ error: "Maa-ameti päring ebaõnnestus (" + lastErr + ")" }, { status: 502 });
 }
