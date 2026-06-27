@@ -2855,6 +2855,7 @@ function renderStats(){
   var tcTot=LEADS.length||1;
   var tcRows=Object.keys(tc).sort(function(a,b){return tc[b]-tc[a];}).map(function(k){var pct=Math.round(tc[k]/tcTot*100);return '<div class="stat-row"><div class="stat-bar" style="width:'+pct+'%"></div><span class="stat-lbl">'+kabiEsc(k)+'</span><span class="stat-val">'+tc[k]+' · '+pct+'%</span></div>';}).join('');
   html += '<div class="stat-block"><div class="stat-title">Objektid tüübi järgi ('+LEADS.length+')</div>'+(tcRows||'<div class="stat-empty">Andmeid pole.</div>')+'</div>';
+  html += '<div id="statsOutcome"></div>'; // müügitulemused (arhiveeritud) — täidetakse async
   html += statsBlock('Veel müügis', statsCount('still_listed', false));
   html += statsBlock('Aeg turul', statsCount('time_on_market', false));
   html += statsBlock('Miks omanikud ise müüvad', statsCount('no_broker_reason', true));
@@ -2862,6 +2863,25 @@ function renderStats(){
   html += statsBlock('Mis paneks meelt muutma', statsCount('change_mind_reason', true));
   html += statsBlock('Inimtüübid', statsCount('personality_type', false));
   w.innerHTML = html;
+  renderOutcomeStats(); // müügitulemused arhiveeritud leadidest (eraldi päring, sest LEADS on ainult aktiivsed)
+}
+
+// Müügitulemuste statistika (S2 vundament): arhiveeritud leadid outcome järgi + meie-võiduprotsent.
+async function renderOutcomeStats(){
+  var el = document.getElementById('statsOutcome'); if(!el) return;
+  try{
+    var r = await sb.from('leads').select('outcome').not('archived_at','is',null);
+    var rows = r.data || [];
+    var c = {}, withOutcome = 0;
+    rows.forEach(function(x){ if(x.outcome){ c[x.outcome] = (c[x.outcome]||0)+1; withOutcome++; } });
+    if(withOutcome === 0){ el.innerHTML = '<div class="stat-block"><div class="stat-title">Müügitulemused</div><div class="stat-empty">Pole veel tulemusi — arhiveerides vali tulemus (müüdud / loobus / aegus).</div></div>'; return; }
+    var labels = { 'müüdud_meie':'Müüdud — meie kaudu','müüdud_mujal':'Müüdud — mujal','omanik_loobus':'Omanik loobus','aegus':'Aegus','muu':'Muu' };
+    var order = ['müüdud_meie','müüdud_mujal','omanik_loobus','aegus','muu'];
+    var rowsHtml = order.filter(function(k){return c[k];}).map(function(k){ var pct=Math.round(c[k]/withOutcome*100); return '<div class="stat-row"><div class="stat-bar" style="width:'+pct+'%"></div><span class="stat-lbl">'+kabiEsc(labels[k]||k)+'</span><span class="stat-val">'+c[k]+' · '+pct+'%</span></div>'; }).join('');
+    var sold = c['müüdud_meie']||0; var win = Math.round(sold/withOutcome*100);
+    el.innerHTML = '<div class="stat-block"><div class="stat-title">Müügitulemused (arhiveeritud '+withOutcome+')</div>'+rowsHtml+
+      '<div style="font-size:10px;color:var(--tx2);margin-top:6px;line-height:1.5">Meie kaudu müüdud: <b>'+sold+'/'+withOutcome+' ('+win+'%)</b>. "Müüdud mujal" = hind oli õige, jäime hiljaks — õppesignaal.</div></div>';
+  }catch(e){}
 }
 
 async function statsAnalyze(){
