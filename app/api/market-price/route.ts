@@ -149,15 +149,13 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string, 
     { execute: { script: "var e=document.getElementById('DDTrykis');e.value='G';e.dispatchEvent(new Event('change',{bubbles:true}));" } },
     { wait_for_selector: { selector: "#LBTrykis option[value='T13']", timeout: 15000 } },
     { execute: { script: `var l=document.getElementById('LBTrykis');l.value='${typeCode}';l.dispatchEvent(new Event('change',{bubbles:true}));` } },
-    { wait_for_selector: { selector: `.multiselect-container input[value='${countyCode}']`, timeout: 15000 } },
-    // NB: multiselect on lehel ALATI olemas → wait_for lahendub KOHE ega oota LBTrykis postbacki.
-    // LBTrykis onchange teeb __doPostBack (setTimeout 0) → vorm laeb uuesti. Oota see LÄBI enne county valikut,
-    // muidu klõps tabab vahetuvat DOM-i ja valik kaob (browseris tõestatud sõltuvus).
-    { wait: 2800 },
-    // County: sea alusvalik DDMaakond OTSE (Bootstrap-multiselecti checkbox-klõps EI uuenda alusvalikut Scrapfly
-    // headless'is → "Sisesta haldusüksus käsitsi"). Otse-seadmine on headless-kindel ja postitub vormiga.
-    // Klõpsa ka widgetit (UI sünk), aga määrav on DDMaakond.options.selected.
-    { execute: { script: `var t='${countyCode}';var sel=document.getElementById('DDMaakond');if(sel){[].forEach.call(sel.options,function(o){o.selected=(o.value===t);});sel.dispatchEvent(new Event('change',{bubbles:true}));}var c=document.querySelectorAll('.multiselect-container')[0];if(c){var cb=[].slice.call(c.querySelectorAll('input[type=checkbox]')).filter(function(x){return x.value===t;})[0];if(cb&&!cb.checked){cb.click();}}` } },
+    // KRIITILINE: ÄRA oota Bootstrap-multiselecti checkboxit (.multiselect-container input) — see plugin EI
+    // re-initsialiseeru Scrapfly headless'is pärast LBTrykis postbacki → wait_for ebaõnnestub → Scrapfly KATKESTAB
+    // kogu stsenaariumi (county/kuupäevad/submit ei jookse). Oota tõelist #DDMaakond select'i (alati DOM-is).
+    { wait_for_selector: { selector: "#DDMaakond option[value='" + countyCode + "']", timeout: 15000 } },
+    { wait: 2800 }, // lase LBTrykis postbackil settida
+    // County: sea alusvalik DDMaakond OTSE (mitte Bootstrap-widgeti kaudu) — headless-kindel, postitub vormiga.
+    { execute: { script: `var t='${countyCode}';var sel=document.getElementById('DDMaakond');if(sel){[].forEach.call(sel.options,function(o){o.selected=(o.value===t);});sel.dispatchEvent(new Event('change',{bubbles:true}));}` } },
   ];
   if (omavCode) {
     // Tallinna linnaosa: käivita omavalitsuse cascade ja vali linnaosa
