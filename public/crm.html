@@ -1495,12 +1495,14 @@ function addrPick(i){
   set('lAsum', a.asum);
   set('lLat', a.viitepunkt_b);  // laius (lat)
   set('lLng', a.viitepunkt_l);  // pikkus (lng)
+  if(a.tunnus){ var ec=document.getElementById('lEhrCode'); if(ec) ec.value=a.tunnus; } // hoone EHR kood (korteril tühi → endpoint lahendab)
   var info = document.getElementById('lAddrInfo');
   if(info) info.textContent = '📍 ' + [a.maakond,a.omavalitsus,a.asustusyksus].filter(Boolean).join(', ');
   addrHideSuggest();
   // sünkroni Turuhinna maakond, kui väli olemas
   var mp = document.getElementById('mpCounty'); if(mp && a.maakond){ mp.value = a.maakond; }
   window._leadDirty = true; // aadressi valik = salvestamata muudatus
+  if(typeof loadEhr==='function') loadEhr(true); // uus aadress → tõmba EHR ehitise faktid
 }
 function addrHideSuggest(){ var s=document.getElementById('lAddrSuggest'); if(s) s.style.display='none'; }
 // Kuulutuse aadressist in-ADS päringu kandidaadid (kõige täpsem → lihtsam).
@@ -1541,6 +1543,7 @@ async function addrStructureFromText(q){
   var info=document.getElementById('lAddrInfo');
   if(info && mk) info.textContent='📍 '+[mk,ov,as,asu].filter(Boolean).join(', ')+(as?'':' · täpsusta linnaosa, trükkides aadressi uuesti');
   addrHideSuggest();
+  if(typeof loadEhr==='function') loadEhr(true); // impordil struktureeritud aadress → tõmba EHR
 }
 
 // Tallinna linnaosa silt (sama mis endpoint salvestab) — cache-otsinguks.
@@ -1694,6 +1697,55 @@ function renderMarketPrice(box, j, l){
       '<div style="font-size:12px;margin:3px 0;color:var(--tx)">'+hinnang+'</div>'+
       '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Ei arvesta seisukorda, korrust ega vaadet — see on piirkonna keskmine, mitte objekti hinnang. '+mpLevelNote(d.district)+typeNote+(thin?' Andmebaas selle segmendi kohta on õhuke ('+tx+' tehingut) — tõlgenda ettevaatlikult.':'')+(j.source==='cache'?' · salvestatud baasist':j.source==='stale'?' · vana baas (värsket ei saanud)':'')+'</div>'+
     '</div>';
+}
+
+// ============================================================
+// EHR — Ehitisregistri ehitise faktid (tasuta avaandmed). Ametlik VIIDE, ei kirjuta üle kuulutuse/kasutaja andmeid.
+// ============================================================
+async function loadEhr(force){
+  var box=document.getElementById('lEhrBox'); if(!box) return;
+  var ehrCode=(document.getElementById('lEhrCode')||{}).value||'';
+  var address=(document.getElementById('lAadress')||{}).value||'';
+  if(!ehrCode && (!address || address.trim().length<5)) return;
+  if(!force && box.getAttribute('data-ehr')==='1') return;
+  box.innerHTML='<span style="color:var(--tx2)">Pärin Ehitisregistrist…</span>';
+  try{
+    var token=await freshToken();
+    var doF=function(t){ return fetch('/api/ehr',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify({ehrCode:ehrCode,address:address}),signal:AbortSignal.timeout(20000)}); };
+    var r=await doF(token);
+    if(r.status===401){ token=await freshToken(true); r=await doF(token); if(r.status===401){ if(typeof sessionLost==='function') sessionLost(); return; } }
+    var j=await r.json();
+    box.setAttribute('data-ehr','1');
+    if(!j || j.found===false){ box.innerHTML='<span style="color:var(--tx2)">EHR: '+esc((j&&j.message)||'ehitise andmeid ei leitud')+'</span>'; return; }
+    if(!r.ok){ box.innerHTML='<span style="color:var(--tx2)">EHR pole hetkel kättesaadav.</span>'; return; }
+    if(j.ehrCode){ var ec=document.getElementById('lEhrCode'); if(ec) ec.value=j.ehrCode; }
+    renderEhr(box, j);
+  }catch(e){ box.innerHTML='<span style="color:var(--tx2)">EHR päring ebaõnnestus.</span>'; }
+}
+function renderEhr(box, j){
+  var b=j.building||{}; var apt=j.apt;
+  function row(lbl,val){ return (val==null||val==='')?'':'<div><span style="color:var(--tx2)">'+lbl+':</span> <b>'+esc(String(val))+'</b></div>'; }
+  // Täida ehitusaasta AINULT kui tühi (ei kirjuta üle)
+  if(b.build_year){ var ey=document.getElementById('lEhitusaasta'); if(ey && !ey.value){ ey.value=b.build_year; window._leadDirty=true; } }
+  var warn=[];
+  var ey2=document.getElementById('lEhitusaasta');
+  if(b.build_year && ey2 && ey2.value && parseInt(ey2.value,10)!==Number(b.build_year)) warn.push('Ehitusaasta: EHR '+b.build_year+' · vormis '+ey2.value);
+  var tuup=(document.getElementById('lTuup')||{}).value||'';
+  if(b.use_purpose && /büroo|äri|tootmis|ladu|kaubandus/i.test(b.use_purpose) && /korter|maja|elamu|majaosa/i.test(tuup)) warn.push('Kasutusotstarve: EHR "'+b.use_purpose+'" · objekt märgitud "'+tuup+'"');
+  var html='<div style="border:1px solid var(--bd);border-radius:6px;padding:8px;background:var(--cd)">'
+    +'<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">EHR — ametlik (Ehitisregister)</div>'
+    +row('Kasutusotstarve',b.use_purpose)
+    +row('Ehitusaasta',b.build_year||'puudub EHR-is')
+    +row('Korruseid',b.floors)
+    +row('Hoone netopind',b.net_area!=null?b.net_area+' m²':null)
+    +(apt?row('Korter '+(apt.nr||''), apt.pind!=null?apt.pind+' m²':(apt.note||'pinda pole EHR-is')):'')
+    +row('Energiamärgis',b.energy_class)
+    +row('Lift', b.lift==null?null:(b.lift?'jah':'ei'))
+    +row('Katastritunnus',b.cadastral)
+    +(warn.length?'<div style="margin-top:5px;color:var(--red);font-size:10px">⚠ '+warn.map(esc).join('<br>⚠ ')+'</div>':'')
+    +'<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Ametlik registriandmed — võrdluseks, ei kirjuta üle kuulutuse omi.'+(j.source==='cache'?' · baasist':'')+'</div>'
+    +'</div>';
+  box.innerHTML=html;
 }
 
 var AI_STIIL = '\n\nSTIIL: Kirjuta eesti kirjakeeles, lihtsate selgete lausetega. Väldi ilukõnet, müügijuttu, emotsionaalsust, klišeesid ja korporatiivset keelt. Keskendu faktidele, loogikale ja reaalsele olukorrale. Ära kirjuta pikemalt kui vaja — iga lause peab andma väärtust. Kui midagi on ebaloogiline või teadmata, ütle see otse. Toon: rahulik, professionaalne, usaldusväärne, otsekohene, lugupidav, kindel aga mitte pealetükkiv. Ülesehitus: alusta kõige olulisemast, siis põhjendus, lõpeta konkreetse järelduse või järgmise sammuga; keeruline jaga punktideks; väldi pikki lõike. Ära kasuta hüüumärke ega emojisid. Ära kasuta vorminduse märke (*, #, nummerdatud loendid) — puhas tekst. Kliendikirjas räägi kui professionaalne nõustaja, mitte müüja: selgita olukorda nii nagu see on, näita võimalusi ja tagajärgi, ära suru otsust peale. Kinnisvaratekstis keskendu sellele, mis mõjutab ostja otsust, ja selgita miks; väldi sõnu unikaalne, suurepärane, ideaalne, fantastiline, eksklusiivne, luksuslik, kui puudub objektiivne põhjus. Tagasisides too välja tugevused ja probleemid, selgita mõju, anna soovitus. Ole kohe kasutatav ilma ümberkirjutamiseta; väldi pikki sissejuhatusi, moraalilugemist, liigseid hoiatusi ja sama mõtte kordamist. JURIIDIKA JA VASTUTUS: Ära luba kindlat tulemust, müügiaega ega -hinda; ära kasuta sõnu garanteerin, luban, kindlasti müüme. Ära tee kliendi nimel siduvaid pakkumisi ega kokkuleppeid (hind, vahendustasu, tähtaeg) — need lepitakse kokku eraldi ja kirjalikult. Ära nimeta konkreetset vahendustasu protsenti ega summat, kui seda pole sisendis antud. Ära esita hindu, protsente ega statistikat faktina, kui neid pole sisendis — ära mõtle numbreid välja; kui andmed puuduvad, ütle et täpsustamiseks on vaja lisainfot. Ära anna juriidilist, maksu- ega notariaalset nõu — sellistes küsimustes soovita pöörduda vastava spetsialisti (jurist, notar, maksunõustaja) poole. Ära kasuta survestavat keelt ega kunstlikku tähtajasurvet.';
@@ -2448,6 +2500,7 @@ function openLead(id, defaultStatus) {
             <input type="hidden" id="lAsum" value="${esc(l.asum)}">
             <input type="hidden" id="lLat" value="${l.addr_lat||''}">
             <input type="hidden" id="lLng" value="${l.addr_lng||''}">
+            <input type="hidden" id="lEhrCode" value="${esc(l.ehr_code)}">
           </div>
         </div>
         <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
@@ -2470,6 +2523,9 @@ function openLead(id, defaultStatus) {
           <div id="mpResult" style="margin-top:6px"></div>
           <a href="https://www.maaamet.ee/kinnisvara/htraru/" target="_blank" rel="noopener" style="color:var(--ac);text-decoration:none;font-size:10px">Maa-amet tehinguhinnad →</a>
         </div></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Ehitisregister<button type="button" class="btn-ghost" style="display:block;margin-top:6px;font-size:10px;padding:2px 6px" onclick="loadEhr(true)" title="Tõmba ehitise ametlikud andmed Ehitisregistrist (tasuta)">↻ EHR</button></span>
+          <div id="lEhrBox" style="flex:1;font-size:11px;line-height:1.5;padding-top:3px"><span style="color:var(--tx2)">Vali aadress — ehitise ametlikud andmed (ehitusaasta, korruseid, kasutusotstarve, energiamärgis) tulevad automaatselt.</span></div>
+        </div>
         <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
           <select class="kv-inp" id="lKontaktViis">
             <option value="">—</option>
@@ -2506,6 +2562,7 @@ function openLead(id, defaultStatus) {
   window._leadDirty = false;     // andmekao kaitse: jälgi muudatusi
   var _lb = document.getElementById('leadBody'); if(_lb) _lb.oninput = function(){ window._leadDirty = true; updateOwnEurLine(); };
   autoLoadMarketPrice(l);        // näita turuhinda kohe, kui segment juba baasis (ilma Scrapflyta)
+  loadEhr(false);                // EHR ehitise faktid (tasuta, auto kui aadress/kood olemas)
 }
 
 async function changeStatus(newKey) {
@@ -2549,6 +2606,7 @@ async function saveLead() {
     area:             parseFloat(document.getElementById('lPindala').value) || null,
     rooms:            parseInt(document.getElementById('lTube').value, 10)  || null,
     build_year:       parseInt(document.getElementById('lEhitusaasta')?.value, 10) || null,
+    ehr_code:         document.getElementById('lEhrCode')?.value.trim()      || null,
     property_type:    document.getElementById('lTuup').value               || null,
     use_purpose:      document.getElementById('lOtstarve')?.value           || null,
     condition:        document.getElementById('lSeisukord')?.value          || null,
