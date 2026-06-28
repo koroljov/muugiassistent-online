@@ -150,7 +150,10 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string, 
     { wait_for_selector: { selector: "#LBTrykis option[value='T13']", timeout: 15000 } },
     { execute: { script: `var l=document.getElementById('LBTrykis');l.value='${typeCode}';l.dispatchEvent(new Event('change',{bubbles:true}));` } },
     { wait_for_selector: { selector: `.multiselect-container input[value='${countyCode}']`, timeout: 15000 } },
-    { wait: 1200 },
+    // NB: multiselect on lehel ALATI olemas → wait_for lahendub KOHE ega oota LBTrykis postbacki.
+    // LBTrykis onchange teeb __doPostBack (setTimeout 0) → vorm laeb uuesti. Oota see LÄBI enne county valikut,
+    // muidu klõps tabab vahetuvat DOM-i ja valik kaob (browseris tõestatud sõltuvus).
+    { wait: 2800 },
     { execute: { script: `var c=document.querySelectorAll('.multiselect-container')[0];var t='${countyCode}';var cb=[].slice.call(c.querySelectorAll('input[type=checkbox]')).filter(function(x){return x.value===t;})[0];if(cb){cb.click();}` } },
   ];
   if (omavCode) {
