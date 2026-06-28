@@ -1601,11 +1601,11 @@ function leadMarketLevels(l){
 async function autoLoadMarketPrice(l){
   var box=document.getElementById('mpResult'); if(!box || !l || !l.county) return;
   var sk=leadSegKey(l.property_type, l.use_purpose); if(!sk.segKey) return;
-  var yr=new Date().getFullYear()-1;
   var levels=leadMarketLevels(l);
   try{
     for(var i=0;i<levels.length;i++){
-      var resp=await sb.from('market_prices').select('*').eq('county',l.county).eq('municipality','').eq('district',levels[i]).eq('property_type',sk.segKey).eq('period_end',yr+'-12-31').maybeSingle();
+      // Võta UUSIM periood (libisev 12 kuud — period_end muutub iga kuu), mitte fikseeritud täisaasta.
+      var resp=await sb.from('market_prices').select('*').eq('county',l.county).eq('municipality','').eq('district',levels[i]).eq('property_type',sk.segKey).order('period_end',{ascending:false}).limit(1).maybeSingle();
       if(resp.data && Number(resp.data.tx_count)>0){ renderMarketPrice(box, {source:'cache', data:resp.data}, l); return; } // näita kõige täpsem OLEMASOLEV (jäta hõredad sentinelid vahele)
     }
   }catch(e){}
@@ -2059,7 +2059,10 @@ async function importExtractAI(d){
     set('lAadress',r.addr); set('lTuup',normType(r.type)); set('lTehing',r.deal); set('lSeisukord',r.condition);
     onTypeChange(r.purpose);   // täida Otstarve taksonoomia järgi + eeltäida purpose
     var _ph=((d.tel||'').split(',')[0]||'').trim()||r.phone; var _em=((d.email||'').split(',')[0]||'').trim()||r.email;
-    set('lNimi',r.name); set('lTel',_ph); set('lEmail',_em);
+    // Ära pane kontaktiks iseennast (maaklerit) — kuulutusel on sageli maakleri nimi, mitte omaniku oma.
+    var _self=(localStorage.getItem('ma_name')||'').trim().toLowerCase();
+    var _rn=(r.name||'').trim(); if(_self && _rn && _rn.toLowerCase()===_self) _rn='';
+    set('lNimi',_rn); set('lTel',_ph); set('lEmail',_em);
     if(r.price) set('lHind',String(r.price).replace(/[^\d]/g,''));
     if(r.area) set('lPindala',String(r.area).replace(/[^\d.,]/g,'').replace(',','.'));
     if(r.rooms) set('lTube',String(r.rooms).replace(/[^\d]/g,''));
@@ -2477,7 +2480,8 @@ function openLead(id, defaultStatus) {
   const curSt   = STAATUSED.find(s => s.key === l.status && s.section === 'M')
                || STAATUSED.find(s => s.key === l.status);
   const section = curSt?.section || 'M';
-  const pipeSteps = STAATUSED.filter(s => s.section === section);
+  // Peida legacy "(vana)" etapid stepperist — välja arvatud kui lead ise on parajasti selles etapis.
+  const pipeSteps = STAATUSED.filter(s => s.section === section && (!/\(vana\)/i.test(s.nimi) || s.key === l.status));
   const aktIdx    = pipeSteps.findIndex(s => s.key === l.status);
   const leadCalls = CALLS.filter(c => c.lead_id === l.id);
 
