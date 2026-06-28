@@ -173,6 +173,13 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string, 
       steps.push({ execute: { script: `var k=document.getElementById('DDKyla');if(k){var o=[].slice.call(k.options).filter(function(x){return x.text.toLowerCase().indexOf('${aN.toLowerCase()}')>=0;})[0];if(o){k.value=o.value;}}` } });
       steps.push({ wait: 500 });
     }
+  } else {
+    // MAAKONNA tase: DDMaakond on Bootstrap-multiselect, mille väärtus EI serialiseeru Scrapfly headless'is
+    // ilma postbackita → "Sisesta haldusüksus käsitsi". Täisaasta töötas, sest RBLAeg_3 postback kinnitas
+    // county serverisse; libisev (RBLAeg_0) postbacki ei tee → KINNITA county eraldi __doPostBackiga.
+    // (Tallinna rada kinnitab DDMaakond juba cascade'is; DDOmavalitsus/DDKyla on tavalised select'id.)
+    steps.push({ execute: { script: "try{__doPostBack('DDMaakond','');}catch(e){}" } });
+    steps.push({ wait: 2800 });
   }
   // Periood: LIBISEV viimased 12 kuud (täpsem kui eelmine täisaasta). Browseris kontrollitud sammud:
   // RBLAeg_0 ("ajavahemik") klõps ERALDI → oota → siis txtAlgus/txtLopp (MM.YYYY) → oota → submit.
