@@ -773,11 +773,10 @@ tbody tr:hover td { background: var(--cd); cursor: pointer; }
 
 .kv-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--bd);
-  gap: 8px;
+  padding: 5px 0;
+  gap: 10px;
 }
 .kv-lbl { font-size: 11px; color: var(--tx2); flex-shrink: 0; padding-top: 3px; }
 
@@ -1059,6 +1058,10 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .ob-btn{font-size:13px;padding:9px 16px;border-radius:10px;cursor:pointer;border:1px solid var(--bd);background:transparent;color:var(--tx)}
 .ob-btn.primary{background:var(--ac);border-color:var(--ac);color:#fff}
 .ob-btn:hover{opacity:0.9}
+
+/* Leadi vorm — puhtad, kompaktsed sektsioonid (Kontakt / Objekt / Turg / Tegevus) */
+.lead-sec-h{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--ac); margin:18px 0 2px; padding-bottom:5px; border-bottom:1px solid var(--bd); }
+.lead-sec-h:first-child{ margin-top:2px; }
 </style>
 </head>
 <body>
@@ -2576,6 +2579,7 @@ function openLead(id, defaultStatus) {
 
     <div class="kv-grid">
       <div>
+        <div class="lead-sec-h">Kontakt</div>
         <div class="kv-row"><span class="kv-lbl">Kontakti nimi</span><input class="kv-inp" id="lNimi" value="${esc(l.contact_name)}"></div>
         <div class="kv-row"><span class="kv-lbl">Telefon</span><input class="kv-inp" id="lTel" value="${esc(l.phone)}"></div>
         <div class="kv-row"><span class="kv-lbl">E-post</span><input class="kv-inp" id="lEmail" value="${esc(l.email)}"></div>
@@ -2593,6 +2597,7 @@ function openLead(id, defaultStatus) {
             <input type="hidden" id="lEhrCode" value="${esc(l.ehr_code)}">
           </div>
         </div>
+        <div class="lead-sec-h">Objekt</div>
         <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Pindala m²</span><input class="kv-inp" id="lPindala" type="number" value="${l.area||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Tube</span><input class="kv-inp" id="lTube" type="number" min="0" value="${l.rooms||''}"></div>
@@ -2602,6 +2607,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row" id="lOtstarveRow" style="display:none"><span class="kv-lbl">Otstarve</span><select class="kv-inp" id="lOtstarve"><option value="">—</option></select></div>
         <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
         <div class="kv-row"><span class="kv-lbl">Seisukord</span><select class="kv-inp" id="lSeisukord"><option value="">—</option>${['Uusarendus','Uus','Renoveeritud','Heas korras','San. remont tehtud','Keskmine','Vajab san. remonti','Vajab renoveerimist'].map(o=>`<option${l.condition===o?' selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="lead-sec-h">Turg</div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:3px">
           <span id="mpOwnLine">${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Vali maakond ja vajuta — oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>`}</span>
           <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">
@@ -2616,6 +2622,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Ehitisregister<button type="button" class="btn-ghost" style="display:block;margin-top:6px;font-size:10px;padding:2px 6px" onclick="loadEhr(true)" title="Tõmba ehitise ametlikud andmed Ehitisregistrist (tasuta)">↻ EHR</button></span>
           <div id="lEhrBox" style="flex:1;font-size:11px;line-height:1.5;padding-top:3px"><span style="color:var(--tx2)">Vali aadress — ehitise ametlikud andmed (ehitusaasta, korruseid, kasutusotstarve, energiamärgis) tulevad automaatselt.</span></div>
         </div>
+        <div class="lead-sec-h">Tegevus</div>
         <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
           <select class="kv-inp" id="lKontaktViis">
             <option value="">—</option>
