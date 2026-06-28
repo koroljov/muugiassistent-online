@@ -1597,32 +1597,41 @@ function leadMarketLevels(l){
   return levels;
 }
 
-// Leadi avamisel: kui maakond+tüüp teada ja segment juba BAASIS, näita turuhinda kohe (ilma Scrapflyta, ilma nupuvajutuseta).
+// Leadi avamisel: KUVA TURUHIND KOHE. Näita kõige täpsem OLEMASOLEV cache silmapilkselt; kui kõige täpsem
+// tase (asum/linnaosa) pole veel baasis, too see automaatselt (Scrapfly ~20 s) ja uuenda — ilma nupuvajutuseta.
 async function autoLoadMarketPrice(l){
   var box=document.getElementById('mpResult'); if(!box || !l || !l.county) return;
   var sk=leadSegKey(l.property_type, l.use_purpose); if(!sk.segKey) return;
-  var levels=leadMarketLevels(l);
+  var levels=window._mpLevels||buildMpLevels(l);
+  var shown=-1;
   try{
     for(var i=0;i<levels.length;i++){
-      // Võta UUSIM periood (libisev 12 kuud — period_end muutub iga kuu), mitte fikseeritud täisaasta.
-      var resp=await sb.from('market_prices').select('*').eq('county',l.county).eq('municipality','').eq('district',levels[i]).eq('property_type',sk.segKey).order('period_end',{ascending:false}).limit(1).maybeSingle();
-      if(resp.data && Number(resp.data.tx_count)>0){ renderMarketPrice(box, {source:'cache', data:resp.data}, l); return; } // näita kõige täpsem OLEMASOLEV (jäta hõredad sentinelid vahele)
+      var lv=levels[i];
+      var resp=await sb.from('market_prices').select('*').eq('county',lv.county).eq('municipality','').eq('district',lv.cacheDistrict||'').eq('property_type',sk.segKey).order('period_end',{ascending:false}).limit(1).maybeSingle();
+      if(resp.data && Number(resp.data.tx_count)>0){ renderMarketPrice(box, {source:'cache', data:resp.data}, l); setMpSelect(i); shown=i; break; } // jäta hõredad sentinelid vahele
     }
   }catch(e){}
+  // Kõige täpsemat taset (idx 0) pole cache'is → too automaatselt, et kuvada päris täpne number.
+  if(levels.length && shown!==0){ setMpSelect(0); loadMarketPriceLevel(); }
 }
 
-async function loadMarketPrice(){
+// Tagasiühilduvus: vana nimi → uus taseme-põhine laadija.
+function loadMarketPrice(){ return loadMarketPriceLevel(); }
+
+async function loadMarketPriceLevel(){
   var box = document.getElementById('mpResult');
   if(!box || !CURRENT) return;
   var l = CURRENT;
+  var levels = window._mpLevels || buildMpLevels(l);
   var sel = document.getElementById('mpCounty');
-  var region = (sel && sel.value) ? sel.value : (l.region || '').trim();
+  var idx = sel ? parseInt(sel.value,10) : 0; if(isNaN(idx)||idx<0||idx>=levels.length) idx=0;
+  var lv = levels[idx];
   var ptype = ((document.getElementById('lTuup') && document.getElementById('lTuup').value) || l.property_type || '').trim();
-  if(!region){ box.innerHTML = mpMsg('Vali maakond rippmenüüst, siis saan piirkonna hinda näidata.'); return; }
+  if(!lv || !lv.county){ box.innerHTML = mpMsg('Vali asukoht/maakond, siis saan piirkonna hinda näidata.'); return; }
   if(!ptype){ box.innerHTML = mpMsg('Vali objekti tüüp (Korter / Maja / Maa), siis saan piirkonna hinda näidata.'); return; }
-  box.innerHTML = '<div style="font-size:10px;color:var(--tx2)">Pärin Maa-ametist… (esimesel korral selle piirkonna kohta ~20 s, edaspidi kohe)</div>';
+  box.innerHTML = '<div style="font-size:10px;color:var(--tx2)">Pärin Maa-ametist ('+esc(lv.label)+')… esimesel korral ~20 s, edaspidi kohe.</div>';
   var usePurpose = (document.getElementById('lOtstarve') && document.getElementById('lOtstarve').value) || (l.use_purpose || '');
-  var payload = { region: region, propertyType: ptype, usePurpose: usePurpose, district: (l.district||''), asum: (l.asum||'') };
+  var payload = { region: lv.county, propertyType: ptype, usePurpose: usePurpose, district: (lv.reqDistrict||''), asum: (lv.reqAsum||'') };
   try{
     var token = await freshToken();
     var doFetch = function(tok){ return fetch('/api/market-price', { method:'POST', headers:{'content-type':'application/json','authorization':'Bearer '+tok}, body: JSON.stringify(payload), signal: AbortSignal.timeout(60000) }); };
@@ -1659,7 +1668,7 @@ function mpOwnEurM2(l){
 function updateOwnEurLine(){
   var el=document.getElementById('mpOwnLine'); if(!el) return;
   var v=mpOwnEurM2(CURRENT);
-  el.innerHTML = v ? ('Sinu objekt: <b>'+v.toLocaleString('et-EE')+' €/m²</b>') : '<span style="color:var(--tx2)">Vali maakond ja vajuta — oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>';
+  el.innerHTML = v ? ('Sinu objekt: <b>'+v.toLocaleString('et-EE')+' €/m²</b>') : '<span style="color:var(--tx2)">Oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>';
 }
 
 // Täpsuse-taseme märge kuvateatesse: asum (kõige täpsem) / linnaosa / maakond.
@@ -1679,7 +1688,26 @@ function mpPeriod(d){
   return s.slice(0,4)||'periood';
 }
 // Lühike taseme-silt ülareale.
-function mpLevelShort(district){ var d=(district||'').trim(); if(!d) return 'maakond'; if(/linnaosa/i.test(d)) return d; return d+' (asum)'; }
+function mpLevelShort(district){ var d=(district||'').trim(); if(!d) return 'maakond'; if(/linnaosa|asum/i.test(d)) return d; return d+' (asum)'; }
+// Leadi asukoha tasemed turuhinna jaoks: kõige täpsem → laiem. Iga tase kannab nii CACHE-võtit (district veerg)
+// kui ka PÄRINGU-välju (region/district/asum endpointile). asum-rea district VEERG = asumi nimi, aga endpoint
+// vajab district=linnaosa + asum=nimi → hoiame mõlemat eraldi, et cache ei mööda lase.
+function buildMpLevels(l){
+  var out=[]; var dl=(typeof leadDistrictLabel==='function')?leadDistrictLabel(l):'';
+  var asum=(l&&l.asum||'').trim();
+  if(dl && asum) out.push({ label:asum, county:l.county, reqDistrict:dl, reqAsum:asum, cacheDistrict:asum });
+  if(dl)        out.push({ label:dl,   county:l.county, reqDistrict:dl, reqAsum:'',   cacheDistrict:dl });
+  if(l&&l.county) out.push({ label:l.county, county:l.county, reqDistrict:'', reqAsum:'', cacheDistrict:'' });
+  if(out.length) return out;
+  // Pole lahendatud asukohta → maakonna loend (aimatud esimeseks), et vana käitumine säiliks.
+  var order=['Harju','Hiiu','Ida-Viru','Jõgeva','Järva','Lääne','Lääne-Viru','Põlva','Pärnu','Rapla','Saare','Tartu','Valga','Viljandi','Võru'];
+  var guess=((l&&l.county)||((typeof guessCounty==='function')?guessCounty(((l&&l.region)||'')+' '+((l&&l.property_address)||'')):''));
+  var arr=order.map(function(c){ return { label:c+' maakond', county:c+' maakond', reqDistrict:'', reqAsum:'', cacheDistrict:'' }; });
+  var gi=arr.map(function(x){return x.county;}).indexOf(guess);
+  if(gi>0){ var g=arr.splice(gi,1)[0]; arr.unshift(g); }
+  return arr;
+}
+function setMpSelect(i){ var s=document.getElementById('mpCounty'); if(s){ s.value=String(i); } }
 
 function renderMarketPrice(box, j, l){
   var d = j.data || {};
@@ -2046,7 +2074,7 @@ async function readListingAI(){
 async function importExtractAI(d){
   var st=document.getElementById('lUrlStatus');
   if(st){ st.style.color='var(--tx2)'; st.textContent='AI loeb kuulutust…'; }
-  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","purpose":"","condition":"","deal":"","price":"","area":"","rooms":"","buildYear":"","name":"","phone":"","email":""}. buildYear=hoone ehitusaasta, ainult 4-kohaline number (nt 1998) kui kuulutusel olemas, muidu "". condition=seisukord, ÜKS järgnevatest kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". addr=objekti aadress (tänav number, linnaosa, linn). type=ÜKS järgnevatest: Korter, Maja, Majaosa, Maa/krunt, Äripind, Garaaž. purpose=alaliik/otstarve vastavalt tüübile: Maja→Eramaja/Suvila/Talu/Muu; Majaosa→Ridaelamuboks/Paarismaja/Muu; Maa/krunt→Elamumaa/Ärimaa/Tootmismaa/Maatulundusmaa/Metsamaa/Aiamaa; Äripind→Büroo/Kaubandus/Majutus/Teenindus/Ladu/Tootmine/Toitlustus/Määramata; Korter ja Garaaž→jäta "". deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). rooms=tubade arv, ainult number. name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
+  var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON ilma seletuseta kujul {"addr":"","type":"","purpose":"","condition":"","deal":"","price":"","area":"","rooms":"","floor":"","buildYear":"","name":"","phone":"","email":""}. buildYear=hoone ehitusaasta, ainult 4-kohaline number (nt 1998) kui kuulutusel olemas, muidu "". floor=korrus kujul "korrus/korruseid kokku" (nt "3/5"); kui kokku-korruseid pole antud, siis ainult korrus (nt "3"); muidu "". condition=seisukord, ÜKS järgnevatest kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". addr=objekti aadress (tänav number, linnaosa, linn). type=ÜKS järgnevatest: Korter, Maja, Majaosa, Maa/krunt, Äripind, Garaaž. purpose=alaliik/otstarve vastavalt tüübile: Maja→Eramaja/Suvila/Talu/Muu; Majaosa→Ridaelamuboks/Paarismaja/Muu; Maa/krunt→Elamumaa/Ärimaa/Tootmismaa/Maatulundusmaa/Metsamaa/Aiamaa; Äripind→Büroo/Kaubandus/Majutus/Teenindus/Ladu/Tootmine/Toitlustus/Määramata; Korter ja Garaaž→jäta "". deal="muuk" kui müük, "uur" kui üür. price=ainult number eurodes ilma tühikute ja euromärgita. area=üldpind ruutmeetrites, ainult number (mitte köök ega muu osa). rooms=tubade arv, ainult number. name=müüja või kontaktisiku nimi või ettevõte. phone=kontakttelefon. email=e-posti aadress. Eelista antud Telefon ja E-post välju kui need on täidetud. Kui väli puudub, jäta "".';
   var user='Pealkiri: '+(d.ogTitle||'')+'\nKirjeldus: '+(d.ogDesc||'')+'\nHinnavihje: '+(d.priceHint||'')+'\nTelefon: '+(d.tel||'')+'\nE-post: '+(d.email||'')+'\nTekst: '+(d.text||'');
   try{
     var ans=await aiFetch({ system:sys, max_tokens:300, messages:[{role:'user',content:user}] });
@@ -2066,7 +2094,10 @@ async function importExtractAI(d){
     if(r.price) set('lHind',String(r.price).replace(/[^\d]/g,''));
     if(r.area) set('lPindala',String(r.area).replace(/[^\d.,]/g,'').replace(',','.'));
     if(r.rooms) set('lTube',String(r.rooms).replace(/[^\d]/g,''));
+    if(r.floor) set('lKorrus', String(r.floor).trim());
     if(r.buildYear){ var _by=String(r.buildYear).replace(/[^\d]/g,'').slice(0,4); if(_by.length===4) set('lEhitusaasta',_by); }
+    // Salvesta kuulutuse kirjeldus (et AI tagasiside saaks päris sisu hinnata, mitte väita "kirjeldus puudub").
+    var _desc=((d.ogDesc||'')+(d.text&&d.text!==d.ogDesc?('\n'+d.text):'')).trim(); if(_desc) set('lKirjeldus', _desc.slice(0,2000));
     if(r.addr) await addrStructureFromText(document.getElementById('lAadress').value); // struktureeri asukoht (maakond/linnaosa/asum)
     window._leadDirty = true;
     if(st){ st.style.color='var(--ac)'; st.textContent='AI luges kuulutuse — kontrolli ja salvesta. (Kui telefon puudub: vajuta kuulutusel Näita numbrit ja klõpsa nuppu uuesti.)'; }
@@ -2096,7 +2127,9 @@ async function genImportFeedback(){
     f('lHind')&&('Hind: '+f('lHind')+' €'),
     f('lPindala')&&('Pindala: '+f('lPindala')+' m²'),
     f('lTube')&&('Tube: '+f('lTube')),
+    f('lKorrus')&&('Korrus: '+f('lKorrus')),
     f('lEhitusaasta')&&('Ehitusaasta: '+f('lEhitusaasta')),
+    f('lKirjeldus')&&('Kuulutuse kirjeldus: '+f('lKirjeldus')),
     f('lMarkus')&&('Kuulutuse märkus: '+f('lMarkus'))
   ].filter(Boolean).join('\n');
   if(!lines){ return; }
@@ -2104,7 +2137,7 @@ async function genImportFeedback(){
   // NB: anna district+asum → AI tagasiside kasutab SAMA taset mis Turuhind (linnaosa/asum), mitte maakonda. Muidu numbrid ei klapi.
   try{ market = await mellMarketLine({ county:f('lCounty'), district:f('lDistrict'), asum:f('lAsum'), property_type:f('lTuup'), use_purpose:f('lOtstarve'), price:parseFloat(f('lHind'))||null, area:parseFloat(f('lPindala'))||null }); }catch(e){}
   ai.value='AI koostab tagasisidet…';
-  var sys='Oled Uus Maa müügiassistent. Anna selle kuulutuse kohta lühike aus professionaalne tagasiside (3-5 lauset): mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel; ära leiuta numbreid ega fakte. KUI andmetes on Maa-ameti turuhind (FAKT), võid sellele faktipõhiselt viidata (märgi et see on piirkonna keskmine, ei arvesta seisukorda). Kuiv, konkreetne, korrektne eesti kirjakeel, ilma emojideta.'+AI_STIIL;
+  var sys='Oled Uus Maa müügiassistent. Anna selle kuulutuse kohta lühike aus professionaalne tagasiside (3-5 lauset): mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel; ära leiuta numbreid ega fakte. KRIITILINE: sul on AINULT struktuurandmed (hind, pindala, seisukord jne) — sul EI ole kuulutuse fotosid, täiskirjeldust ega korruse infot. ÄRA väida, et fotod, kirjeldus, korrus vms puuduvad või on nõrgad — sa lihtsalt ei näe neid (need ei pruugi olla meie süsteemi imporditud, kuid võivad kuulutusel olemas olla). Hinda seda, mida andmed NÄITAVAD: hinnapositsioon turu suhtes, seisukord, ehitusaasta, pinna ja tubade suhe. Kui viitad kuulutuse esitlusele, sõnasta tingimuslikult ("veendu, et fotod ja kirjeldus on tugevad"), mitte väida puuduvaks. KUI andmetes on Maa-ameti turuhind (FAKT), võid sellele faktipõhiselt viidata (märgi et see on piirkonna keskmine, ei arvesta seisukorda). Kuiv, konkreetne, korrektne eesti kirjakeel, ilma emojideta.'+AI_STIIL;
   try{
     var out=await aiFetch({ system:sys, max_tokens:350, model:'claude-sonnet-4-6', messages:[{role:'user', content:'Andmed:\n'+lines+market}] });
     if(out && out.indexOf('Viga')!==0 && out.indexOf('Sessioon aegus')!==0){ ai.value=out; window._leadDirty=true; }
@@ -2510,6 +2543,7 @@ function openLead(id, defaultStatus) {
     : '<div style="font-size:11px;color:var(--tx2);padding:4px 0">Ajalugu puudub.</div>';
 
   const contactMethodOpts = ['Kõne (väljaminev)','Kõne (sissetulev)','KV.ee sõnum','E-mail','Soovitus','Isiklik tutvus','Muu'];
+  window._mpLevels = buildMpLevels(l);   // turuhinna taseme-valija valikud (asum/linnaosa/maakond, kõige täpsem ees)
   document.getElementById('leadBody').innerHTML = `
     <div class="pbar">${pbar}</div>
     ${l.img_url ? `<img class="lead-img" src="${esc(l.img_url)}" onerror="this.style.display='none'">` : ''}
@@ -2536,6 +2570,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Pindala m²</span><input class="kv-inp" id="lPindala" type="number" value="${l.area||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Tube</span><input class="kv-inp" id="lTube" type="number" min="0" value="${l.rooms||''}"></div>
+        <div class="kv-row"><span class="kv-lbl">Korrus</span><input class="kv-inp" id="lKorrus" placeholder="nt 3/5" value="${esc(l.floor)}"></div>
         <div class="kv-row"><span class="kv-lbl">Ehitusaasta</span><input class="kv-inp" id="lEhitusaasta" type="number" min="1800" max="2100" placeholder="nt 1998" value="${l.build_year||''}"></div>
         <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup" onchange="onTypeChange()"><option value="">—</option>${Object.keys(PROPERTY_TAXONOMY).map(o => `<option${normType(l.property_type)===o?' selected':''}>${o}</option>`).join('')}</select></div>
         <div class="kv-row" id="lOtstarveRow" style="display:none"><span class="kv-lbl">Otstarve</span><select class="kv-inp" id="lOtstarve"><option value="">—</option></select></div>
@@ -2544,11 +2579,10 @@ function openLead(id, defaultStatus) {
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:3px">
           <span id="mpOwnLine">${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Vali maakond ja vajuta — oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>`}</span>
           <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">
-            <select class="kv-inp" id="mpCounty" style="flex:0 1 150px;font-size:11px;padding:3px 6px">
-              <option value="">Vali maakond…</option>
-              ${['Harju','Hiiu','Ida-Viru','Jõgeva','Järva','Lääne','Lääne-Viru','Põlva','Pärnu','Rapla','Saare','Tartu','Valga','Viljandi','Võru'].map(c=>`<option value="${c} maakond"${(l.county || guessCounty((l.region||'')+' '+(l.property_address||'')))===c+' maakond'?' selected':''}>${c}</option>`).join('')}
+            <select class="kv-inp" id="mpCounty" onchange="loadMarketPriceLevel()" style="flex:0 1 180px;font-size:11px;padding:3px 6px" title="Vali täpsusaste — kõige täpsem (asum/linnaosa) on ees">
+              ${(window._mpLevels||[]).map((x,i)=>`<option value="${i}"${i===0?' selected':''}>${esc(x.label)}</option>`).join('')}
             </select>
-            <button class="btn-ghost" style="font-size:10px;padding:2px 8px" onclick="loadMarketPrice()">📊 Vaata turuhinda</button>
+            <button class="btn-ghost" style="font-size:10px;padding:2px 8px" onclick="loadMarketPriceLevel()">📊 Vaata turuhinda</button>
           </div>
           <div id="mpResult" style="margin-top:6px"></div>
           <a href="https://www.maaamet.ee/kinnisvara/htraru/" target="_blank" rel="noopener" style="color:var(--ac);text-decoration:none;font-size:10px">Maa-amet tehinguhinnad →</a>
@@ -2567,6 +2601,7 @@ function openLead(id, defaultStatus) {
         <div id="lUrlStatus" style="font-size:9px;color:var(--tx2);margin-bottom:4px;min-height:12px;padding-left:100px"></div>
         <div id="lImgPreview" style="display:${l.img_url?'block':'none'};width:calc(100% - 108px);margin-left:100px;height:80px;background-size:cover;background-position:center;border-radius:6px;margin-bottom:8px;border:1px solid var(--bd);background-image:url('${esc(l.img_url)}')"></div>
         <input type="hidden" id="lImgUrl" value="${esc(l.img_url)}">
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kirjeldus</span><textarea class="kv-inp" id="lKirjeldus" rows="3" placeholder="Kuulutuse kirjeldus — täitub impordil; annab AI-le päris sisu hinnata" style="font-size:11px;line-height:1.45">${esc(l.description)}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?esc(l.listing_note):''}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">AI tagasiside<button type="button" class="btn-ghost" style="display:block;margin-top:6px;font-size:10px;padding:2px 6px" onclick="refreshAiFeedback()" title="Genereeri uuesti praeguste andmete + linnaosa/asumi turuhinna põhjal">↻ Värskenda</button></span><textarea class="kv-inp" id="lAiSummary" rows="5" placeholder="AI tagasiside — täitub kuulutuse importimisel; täienda Küsi Mellilt kaudu" style="font-size:11px;line-height:1.5">${esc(l.ai_summary)}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${esc(l.lead_comment)}</textarea></div>
@@ -2636,6 +2671,8 @@ async function saveLead() {
     area:             parseFloat(document.getElementById('lPindala').value) || null,
     rooms:            parseInt(document.getElementById('lTube').value, 10)  || null,
     build_year:       parseInt(document.getElementById('lEhitusaasta')?.value, 10) || null,
+    floor:            document.getElementById('lKorrus')?.value.trim()        || null,
+    description:      document.getElementById('lKirjeldus')?.value.trim()     || null,
     ehr_code:         document.getElementById('lEhrCode')?.value.trim()      || null,
     property_type:    document.getElementById('lTuup').value               || null,
     use_purpose:      document.getElementById('lOtstarve')?.value           || null,
@@ -3365,12 +3402,14 @@ function mellLeadContext(){
     loc && ('Asukoht (struktuurne): ' + loc),
     l.property_type && ('Tüüp: ' + l.property_type + (l.use_purpose ? ' / ' + l.use_purpose : '')),
     l.condition && ('Seisukord: ' + l.condition),
+    l.floor && ('Korrus: ' + l.floor),
     (l.build_year != null) && ('Ehitusaasta: ' + l.build_year),
     l.deal_type && ('Tehing: ' + l.deal_type),
     l.client_type && ('Kliendi tüüp: ' + l.client_type),
     (l.price != null) && ('Hind: ' + l.price + ' €'),
     (l.area != null) && ('Pindala: ' + l.area + ' m²'),
     (l.rooms != null) && ('Tube: ' + l.rooms),
+    l.description && ('Kuulutuse kirjeldus: ' + String(l.description).slice(0,600)),
     (l.price && l.area) && ('Objekti €/m²: ' + Math.round(l.price/l.area)),
     l.status && ('Staatus: ' + l.status),
     l.contact_name && ('Kontakt: ' + l.contact_name),
@@ -3695,12 +3734,14 @@ function kabiContext(){
     loc && ('Asukoht (struktuurne): '+loc),
     l.property_type && ('Tüüp: '+l.property_type + (l.use_purpose ? ' / '+l.use_purpose : '')),
     l.condition && ('Seisukord: '+l.condition),
+    l.floor && ('Korrus: '+l.floor),
     (l.build_year!=null) && ('Ehitusaasta: '+l.build_year),
     l.deal_type && ('Tehing: '+l.deal_type),
     (l.price!=null) && ('Hind: '+l.price+' €'),
     (l.area!=null) && ('Pindala: '+l.area+' m²'),
     (l.rooms!=null) && ('Tube: '+l.rooms),
     (l.price && l.area) && ('Objekti €/m²: '+Math.round(l.price/l.area)),
+    l.description && ('Kuulutuse kirjeldus: '+String(l.description).slice(0,600)),
     l.contact_name && ('Kontakt: '+l.contact_name),
     l.listing_note && ('Kuulutuse märkus: '+l.listing_note)
   ];
@@ -3725,7 +3766,7 @@ function kabiCopy(btn){
 async function kabiGen(kind){
   var sys, title;
   if(kind==='summary'){ title='Kõne kokkuvõte'; sys='Oled Uus Maa müügiassistent. Tee selle kõne lühike struktureeritud kokkuvõte eesti keeles. Kasuta AINULT antud andmeid, ära midagi juurde mõtle. Lõpus üks konkreetne järgmine samm.'; }
-  else if(kind==='listing'){ title='Kuulutuse tagasiside'; sys='Oled Uus Maa müügiassistent. Anna lühike aus professionaalne tagasiside selle kuulutuse kohta — mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel, ära väida fakte mida pole. Ära leiuta turuandmeid, hindu ega numbreid. KUI andmetes on antud Maa-ameti turuhind (FAKT), võid sellele faktipõhiselt viidata — märgi selgelt, et see on piirkonna keskmine ega arvesta seisukorda/korrust; ära tee oletusi numbritega mida pole. Korrektne eesti kirjakeel. Ilma hämata. Kuiv ja konkreetne.'; }
+  else if(kind==='listing'){ title='Kuulutuse tagasiside'; sys='Oled Uus Maa müügiassistent. Anna lühike aus professionaalne tagasiside selle kuulutuse kohta — mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel, ära väida fakte mida pole. Ära leiuta turuandmeid, hindu ega numbreid. KRIITILINE: sul on AINULT struktuurandmed — sul EI ole kuulutuse fotosid, täiskirjeldust ega korruse infot. ÄRA väida, et fotod, kirjeldus, korrus vms puuduvad või on nõrgad (sa lihtsalt ei näe neid; need võivad kuulutusel olemas olla, lihtsalt pole meie süsteemi imporditud). Hinda seda, mida andmed NÄITAVAD (hinnapositsioon, seisukord, vanus, pinna/tubade suhe); esitlusele viita tingimuslikult, mitte väitvalt puuduvaks. KUI andmetes on antud Maa-ameti turuhind (FAKT), võid sellele faktipõhiselt viidata — märgi selgelt, et see on piirkonna keskmine ega arvesta seisukorda/korrust; ära tee oletusi numbritega mida pole. Korrektne eesti kirjakeel. Ilma hämata. Kuiv ja konkreetne.'; }
   else if(kind==='letter'){ title='Kiri kliendile'; sys='Oled Uus Maa müügiassistent. Koosta kliendile saadetav lühike viisakas kiri eesti keeles: tänu kõne eest, lühike kokkuvõte, aus tagasiside kuulutuse kohta, ja sujuv suunamine müügispetsialist Meelisele ning paindlikule koostööle ja tasustamisele. Alusta tervitusega "Tere [eesnimi]", mitte "Kallim". Kasuta teie-vormi, klient on võõras. Omanik müüb ise — ära väida, et Uus Maa on midagi teinud (nt hinda muutnud). Ära ole pealetükkiv ega survesta. Kirjuta korrektses eesti kirjakeeles, lühidalt (max 120 sõna). Ära leiuta numbreid, hindu, aega ega turuandmeid. KUI andmetes on antud Maa-ameti turuhind (FAKT), võid seda faktina mainida (piirkonna keskmine, ei arvesta seisukorda); ära tee sellest survestavaid järeldusi. Kasuta täpselt antud sõnastust, ära tee numbritest oma tõlgendusi. Põhine AINULT antud andmetel, ära midagi välja mõtle. Ilma emojideta, kohe saadetav.'; }
   else { title='AI soovitus'; sys='Oled Uus Maa müügiassistent. Anna selle kõne andmete põhjal üks lühike konkreetne soovitus, mida järgmisena teha. 2-3 lauset, eesti keeles, otsekohe.'; }
   sys += AI_STIIL;
