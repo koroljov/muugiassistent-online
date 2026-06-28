@@ -1650,10 +1650,12 @@ function mpLevelNote(district){
 }
 // Periood "viimased 12 kuud (MM.YYYY–MM.YYYY)" period_start/end järgi.
 function mpPeriod(d){
-  function my(x){ var m=String(x||'').match(/(\d{4})-(\d{2})/); return m?m[2]+'.'+m[1]:''; }
-  var a=my(d.period_start), b=my(d.period_end);
+  var s=String(d.period_start||''), e=String(d.period_end||'');
+  function my(x){ var m=x.match(/(\d{4})-(\d{2})/); return m?m[2]+'.'+m[1]:''; }
+  if(/-01-01$/.test(s) && /-12-31$/.test(e)) return s.slice(0,4)+' (täisaasta)';
+  var a=my(s), b=my(e);
   if(a&&b) return 'viimased 12 kuud ('+a+'–'+b+')';
-  var yr=String(d.period_start||'').slice(0,4); return yr?yr:'periood';
+  return s.slice(0,4)||'periood';
 }
 // Lühike taseme-silt ülareale.
 function mpLevelShort(district){ var d=(district||'').trim(); if(!d) return 'maakond'; if(/linnaosa/i.test(d)) return d; return d+' (asum)'; }

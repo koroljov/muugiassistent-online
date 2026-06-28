@@ -241,15 +241,13 @@ export async function POST(request: Request) {
   // Segmendi võti: korter='T13', maja='T11:elamumaa', äripind='T11:ärimaa', maa='T12:<otstarve>'.
   const segKey = ptype.metric === "price" ? ptype.code + ":" + ptype.segment : ptype.code;
 
-  // Periood: LIBISEV viimased 12 täiskuud (täpsem kui eelmine täisaasta). Lõpp = eelmine täis kuu.
-  const _now = new Date();
-  const _endD = new Date(_now.getFullYear(), _now.getMonth(), 0);            // eelmise kuu viimane päev
-  const _startD = new Date(_endD.getFullYear(), _endD.getMonth() - 11, 1);   // 12 kuu akna esimene päev
-  const _pad = (n: number) => String(n).padStart(2, "0");
-  const algMY = _pad(_startD.getMonth() + 1) + "." + _startD.getFullYear();  // htraru txtAlgus (MM.YYYY)
-  const loppMY = _pad(_endD.getMonth() + 1) + "." + _endD.getFullYear();     // htraru txtLopp (MM.YYYY)
-  const period_start = `${_startD.getFullYear()}-${_pad(_startD.getMonth() + 1)}-01`;
-  const period_end = `${_endD.getFullYear()}-${_pad(_endD.getMonth() + 1)}-${_pad(_endD.getDate())}`; // cache-võti muutub iga kuu → automaatne värskendus
+  // Periood: eelmine täisaasta (RBLAeg_3) — TÖÖKINDEL. (Libisev 12 kuud / kohandatud vahemik vajab htraru
+  // vormi põhjalikumat testimist — RBLAeg_0+txtAlgus/txtLopp ei andnud Scrapfly kaudu tulemust. Teen eraldi.)
+  const lastYear = new Date().getFullYear() - 1;
+  const algMY: string | undefined = undefined; // libisev väljas kuni vorm testitud
+  const loppMY: string | undefined = undefined;
+  const period_start = `${lastYear}-01-01`;
+  const period_end = `${lastYear}-12-31`;
   const FRESH_MS = 180 * 24 * 3600 * 1000;
 
   // Parsib HTML-i õige mõõdiku järgi. Tagastab rea VÕI null (andmeid napib / vorm muutus).
