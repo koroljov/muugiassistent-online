@@ -3402,6 +3402,23 @@ async function mellMarketLine(l){
   }catch(e){ return ''; }
 }
 
+// EHR ehitise faktid (ametlik) AI konteksti — leadi ehr_code järgi ehr_buildings cache'ist.
+async function mellEhrLine(l){
+  if(!l || !l.ehr_code) return '';
+  try{
+    var r=await sb.from('ehr_buildings').select('use_purpose,build_year,floors,net_area,energy_class,building_type,status').eq('ehr_code', l.ehr_code).maybeSingle();
+    var b=r.data; if(!b) return '';
+    var parts=[];
+    if(b.use_purpose) parts.push('kasutusotstarve '+b.use_purpose);
+    if(b.build_year) parts.push('ehitusaasta '+b.build_year);
+    if(b.floors) parts.push(b.floors+' korrust');
+    if(b.energy_class) parts.push('energiamärgis '+b.energy_class);
+    if(b.net_area) parts.push('hoone netopind '+b.net_area+' m²');
+    if(!parts.length) return '';
+    return '\n\nEHITISREGISTER (FAKT, ametlik): '+parts.join(', ')+'. NB: ametlikud registriandmed; kui erineb kuulutusest, usalda EHR-i ja too lahknevus välja.';
+  }catch(e){ return ''; }
+}
+
 async function openMell(){
   if(!CURRENT){ alert('Ava esmalt lead.'); return; }
   MELL_HISTORY = [];
@@ -3454,7 +3471,8 @@ async function sendMell(){
   const thinking = mellAddMsg('a', '...');
   MELL_HISTORY.push({ role:'user', content:q });
   const marketLine = await mellMarketLine(CURRENT);
-  const system = 'Oled "Mell", Uus Maa kinnisvarabüroo müügiassistent. Vastad eesti keeles, otsekohe, lühidalt ja praktiliselt. Aitad müügispetsialisti selle konkreetse leadiga: anna konkreetne järgmine samm, mitte üldine jutt. Kui kasutaja palub sõnumi, anna valmis, kohe saadetav tekst ilma emojideta.' + AI_STIIL + '\n\nLEADI ANDMED:\n' + mellLeadContext() + marketLine;
+  const ehrLine = await mellEhrLine(CURRENT);
+  const system = 'Oled "Mell", Uus Maa kinnisvarabüroo müügiassistent. Vastad eesti keeles, otsekohe, lühidalt ja praktiliselt. Aitad müügispetsialisti selle konkreetse leadiga: anna konkreetne järgmine samm, mitte üldine jutt. Kui kasutaja palub sõnumi, anna valmis, kohe saadetav tekst ilma emojideta.' + AI_STIIL + '\n\nLEADI ANDMED:\n' + mellLeadContext() + marketLine + ehrLine;
   try{
     const ans = await aiFetch({ system: system, messages: MELL_HISTORY, max_tokens:700 });
     thinking.textContent = ans;
@@ -3665,7 +3683,8 @@ async function kabiGen(kind){
   var model = (kind === 'letter' || kind === 'listing') ? 'claude-sonnet-4-6' : undefined;
   kabiShowOut(title, 'Genereerin...');
   var marketLine = await mellMarketLine(CURRENT);   // sama Maa-ameti FAKT mis Mellil — kooskõla
-  var out = await kabiAI(sys, 'Andmed:\n' + kabiContext() + marketLine, model);
+  var ehrLine = await mellEhrLine(CURRENT);          // EHR ehitise faktid (ametlik)
+  var out = await kabiAI(sys, 'Andmed:\n' + kabiContext() + marketLine + ehrLine, model);
   if(out === null) kabiShowOut(title, 'AI ei vastanud. Kontrolli, kas Anthropic API võti on Seadetes (AI ja kõneabi) salvestatud ja kontol on krediit.');
   else { kabiShowOut(title, out); if(window._kabiOutputs) window._kabiOutputs[kind] = out; }
 }
