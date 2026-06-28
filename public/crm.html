@@ -3406,7 +3406,7 @@ async function mellMarketLine(l){
   try{
     var levels=leadMarketLevels(l); var d=null;
     for(var i=0;i<levels.length;i++){ // kõige täpsem olemasolev tase
-      var resp = await sb.from('market_prices').select('median_eur_m2,median_price,tx_count,period_end,segment,district')
+      var resp = await sb.from('market_prices').select('median_eur_m2,median_price,tx_count,period_start,period_end,segment,district')
         .eq('county', l.county).eq('municipality','').eq('district', levels[i]).eq('property_type', segKey).order('period_end',{ascending:false}).limit(1).maybeSingle();
       if(resp.data && Number(resp.data.tx_count)>0){ d=resp.data; break; } // jäta hõredad sentinelid vahele
     }
@@ -3415,10 +3415,10 @@ async function mellMarketLine(l){
     if(metric==='eur_m2'){
       if(!d.median_eur_m2) return '';
       var own = (l.price && l.area) ? Math.round(l.price/l.area) : null;
-      return '\n\nMAA-AMETI TURUHIND (FAKT, '+loc+', '+String(d.period_end||'').slice(0,4)+'): mediaan '+Math.round(d.median_eur_m2)+' €/m², '+d.tx_count+' tehingut'+(own?('; selle objekti €/m² '+own):'')+'. NB: piirkonna keskmine, ei arvesta seisukorda/korrust.';
+      return '\n\nMAA-AMETI TURUHIND (FAKT, '+loc+', '+mpPeriod(d)+'): mediaan '+Math.round(d.median_eur_m2)+' €/m², '+d.tx_count+' tehingut'+(own?('; selle objekti €/m² '+own):'')+'. NB: piirkonna keskmine, ei arvesta seisukorda/korrust.';
     } else {
       if(!d.median_price) return '';
-      return '\n\nMAA-AMETI TURUHIND (FAKT, '+loc+', '+(d.segment||'')+', '+String(d.period_end||'').slice(0,4)+'): mediaan tehinguhind '+Math.round(d.median_price)+' €, '+d.tx_count+' tehingut. NB: maa-pinna tehingute mediaanhind, mitte €/m² ega objekti väärtus.';
+      return '\n\nMAA-AMETI TURUHIND (FAKT, '+loc+', '+(d.segment||'')+', '+mpPeriod(d)+'): mediaan tehinguhind '+Math.round(d.median_price)+' €, '+d.tx_count+' tehingut. NB: maa-pinna tehingute mediaanhind, mitte €/m² ega objekti väärtus.';
     }
   }catch(e){ return ''; }
 }
