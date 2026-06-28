@@ -251,13 +251,18 @@ export async function POST(request: Request) {
       const h = await scrapflyFetch(ptype.code, county.code, undefined, undefined, algD, loppD);
       const dec = h.replace(/&nbsp;/gi, " ").replace(/&#160;/g, " ").replace(/ /g, " ");
       const kIdx = dec.indexOf("KOKKU");
-      const ajav = dec.match(/ajavahemik[^<]{0,80}/i)?.[0] || null;
-      const tbl = dec.indexOf("<table");
+      const algInput = dec.match(/id="txtAlgus"[^>]*?value="([^"]*)"/i) || dec.match(/value="([^"]*)"[^>]*?id="txtAlgus"/i);
+      const loppInput = dec.match(/id="txtLopp"[^>]*?value="([^"]*)"/i) || dec.match(/value="([^"]*)"[^>]*?id="txtLopp"/i);
+      const rb0m = dec.match(/id="RBLAeg_0"[^>]*?>/i);
+      const rb0checked = rb0m ? /checked/i.test(rb0m[0]) : null;
+      const harjuM = dec.match(/value="0037"[^>]*?>/i);
+      const harjuChecked = harjuM ? /checked/i.test(harjuM[0]) : null;
+      const valMsg = (dec.match(/(viga|sisesta|vale|kohustuslik|täida)[^<]{0,60}/i) || [])[0] || null;
       return NextResponse.json({
-        debug: true, alg: algD, lopp: loppD, len: h.length,
-        hasKOKKU: kIdx >= 0, kokkuCtx: kIdx >= 0 ? dec.slice(kIdx - 50, kIdx + 400) : null,
-        ajav, firstTable: tbl >= 0 ? dec.slice(tbl, tbl + 600) : dec.slice(0, 600),
-        parsed: parseKokku(h), finalUrl: lastScrapflyUrl,
+        debug: true, alg: algD, lopp: loppD, len: h.length, finalUrl: lastScrapflyUrl,
+        hasKOKKU: kIdx >= 0, parsed: parseKokku(h),
+        formAlg: algInput ? algInput[1] : "NO_FIELD", formLopp: loppInput ? loppInput[1] : "NO_FIELD",
+        rb0checked, harjuChecked, valMsg,
       });
     } catch (e: any) {
       return NextResponse.json({ debug: true, err: String(e?.message || e) });
