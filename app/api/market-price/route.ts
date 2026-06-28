@@ -311,11 +311,8 @@ export async function POST(request: Request) {
       lastErr = e?.message || "päring ebaõnnestus";
       continue; // proovi üldisemat taset
     }
-    let row = parseRow(html);
-    if (!row) {
-      // Ajutine Cloudflare/tõrge võib anda vale lehe → proovi ÜKS kord uuesti enne alla-andmist (töökindlus).
-      try { await new Promise((r) => setTimeout(r, 1200)); html = await scrapflyFetch(ptype.code, county.code, lv.omavCode, lv.asumName, algMY, loppMY); row = parseRow(html); } catch (e) {}
-    }
+    // NB: ainult ÜKS Scrapfly-päring tasemel — kordus ületaks Vercel 60s limiidi (eriti libiseva perioodiga). Tõrke korral → stale-varuvariant.
+    const row = parseRow(html);
     if (!row) {
       lastErr = "andmeid napib tasemel '" + lv.kind + "'";
       // Maakonna tasemel on ALATI tuhandeid tehinguid → parse null seal = Maa-amet muutis vormi/struktuuri
