@@ -171,12 +171,13 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string, 
   // Periood: LIBISEV viimased 12 kuud (täpsem kui eelmine täisaasta). Browseris kontrollitud sammud:
   // RBLAeg_0 ("ajavahemik") klõps ERALDI → oota → siis txtAlgus/txtLopp (MM.YYYY) → oota → submit.
   if (algMY && loppMY) {
-    // RBLAeg_0 võib käivitada AutoPostBacki (vorm laeb uuesti) → oota POSTBACK LÄBI enne kuupäevade sisestust,
-    // muidu väljad tühjenevad ja server lükkab vormi tagasi. Sea kuupäevad alles siis, kontrolli väärtus.
-    steps.push({ execute: { script: "var rb=document.getElementById('RBLAeg_0');if(rb){rb.click();}" } });
-    steps.push({ wait: 3500 });
-    steps.push({ execute: { script: "function S(id,v){var e=document.getElementById(id);if(e){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));e.dispatchEvent(new Event('blur',{bubbles:true}));}}S('txtAlgus','" + algMY + "');S('txtLopp','" + loppMY + "');" } });
-    steps.push({ wait: 1500 });
+    // RBLAeg_0 ("ajavahemik") on vormil JUBA vaikimisi valitud ega oma AutoPostBacki.
+    // ÄRA klõpsa seda — klõps võib raadio hoopis MAHA võtta (browseris tõestatud: rb0=false).
+    // KRIITILINE: LBTrykis (ja Tallinna cascade) käivitavad AutoPostBacki, mis vormi uuesti laeb ja
+    // txtAlgus/txtLopp TÜHJENDAB. Seetõttu: oota postback läbi → sea kuupäevad VIIMASENA → siis esita.
+    steps.push({ wait: 2500 });
+    steps.push({ execute: { script: "function S(id,v){var e=document.getElementById(id);if(e){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));}}S('txtAlgus','" + algMY + "');S('txtLopp','" + loppMY + "');" } });
+    steps.push({ wait: 1000 });
   } else {
     steps.push({ execute: { script: "var rb=document.getElementById('RBLAeg_3');if(rb){rb.click();}" } });
     steps.push({ wait: 1000 });
