@@ -171,18 +171,19 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string, 
   // Periood: LIBISEV viimased 12 kuud (täpsem kui eelmine täisaasta). Browseris kontrollitud sammud:
   // RBLAeg_0 ("ajavahemik") klõps ERALDI → oota → siis txtAlgus/txtLopp (MM.YYYY) → oota → submit.
   if (algMY && loppMY) {
+    // RBLAeg_0 võib käivitada AutoPostBacki (vorm laeb uuesti) → oota POSTBACK LÄBI enne kuupäevade sisestust,
+    // muidu väljad tühjenevad ja server lükkab vormi tagasi. Sea kuupäevad alles siis, kontrolli väärtus.
     steps.push({ execute: { script: "var rb=document.getElementById('RBLAeg_0');if(rb){rb.click();}" } });
-    steps.push({ wait: 1200 });
-    steps.push({ execute: { script: "var a=document.getElementById('txtAlgus');if(a){a.value='" + algMY + "';a.dispatchEvent(new Event('change',{bubbles:true}));}var l=document.getElementById('txtLopp');if(l){l.value='" + loppMY + "';l.dispatchEvent(new Event('change',{bubbles:true}));}" } });
-    steps.push({ wait: 900 });
+    steps.push({ wait: 3500 });
+    steps.push({ execute: { script: "function S(id,v){var e=document.getElementById(id);if(e){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));e.dispatchEvent(new Event('blur',{bubbles:true}));}}S('txtAlgus','" + algMY + "');S('txtLopp','" + loppMY + "');" } });
+    steps.push({ wait: 1500 });
   } else {
     steps.push({ execute: { script: "var rb=document.getElementById('RBLAeg_3');if(rb){rb.click();}" } });
     steps.push({ wait: 1000 });
   }
   steps.push({ click: { selector: "#btnTryki" } });
-  steps.push({ wait: 4000 });
-  steps.push({ wait_for_selector: { selector: "table", timeout: 15000 } });
-  steps.push({ wait: 1000 });
+  // Submit navigeerib Result.aspx-le. ÄRA oota geneerilist 'table' (vormi lehel ON tabeleid → lahendub liiga vara).
+  steps.push({ wait: 9000 });
   return Buffer.from(JSON.stringify(steps)).toString("base64");
 }
 
@@ -203,9 +204,11 @@ async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: st
   });
   const j = await r.json();
   const content = j?.result?.content;
+  lastScrapflyUrl = j?.result?.url || ""; // DEBUG: lõplik URL (kas navigeeris Result.aspx-le)
   if (!content) throw new Error("Scrapfly ei tagastanud sisu: " + JSON.stringify(j?.result?.error || j).slice(0, 300));
   return content as string;
 }
+let lastScrapflyUrl = ""; // DEBUG ajutine
 
 export async function POST(request: Request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
@@ -250,7 +253,7 @@ export async function POST(request: Request) {
         debug: true, alg: algD, lopp: loppD, len: h.length,
         hasKOKKU: kIdx >= 0, kokkuCtx: kIdx >= 0 ? dec.slice(kIdx - 50, kIdx + 400) : null,
         ajav, firstTable: tbl >= 0 ? dec.slice(tbl, tbl + 600) : dec.slice(0, 600),
-        parsed: parseKokku(h),
+        parsed: parseKokku(h), finalUrl: lastScrapflyUrl,
       });
     } catch (e: any) {
       return NextResponse.json({ debug: true, err: String(e?.message || e) });
