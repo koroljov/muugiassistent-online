@@ -297,17 +297,23 @@ export async function POST(request: Request) {
     mustFetch = true; // see tase pole värske cache'is → vaja Scrapflyt
     break;
   }
-  // Varuks: kui täpsemalt tasemelt ei leitud, võta maakonna-tase (district='') kui kunagi salvestatud — peaaegu alati olemas.
+  // Varuks: kui värsket pole, leia VÕIMALIKULT TÄPNE varem salvestatud väärtus (ükskõik mis periood) —
+  // kõige täpsemast tasemest üldisemani. Nii näitab asumi hõreduse korral linnaosa, mitte maakonda.
   if (mustFetch && !staleFallback) {
-    const { data: cf } = await admin.from("market_prices").select("*")
-      .eq("county", county.name).eq("municipality", "").eq("district", "")
-      .eq("property_type", segKey).eq("period_end", period_end).maybeSingle();
-    if (cf && Number(cf.tx_count) > 0) staleFallback = { data: cf, level: "maakond" };
+    for (const lv of levels) {
+      const { data: cf } = await admin.from("market_prices").select("*")
+        .eq("county", county.name).eq("municipality", "").eq("district", lv.district)
+        .eq("property_type", segKey).order("period_end", { ascending: false }).limit(1).maybeSingle();
+      if (cf && Number(cf.tx_count) > 0) { staleFallback = { data: cf, level: lv.kind }; break; }
+    }
   }
 
   // 2) Päri Scrapfly kaudu, kõige täpsemast tasemest. Kui napib → salvesta sentinel ja lange järgmisele.
   let lastErr = "";
   let structural = false; // true = Maa-amet muutis vormi/struktuuri (mitte ajutine viga ega hõredus)
+  // NB: MAX ÜKS Scrapfly-päring kogu requesti kohta. Mitme taseme aheldatud pärimine (asum hõre → linnaosa → ...)
+  // ületaks Vercel 60s limiidi → "An error occurred" timeout. Seega: pärime kõige täpsema taseme ÜKS kord; kui see
+  // hõre/kukub, langeme stale-varuvariandile ja täpsem tase tuleb hilisemast eraldi päringust (sentinel väldib kordust).
   for (let i = 0; mustFetch && i < levels.length; i++) {
     const lv = levels[i];
     let html: string;
@@ -315,9 +321,8 @@ export async function POST(request: Request) {
       html = await scrapflyFetch(ptype.code, county.code, lv.omavCode, lv.asumName, algMY, loppMY);
     } catch (e: any) {
       lastErr = e?.message || "päring ebaõnnestus";
-      continue; // proovi üldisemat taset
+      break; // üks päring kulutatud (ka tõrge) → ära aheldata, kasuta varuvarianti
     }
-    // NB: ainult ÜKS Scrapfly-päring tasemel — kordus ületaks Vercel 60s limiidi (eriti libiseva perioodiga). Tõrke korral → stale-varuvariant.
     const row = parseRow(html);
     if (!row) {
       lastErr = "andmeid napib tasemel '" + lv.kind + "'";
@@ -336,7 +341,7 @@ export async function POST(request: Request) {
           source: "maaamet_htraru", fetched_at: new Date().toISOString(), tx_count: 0,
         }, { onConflict: "county,municipality,district,property_type,period_start,period_end" });
       }
-      continue; // <5 tehingut vms → langeme üldisemale tasemele
+      break; // <5 tehingut vms → ÜKS päring tehtud, langeme stale-varuvariandile (mitte teist Scrapfly-päringut)
     }
 
     // 3) Salvesta selle taseme tulemus.
