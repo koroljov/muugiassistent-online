@@ -209,22 +209,9 @@ async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: st
   });
   const j = await r.json();
   const content = j?.result?.content;
-  lastScrapflyUrl = j?.result?.url || ""; // DEBUG: lõplik URL (kas navigeeris Result.aspx-le)
-  // DEBUG: Scrapfly metaandmed — kas cache, kas stsenaarium jooksis, vead
-  try {
-    const res = j?.result || {};
-    const sc = res.browser_data?.js_scenario || res.js_scenario || {};
-    lastScrapflyMeta = JSON.stringify({
-      status_code: res.status_code, from_cache: j?.context?.cache?.state || res.from_cache,
-      scenarioSteps: Array.isArray(sc?.steps) ? sc.steps.map((s: any) => ({ a: s.action, ok: s.success, err: (s.error || "").toString().slice(0, 80) })) : (sc?.executed ?? "no-scenario-data"),
-      logUrl: res.log_url,
-    }).slice(0, 900);
-  } catch (e) { lastScrapflyMeta = "meta-parse-fail"; }
   if (!content) throw new Error("Scrapfly ei tagastanud sisu: " + JSON.stringify(j?.result?.error || j).slice(0, 300));
   return content as string;
 }
-let lastScrapflyUrl = ""; // DEBUG ajutine
-let lastScrapflyMeta = ""; // DEBUG ajutine
 
 export async function POST(request: Request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
@@ -250,36 +237,6 @@ export async function POST(request: Request) {
   if (!ptype) return NextResponse.json({ unsupported: true, message: "Selle objekti tüübi (nt garaaž) kohta Maa-amet hinnastatistikat ei anna." });
 
   const asum = (body?.asum || "").toString().trim();
-
-  // AJUTINE DEBUG: body.debug=true → tagasta toores HTML-i diagnostika (maakond, libisev periood).
-  if (body?.debug === true) {
-    const _now2 = new Date();
-    const _endD2 = new Date(_now2.getFullYear(), _now2.getMonth(), 0);
-    const _startD2 = new Date(_endD2.getFullYear(), _endD2.getMonth() - 11, 1);
-    const _pad2 = (n: number) => String(n).padStart(2, "0");
-    const algD = _pad2(_startD2.getMonth() + 1) + "." + _startD2.getFullYear();
-    const loppD = _pad2(_endD2.getMonth() + 1) + "." + _endD2.getFullYear();
-    try {
-      const h = await scrapflyFetch(ptype.code, county.code, undefined, undefined, algD, loppD);
-      const dec = h.replace(/&nbsp;/gi, " ").replace(/&#160;/g, " ").replace(/ /g, " ");
-      const kIdx = dec.indexOf("KOKKU");
-      const algInput = dec.match(/id="txtAlgus"[^>]*?value="([^"]*)"/i) || dec.match(/value="([^"]*)"[^>]*?id="txtAlgus"/i);
-      const loppInput = dec.match(/id="txtLopp"[^>]*?value="([^"]*)"/i) || dec.match(/value="([^"]*)"[^>]*?id="txtLopp"/i);
-      const rb0m = dec.match(/id="RBLAeg_0"[^>]*?>/i);
-      const rb0checked = rb0m ? /checked/i.test(rb0m[0]) : null;
-      const harjuM = dec.match(/value="0037"[^>]*?>/i);
-      const harjuChecked = harjuM ? /checked/i.test(harjuM[0]) : null;
-      const valMsg = (dec.match(/(viga|sisesta|vale|kohustuslik|täida)[^<]{0,60}/i) || [])[0] || null;
-      return NextResponse.json({
-        debug: true, alg: algD, lopp: loppD, len: h.length, finalUrl: lastScrapflyUrl,
-        hasKOKKU: kIdx >= 0, parsed: parseKokku(h),
-        formAlg: algInput ? algInput[1] : "NO_FIELD", formLopp: loppInput ? loppInput[1] : "NO_FIELD",
-        rb0checked, harjuChecked, valMsg, scrapflyMeta: lastScrapflyMeta,
-      });
-    } catch (e: any) {
-      return NextResponse.json({ debug: true, err: String(e?.message || e) });
-    }
-  }
 
   // Tallinna täpsus (ainult Harju). Tasemed kõige täpsemast → üldisemani:
   //   asum (nt Kalamaja) → linnaosa (nt Põhja-Tallinn) → maakond (Harju).
