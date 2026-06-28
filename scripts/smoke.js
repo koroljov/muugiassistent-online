@@ -50,3 +50,10 @@ if (errors.length) {
   process.exit(1);
 }
 console.log("✅ SMOKE OK — crm.html süntaks + " + mustHaveFns.length + " funktsiooni + ID-d + taksonoomia + API-routed korras (" + Math.round(code.length/1024) + " KB skript)");
+
+// KÄITUMIS-testid (väljundi kontroll, mitte ainult süntaks) — jooksevad smoke'i järel, üks käsk katab mõlemat.
+try {
+  require("child_process").execFileSync("node", [path.join(__dirname, "behavior.js")], { stdio: "inherit" });
+} catch (e) {
+  process.exit(1); // behavior.js trükkis juba vea + väljus 1-ga
+}
