@@ -1629,15 +1629,16 @@ async function loadMarketPriceLevel(){
   var ptype = ((document.getElementById('lTuup') && document.getElementById('lTuup').value) || l.property_type || '').trim();
   if(!lv || !lv.county){ box.innerHTML = mpMsg('Vali asukoht/maakond, siis saan piirkonna hinda näidata.'); return; }
   if(!ptype){ box.innerHTML = mpMsg('Vali objekti tüüp (Korter / Maja / Maa), siis saan piirkonna hinda näidata.'); return; }
-  box.innerHTML = '<div style="font-size:10px;color:var(--tx2)">Pärin Maa-ametist ('+esc(lv.label)+')… esimesel korral ~20 s, edaspidi kohe.</div>';
+  var _stop = mpLoadingTicker(box, lv.label);   // elus, kergelt naljakas ootetekst — kirjeldab pärimist
   var usePurpose = (document.getElementById('lOtstarve') && document.getElementById('lOtstarve').value) || (l.use_purpose || '');
   var payload = { region: lv.county, propertyType: ptype, usePurpose: usePurpose, district: (lv.reqDistrict||''), asum: (lv.reqAsum||'') };
   try{
     var token = await freshToken();
     var doFetch = function(tok){ return fetch('/api/market-price', { method:'POST', headers:{'content-type':'application/json','authorization':'Bearer '+tok}, body: JSON.stringify(payload), signal: AbortSignal.timeout(60000) }); };
     var r = await doFetch(token);
-    if(r.status === 401){ token = await freshToken(true); r = await doFetch(token); if(r.status===401){ sessionLost(); return; } }
+    if(r.status === 401){ token = await freshToken(true); r = await doFetch(token); if(r.status===401){ _stop(); sessionLost(); return; } }
     var j = await r.json();
+    _stop();
     if(j && j.unsupported){ box.innerHTML = mpMsg(j.message || 'See objekti tüüp pole turuhinna võrdluseks toetatud.'); return; }
     if(!r.ok){
       // Kiht 3: struktuurne tõrge (Maa-amet muutis lehte) → eristatud, selgem teade
@@ -1652,8 +1653,33 @@ async function loadMarketPriceLevel(){
     }
     renderMarketPrice(box, j, l);
   }catch(e){
+    _stop();
     box.innerHTML = mpMsg('Päring ebaõnnestus: '+(e && e.message ? e.message : 'tundmatu viga')+'.');
   }
+}
+
+// Elus ooteanimatsioon turuhinna pärimisel: rotreerib kergelt naljakaid samme, mis kirjeldavad päris tegevust
+// (vorm → asum → tehingute lugemine → mediaan). Tagastab stop-funktsiooni (kutsu kui vastus saabub).
+function mpLoadingTicker(box, label){
+  // NB: Maa-ameti hinnastatistika on AVALIK — sõnastus mängulised, aga selgelt avaliku statistika pärimine
+  // (mitte "sissehiilimine" vms, et juriidiliselt mitte haakuv).
+  var msgs = [
+    'Avan Maa-ameti avaliku hinnastatistika…',
+    'Küsin '+(label||'piirkonna')+' viimase 12 kuu tehingud…',
+    'Sirvin avalikku tehingute tabelit, ükshaaval…',
+    'Loen numbreid kokku, sõrmega järge ajades…',
+    'Otsin KOKKU-rida — seal istub mediaan ja teeskleb, et teda pole…',
+    'Toon numbri puhtalt kohale…'
+  ];
+  var i = 0;
+  function paint(){
+    box.innerHTML = '<div style="font-size:11px;color:var(--tx)">'+esc(msgs[i % msgs.length])+'</div>'+
+      '<div style="font-size:9px;color:var(--tx2);margin-top:2px">esimesel korral selle piirkonna kohta ~20–40 s, edaspidi kohe</div>';
+    i++;
+  }
+  paint();
+  var id = setInterval(paint, 3200);
+  return function(){ try{ clearInterval(id); }catch(_){ } };
 }
 
 // Oma €/m² — loe LIVE väljadelt (lHind/lPindala), et töötaks ka salvestamata; varuks CURRENT.
