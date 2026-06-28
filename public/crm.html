@@ -1648,6 +1648,15 @@ function mpLevelNote(district){
   if(/linnaosa/i.test(d)) return 'Võrdlus on linnaosa tasemel ('+esc(d)+').';
   return 'Võrdlus on asumi tasemel ('+esc(d)+') — kõige täpsem.';
 }
+// Periood "viimased 12 kuud (MM.YYYY–MM.YYYY)" period_start/end järgi.
+function mpPeriod(d){
+  function my(x){ var m=String(x||'').match(/(\d{4})-(\d{2})/); return m?m[2]+'.'+m[1]:''; }
+  var a=my(d.period_start), b=my(d.period_end);
+  if(a&&b) return 'viimased 12 kuud ('+a+'–'+b+')';
+  var yr=String(d.period_start||'').slice(0,4); return yr?yr:'periood';
+}
+// Lühike taseme-silt ülareale.
+function mpLevelShort(district){ var d=(district||'').trim(); if(!d) return 'maakond'; if(/linnaosa/i.test(d)) return d; return d+' (asum)'; }
 
 function renderMarketPrice(box, j, l){
   var d = j.data || {};
@@ -1655,19 +1664,16 @@ function renderMarketPrice(box, j, l){
   var srcP = j.source==='cache'?' · salvestatud baasist':j.source==='stale'?' · vana baas (värsket ei saanud)':'';
   // HINNA-mõõdik (maja/maa/äripind): mediaan TEHINGUHIND, mitte €/m²
   if(d.metric==='price' || d.median_price!=null){
-    var yrP=(d.period_start||'').slice(0,4); var periodP=yrP?yrP+' (eelmine täisaasta)':'eelmine täisaasta';
     var mpv=Number(d.median_price), apv=Number(d.avg_price);
     if(!(mpv>0)||!(tx>0)){ box.innerHTML=mpMsg('Maa-ametist ei saadud usaldusväärset tehinguhinda — selles segmendis andmeid napib.'); return; }
     var _hv=document.getElementById('lHind'); var ownP=(_hv&&_hv.value!=='')?parseFloat(String(_hv.value).replace(/\s/g,'').replace(',','.')):((l&&l.price)?Number(l.price):null); if(!(ownP>0)) ownP=null;
     var hinnangP;
-    if(ownP){ var dfp=Math.round((ownP/mpv-1)*100); hinnangP='Sinu objekt ('+Math.round(ownP).toLocaleString('et-EE')+' €) on piirkonna mediaanist '+(dfp>0?dfp+'% ÜLE':dfp<0?Math.abs(dfp)+'% ALLA':'samal tasemel')+'.'; }
-    else { hinnangP='Lisa objekti hind, et piirkonna mediaaniga võrrelda.'; }
+    if(ownP){ var dfp=Math.round((ownP/mpv-1)*100); hinnangP='Sinu objekt '+Math.round(ownP).toLocaleString('et-EE')+' € — mediaanist '+(dfp>0?'<b>'+dfp+'% ÜLE</b>':dfp<0?'<b>'+Math.abs(dfp)+'% ALLA</b>':'samal tasemel')+'.'; }
+    else { hinnangP='Lisa hind, et mediaaniga võrrelda.'; }
     box.innerHTML='<div style="border:1px solid var(--bd);border-radius:6px;padding:8px;background:var(--cd)">'+
-      '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">Fakt — Maa-amet ('+esc(d.county||'')+' · '+esc(d.segment||'')+' · '+periodP+')</div>'+
-      '<div style="font-size:12px;margin:3px 0;color:var(--tx)">Mediaan tehinguhind <b>'+Math.round(mpv).toLocaleString('et-EE')+' €</b> · keskmine '+Math.round(apv||0).toLocaleString('et-EE')+' € · '+tx.toLocaleString('et-EE')+' tehingut</div>'+
-      '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-top:5px">Hinnang (arvutuslik)</div>'+
-      '<div style="font-size:12px;margin:3px 0;color:var(--tx)">'+hinnangP+'</div>'+
-      '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Maa-pinna tehingute mediaanHIND (sihtotstarve: '+esc(d.segment||'')+'), mitte €/m² ega objekti väärtus. Ei arvesta hoone seisukorda/suurust. '+mpLevelNote(d.district)+(tx<30?' Õhuke andmebaas ('+tx+') — tõlgenda ettevaatlikult.':'')+srcP+'</div>'+
+      '<div style="font-size:12px;color:var(--tx)">Mediaan tehinguhind <b>'+Math.round(mpv).toLocaleString('et-EE')+' €</b> · '+tx.toLocaleString('et-EE')+' tehingut · '+esc(mpLevelShort(d.district))+'</div>'+
+      '<div style="font-size:11px;color:var(--tx);margin-top:2px">'+hinnangP+'</div>'+
+      '<div style="font-size:9px;color:var(--tx2);margin-top:4px;line-height:1.35">Maa-amet · '+esc(d.county||'')+' · '+esc(d.segment||'')+' · '+mpPeriod(d)+' · keskmine '+Math.round(apv||0).toLocaleString('et-EE')+' €. Maa-pinna tehingute mediaanhind, mitte €/m² ega objekti väärtus.'+(tx<30?' Õhuke ('+tx+').':'')+srcP+'</div>'+
     '</div>';
     return;
   }
@@ -1678,24 +1684,21 @@ function renderMarketPrice(box, j, l){
     return;
   }
   var own = mpOwnEurM2(l);
-  var yr = (d.period_start||'').slice(0,4);
-  var period = yr ? yr + ' (eelmine täisaasta)' : 'eelmine täisaasta';
+  var period = mpPeriod(d);
   var thin = tx < 30;
   var hinnang;
   if(own){
     var diff = Math.round((own/med - 1)*100);
-    hinnang = 'Sinu objekt ('+own.toLocaleString('et-EE')+' €/m²) on piirkonna mediaanist '+(diff>0 ? diff+'% ÜLE' : diff<0 ? Math.abs(diff)+'% ALLA' : 'samal tasemel')+'.';
+    hinnang = 'Sinu objekt '+own.toLocaleString('et-EE')+' €/m² — mediaanist '+(diff>0 ? '<b>'+diff+'% ÜLE</b>' : diff<0 ? '<b>'+Math.abs(diff)+'% ALLA</b>' : 'samal tasemel')+'.';
   } else {
-    hinnang = 'Lisa hind ja pindala, et oma €/m² piirkonnaga võrrelda.';
+    hinnang = 'Lisa hind ja pindala, et oma €/m² võrrelda.';
   }
-  var typeNote = /maja|maa|krunt|hoonestat/i.test(d.property_label||'') ? ' Maa/maja €/m² on maa-pinna põhine, mitte elupinna — tõlgenda vastavalt.' : '';
+  var typeNote = /maja|maa|krunt|hoonestat/i.test(d.property_label||'') ? ' Maa/maja €/m² on maa-pinna põhine, mitte elupinna.' : '';
   box.innerHTML =
     '<div style="border:1px solid var(--bd);border-radius:6px;padding:8px;background:var(--cd)">'+
-      '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">Fakt — Maa-amet ('+esc(d.county||'')+(d.district?' · '+esc(d.district):'')+', '+period+')</div>'+
-      '<div style="font-size:12px;margin:3px 0;color:var(--tx)">Mediaan <b>'+Math.round(med).toLocaleString('et-EE')+' €/m²</b> · keskmine '+Math.round(avg).toLocaleString('et-EE')+' €/m² · '+tx.toLocaleString('et-EE')+' tehingut</div>'+
-      '<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;margin-top:5px">Hinnang (arvutuslik)</div>'+
-      '<div style="font-size:12px;margin:3px 0;color:var(--tx)">'+hinnang+'</div>'+
-      '<div style="font-size:9px;color:var(--tx2);margin-top:5px;line-height:1.4">Ei arvesta seisukorda, korrust ega vaadet — see on piirkonna keskmine, mitte objekti hinnang. '+mpLevelNote(d.district)+typeNote+(thin?' Andmebaas selle segmendi kohta on õhuke ('+tx+' tehingut) — tõlgenda ettevaatlikult.':'')+(j.source==='cache'?' · salvestatud baasist':j.source==='stale'?' · vana baas (värsket ei saanud)':'')+'</div>'+
+      '<div style="font-size:12px;color:var(--tx)">Mediaan <b>'+Math.round(med).toLocaleString('et-EE')+' €/m²</b> · '+tx.toLocaleString('et-EE')+' tehingut · '+esc(mpLevelShort(d.district))+'</div>'+
+      '<div style="font-size:11px;color:var(--tx);margin-top:2px">'+hinnang+'</div>'+
+      '<div style="font-size:9px;color:var(--tx2);margin-top:4px;line-height:1.35">Maa-amet · '+esc(d.county||'')+' · '+period+' · keskmine '+Math.round(avg).toLocaleString('et-EE')+' €/m². Piirkonna keskmine, ei arvesta seisukorda/korrust.'+typeNote+(thin?' Õhuke ('+tx+').':'')+(j.source==='cache'?' · baasist':j.source==='stale'?' · vana baas':'')+'</div>'+
     '</div>';
 }
 

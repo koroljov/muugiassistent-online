@@ -141,7 +141,7 @@ function parseKokku(html: string): {
 
 // Ehita Scrapfly js_scenario, mis juhib htraru-vormi nagu päris kasutaja.
 // omavCode (valikuline) = Tallinna linnaosa kood (DDOmavalitsus), nt 298 Kesklinn → linnaosa-täpne päring.
-function buildScenario(typeCode: string, countyCode: string, omavCode?: string, asumName?: string): string {
+function buildScenario(typeCode: string, countyCode: string, omavCode?: string, asumName?: string, algMY?: string, loppMY?: string): string {
   // NB: dropdownid value+change (vallandab AutoPostBack); maakond ja periood vajavad .click()
   // (sündmustega) — .checked=true EI tööta. Omavalitsuse cascade: __doPostBack('DDMaakond',''). Submit päris-klõpsuga.
   const steps: any[] = [
@@ -168,7 +168,12 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string, 
       steps.push({ wait: 500 });
     }
   }
-  steps.push({ execute: { script: "var rb=document.getElementById('RBLAeg_3');if(rb){rb.click();}" } });
+  // Periood: LIBISEV viimased 12 kuud (täpsem kui eelmine täisaasta). RBLAeg_0 = "ajavahemik", txtAlgus/txtLopp = MM.YYYY.
+  if (algMY && loppMY) {
+    steps.push({ execute: { script: "var rb=document.getElementById('RBLAeg_0');if(rb){rb.click();}var a=document.getElementById('txtAlgus');if(a){a.value='" + algMY + "';a.dispatchEvent(new Event('change',{bubbles:true}));}var l=document.getElementById('txtLopp');if(l){l.value='" + loppMY + "';l.dispatchEvent(new Event('change',{bubbles:true}));}" } });
+  } else {
+    steps.push({ execute: { script: "var rb=document.getElementById('RBLAeg_3');if(rb){rb.click();}" } });
+  }
   steps.push({ wait: 1000 });
   steps.push({ click: { selector: "#btnTryki" } });
   steps.push({ wait: 4000 });
@@ -177,7 +182,7 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string, 
   return Buffer.from(JSON.stringify(steps)).toString("base64");
 }
 
-async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: string, asumName?: string): Promise<string> {
+async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: string, asumName?: string, algMY?: string, loppMY?: string): Promise<string> {
   const key = process.env.SCRAPFLY_KEY;
   if (!key) throw new Error("SCRAPFLY_KEY puudub serveris");
   const params = new URLSearchParams({
@@ -187,7 +192,7 @@ async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: st
     asp: "true", // Anti Scraping Protection (Cloudflare bypass)
     country: "ee",
     rendering_wait: "3000",
-    js_scenario: buildScenario(typeCode, countyCode, omavCode, asumName),
+    js_scenario: buildScenario(typeCode, countyCode, omavCode, asumName, algMY, loppMY),
   });
   const r = await fetch("https://api.scrapfly.io/scrape?" + params.toString(), {
     signal: AbortSignal.timeout(55000),
@@ -236,10 +241,15 @@ export async function POST(request: Request) {
   // Segmendi võti: korter='T13', maja='T11:elamumaa', äripind='T11:ärimaa', maa='T12:<otstarve>'.
   const segKey = ptype.metric === "price" ? ptype.code + ":" + ptype.segment : ptype.code;
 
-  // Periood: eelmine täisaasta.
-  const lastYear = new Date().getFullYear() - 1;
-  const period_start = `${lastYear}-01-01`;
-  const period_end = `${lastYear}-12-31`;
+  // Periood: LIBISEV viimased 12 täiskuud (täpsem kui eelmine täisaasta). Lõpp = eelmine täis kuu.
+  const _now = new Date();
+  const _endD = new Date(_now.getFullYear(), _now.getMonth(), 0);            // eelmise kuu viimane päev
+  const _startD = new Date(_endD.getFullYear(), _endD.getMonth() - 11, 1);   // 12 kuu akna esimene päev
+  const _pad = (n: number) => String(n).padStart(2, "0");
+  const algMY = _pad(_startD.getMonth() + 1) + "." + _startD.getFullYear();  // htraru txtAlgus (MM.YYYY)
+  const loppMY = _pad(_endD.getMonth() + 1) + "." + _endD.getFullYear();     // htraru txtLopp (MM.YYYY)
+  const period_start = `${_startD.getFullYear()}-${_pad(_startD.getMonth() + 1)}-01`;
+  const period_end = `${_endD.getFullYear()}-${_pad(_endD.getMonth() + 1)}-${_pad(_endD.getDate())}`; // cache-võti muutub iga kuu → automaatne värskendus
   const FRESH_MS = 180 * 24 * 3600 * 1000;
 
   // Parsib HTML-i õige mõõdiku järgi. Tagastab rea VÕI null (andmeid napib / vorm muutus).
@@ -292,7 +302,7 @@ export async function POST(request: Request) {
     const lv = levels[i];
     let html: string;
     try {
-      html = await scrapflyFetch(ptype.code, county.code, lv.omavCode, lv.asumName);
+      html = await scrapflyFetch(ptype.code, county.code, lv.omavCode, lv.asumName, algMY, loppMY);
     } catch (e: any) {
       lastErr = e?.message || "päring ebaõnnestus";
       continue; // proovi üldisemat taset
@@ -300,7 +310,7 @@ export async function POST(request: Request) {
     let row = parseRow(html);
     if (!row) {
       // Ajutine Cloudflare/tõrge võib anda vale lehe → proovi ÜKS kord uuesti enne alla-andmist (töökindlus).
-      try { await new Promise((r) => setTimeout(r, 1200)); html = await scrapflyFetch(ptype.code, county.code, lv.omavCode, lv.asumName); row = parseRow(html); } catch (e) {}
+      try { await new Promise((r) => setTimeout(r, 1200)); html = await scrapflyFetch(ptype.code, county.code, lv.omavCode, lv.asumName, algMY, loppMY); row = parseRow(html); } catch (e) {}
     }
     if (!row) {
       lastErr = "andmeid napib tasemel '" + lv.kind + "'";
