@@ -15,29 +15,37 @@ const FRESH_MS = 180 * 24 * 3600 * 1000;
 function num(v: any): number | null { if (v == null || v === "") return null; const n = parseFloat(String(v).replace(",", ".")); return isNaN(n) ? null : n; }
 function yr(v: any): number | null { if (!v) return null; const m = String(v).match(/(\d{4})/); if (!m) return null; const y = parseInt(m[1], 10); return y >= 1700 && y <= 2100 ? y : null; }
 
+// Aadressi kandidaadid in-ADS jaoks (asum/liigsed osad segavad in-ADS-i). Kõige täpsem (korteriga) enne.
+const EHR_CITIES = ["Tallinn","Tartu","Pärnu","Narva","Kohtla-Järve","Viljandi","Rakvere","Maardu","Kuressaare","Sillamäe","Valga","Võru","Haapsalu","Jõhvi","Paide","Keila","Elva","Rapla","Jõgeva","Saue","Põlva","Türi","Põltsamaa","Paldiski","Tapa","Kunda","Tõrva"];
+function ehrAddrCandidates(raw: string): string[] {
+  const out: string[] = [];
+  const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  const first = parts[0] || raw;
+  const street = first.replace(/\s*-\s*\d+\w?$/, ""); // ilma korterinumbrita
+  const city = parts.filter((p) => EHR_CITIES.some((c) => p.toLowerCase() === c.toLowerCase()))[0] || "";
+  if (city && first !== street) out.push(first + ", " + city); // "J. Vilmsi tn 35a-16, Tallinn" (korter+linn → komposiit tunnus)
+  out.push(raw);                                               // täisstring
+  if (city) out.push(street + ", " + city);                   // "J. Vilmsi tn 35a, Tallinn" (hoone)
+  out.push(street);                                            // "J. Vilmsi tn 35a"
+  return out.filter((v, i, a) => v && a.indexOf(v) === i);
+}
+
 // in-ADS aadress → { ehrCode (hoone), aptNr, aptCode (osa kood), address }
-// NB: korteri in-ADS tunnus on kujul "HOONEKOOD-OSAKOOD" (nt 101014781-2297480) → võta hoonekood; osakood = korteri täpne sobitus.
+// NB: korteri in-ADS tunnus on kujul "HOONEKOOD-OSAKOOD" (nt 101014781-2297480) → hoonekood + osakood (korteri täpne sobitus).
 async function resolveEhrCode(addressRaw: string): Promise<{ ehrCode: string; aptNr: string; aptCode: string; address: string } | null> {
   async function look(q: string): Promise<any[]> {
     try { const r = await fetch("https://inaadress.maaamet.ee/inaadress/gazetteer?address=" + encodeURIComponent(q) + "&results=5", { signal: AbortSignal.timeout(8000) }); const j = await r.json(); return j.addresses || []; } catch { return []; }
   }
-  const list = await look(addressRaw);
-  let hit = list[0];
-  let aptNr = hit?.kort_nr || "";
-  let address = hit?.ipikkaadress || hit?.taisaadress || addressRaw;
-  const rawTunnus = String(hit?.tunnus || "");
-  let ehrCode = ""; let aptCode = "";
-  if (rawTunnus) { const parts = rawTunnus.split("-"); ehrCode = parts[0]; aptCode = parts[1] || ""; }
-  // Kui koodi pole (mõnel korteril tunnus tühi) → küsi hoone (eemalda korterinumber)
-  if (!ehrCode) {
-    const noApt = addressRaw.replace(/\s*-\s*\d+\w?(?=\s*,|\s*$)/, "");
-    const street = (hit?.liikluspind && hit?.aadress_nr) ? (hit.liikluspind + " " + hit.aadress_nr + ", " + (hit.omavalitsus || "")) : noApt;
-    const bl = await look(street);
-    const b = bl.find((x: any) => x.tunnus) || bl[0];
-    if (b?.tunnus) { ehrCode = String(b.tunnus).split("-")[0]; if (!address) address = b.ipikkaadress; }
+  for (const cand of ehrAddrCandidates(addressRaw)) {
+    const list = await look(cand);
+    if (!list.length) continue;
+    const hit = list.find((x: any) => x.tunnus) || list[0];
+    const rawTunnus = String(hit?.tunnus || "");
+    if (!rawTunnus) continue; // see kandidaat ei andnud EHR-koodi → proovi järgmist (üldisemat)
+    const p = rawTunnus.split("-");
+    return { ehrCode: p[0], aptCode: p[1] || "", aptNr: hit?.kort_nr || "", address: hit?.ipikkaadress || hit?.taisaadress || addressRaw };
   }
-  if (!ehrCode) return null;
-  return { ehrCode, aptNr, aptCode, address };
+  return null;
 }
 
 function parseBuilding(j: any): any {
