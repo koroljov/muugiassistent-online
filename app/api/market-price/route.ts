@@ -154,7 +154,10 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string, 
     // LBTrykis onchange teeb __doPostBack (setTimeout 0) → vorm laeb uuesti. Oota see LÄBI enne county valikut,
     // muidu klõps tabab vahetuvat DOM-i ja valik kaob (browseris tõestatud sõltuvus).
     { wait: 2800 },
-    { execute: { script: `var c=document.querySelectorAll('.multiselect-container')[0];var t='${countyCode}';var cb=[].slice.call(c.querySelectorAll('input[type=checkbox]')).filter(function(x){return x.value===t;})[0];if(cb){cb.click();}` } },
+    // County: sea alusvalik DDMaakond OTSE (Bootstrap-multiselecti checkbox-klõps EI uuenda alusvalikut Scrapfly
+    // headless'is → "Sisesta haldusüksus käsitsi"). Otse-seadmine on headless-kindel ja postitub vormiga.
+    // Klõpsa ka widgetit (UI sünk), aga määrav on DDMaakond.options.selected.
+    { execute: { script: `var t='${countyCode}';var sel=document.getElementById('DDMaakond');if(sel){[].forEach.call(sel.options,function(o){o.selected=(o.value===t);});sel.dispatchEvent(new Event('change',{bubbles:true}));}var c=document.querySelectorAll('.multiselect-container')[0];if(c){var cb=[].slice.call(c.querySelectorAll('input[type=checkbox]')).filter(function(x){return x.value===t;})[0];if(cb&&!cb.checked){cb.click();}}` } },
   ];
   if (omavCode) {
     // Tallinna linnaosa: käivita omavalitsuse cascade ja vali linnaosa
