@@ -232,6 +232,31 @@ export async function POST(request: Request) {
 
   const asum = (body?.asum || "").toString().trim();
 
+  // AJUTINE DEBUG: body.debug=true → tagasta toores HTML-i diagnostika (maakond, libisev periood).
+  if (body?.debug === true) {
+    const _now2 = new Date();
+    const _endD2 = new Date(_now2.getFullYear(), _now2.getMonth(), 0);
+    const _startD2 = new Date(_endD2.getFullYear(), _endD2.getMonth() - 11, 1);
+    const _pad2 = (n: number) => String(n).padStart(2, "0");
+    const algD = _pad2(_startD2.getMonth() + 1) + "." + _startD2.getFullYear();
+    const loppD = _pad2(_endD2.getMonth() + 1) + "." + _endD2.getFullYear();
+    try {
+      const h = await scrapflyFetch(ptype.code, county.code, undefined, undefined, algD, loppD);
+      const dec = h.replace(/&nbsp;/gi, " ").replace(/&#160;/g, " ").replace(/ /g, " ");
+      const kIdx = dec.indexOf("KOKKU");
+      const ajav = dec.match(/ajavahemik[^<]{0,80}/i)?.[0] || null;
+      const tbl = dec.indexOf("<table");
+      return NextResponse.json({
+        debug: true, alg: algD, lopp: loppD, len: h.length,
+        hasKOKKU: kIdx >= 0, kokkuCtx: kIdx >= 0 ? dec.slice(kIdx - 50, kIdx + 400) : null,
+        ajav, firstTable: tbl >= 0 ? dec.slice(tbl, tbl + 600) : dec.slice(0, 600),
+        parsed: parseKokku(h),
+      });
+    } catch (e: any) {
+      return NextResponse.json({ debug: true, err: String(e?.message || e) });
+    }
+  }
+
   // Tallinna täpsus (ainult Harju). Tasemed kõige täpsemast → üldisemani:
   //   asum (nt Kalamaja) → linnaosa (nt Põhja-Tallinn) → maakond (Harju).
   // Kui täpsemas tasemes on liiga vähe tehinguid (Maa-amet peidab <5), langeme automaatselt järgmisele.
