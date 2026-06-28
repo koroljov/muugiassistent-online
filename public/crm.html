@@ -1123,6 +1123,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
           </div>
         </div>
       </div>
+      <button class="ib" onclick="openKiir()" title="Kiirpäring — aadressi turuhind + ehitise andmed (ilma leadita)">🔎</button>
       <button class="ib" id="newsBtn" onclick="openNews()" title="Mis on uut" style="position:relative">🔔<span id="newsDot" style="display:none;position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#ef4444;border:1.5px solid var(--bg)"></span></button>
       <button class="ib" onclick="openHelp()" title="Abi — küsi kuidas">?</button>
       <button class="ib" id="modeBtn" onclick="toggleMode()" title="Hele/Tume">☀</button>
@@ -1346,6 +1347,26 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
         <button class="btn-ghost" style="text-align:left" onclick="archiveLead('aegus')">Aegus / pole enam aktiivne</button>
         <button class="btn-ghost" style="text-align:left" onclick="archiveLead('muu')">Muu — lihtsalt arhiveeri</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- KIIRPÄRING — aadress → EHR + turuhind, ilma leadita -->
+<div class="modal-overlay" id="kiirModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div class="modal-title">Kiirpäring</div>
+      <button class="modal-x" onclick="closeModal('kiirModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:8px;line-height:1.5">Trüki aadress → ehitise ametlikud andmed (EHR) + piirkonna turuhind (Maa-amet). Ilma leadi loomata.</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <input class="inp" id="kiirAddr" placeholder="nt Kungla tn 5a-22, Tallinn" style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')runKiir()">
+        <select class="inp" id="kiirTyp" style="flex:0 1 120px;font-size:12px"><option>Korter</option><option>Maja</option><option>Majaosa</option><option>Maa-krunt</option><option>Äripind</option><option>Garaaž</option></select>
+        <button class="btn-sm" onclick="runKiir()">Otsi</button>
+      </div>
+      <div id="kiirEhr" style="margin-bottom:8px"></div>
+      <div id="kiirMp"></div>
     </div>
   </div>
 </div>
@@ -3417,6 +3438,32 @@ async function mellEhrLine(l){
     if(!parts.length) return '';
     return '\n\nEHITISREGISTER (FAKT, ametlik): '+parts.join(', ')+'. NB: ametlikud registriandmed; kui erineb kuulutusest, usalda EHR-i ja too lahknevus välja.';
   }catch(e){ return ''; }
+}
+
+// ============================================================
+// KIIRPÄRING — aadress → EHR ehitise andmed + Maa-amet turuhind, ilma leadita
+// ============================================================
+function openKiir(){ var m=document.getElementById('kiirModal'); if(!m) return; m.classList.add('open'); setTimeout(function(){ var a=document.getElementById('kiirAddr'); if(a) a.focus(); },100); }
+function kiirEhrHtml(b, apt){
+  function row(l,v){ return (v==null||v==='')?'':'<div><span style="color:var(--tx2)">'+l+':</span> <b>'+esc(String(v))+'</b></div>'; }
+  return '<div style="border:1px solid var(--bd);border-radius:6px;padding:8px;background:var(--cd);font-size:11px;line-height:1.5">'
+    +'<div style="font-weight:600;font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px">EHR — ametlik (Ehitisregister)</div>'
+    +row('Kasutusotstarve',b.use_purpose)+row('Ehitusaasta',b.build_year||'puudub EHR-is')+row('Korruseid',b.floors)
+    +row('Hoone netopind',b.net_area!=null?b.net_area+' m²':null)
+    +(apt?row('Korter '+(apt.nr||''), apt.pind!=null?apt.pind+' m²':(apt.note||'pinda pole')):'')
+    +row('Energiamärgis',b.energy_class)+row('Lift',b.lift==null?null:(b.lift?'jah':'ei'))+row('Katastritunnus',b.cadastral)+'</div>';
+}
+async function runKiir(){
+  var addr=(document.getElementById('kiirAddr').value||'').trim();
+  var typ=(document.getElementById('kiirTyp').value||'Korter');
+  var eBox=document.getElementById('kiirEhr'), mBox=document.getElementById('kiirMp');
+  if(addr.length<5){ eBox.innerHTML='<span style="color:var(--tx2)">Trüki aadress (vähemalt tänav + maja).</span>'; mBox.innerHTML=''; return; }
+  eBox.innerHTML='<span style="color:var(--tx2)">Pärin Ehitisregistrist…</span>'; mBox.innerHTML='<span style="color:var(--tx2)">Pärin Maa-ametist… (esimesel korral ~20 s)</span>';
+  var tok=await freshToken();
+  fetch('/api/ehr',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+tok},body:JSON.stringify({address:addr}),signal:AbortSignal.timeout(25000)})
+    .then(function(r){return r.json();}).then(function(j){ if(j&&j.found){ eBox.innerHTML=kiirEhrHtml(j.building||{}, j.apt); } else { eBox.innerHTML='<span style="color:var(--tx2)">EHR: '+esc((j&&j.message)||'ehitise andmeid ei leitud')+'</span>'; } }).catch(function(){ eBox.innerHTML='<span style="color:var(--tx2)">EHR päring ebaõnnestus.</span>'; });
+  fetch('/api/market-price',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+tok},body:JSON.stringify({region:addr,propertyType:typ,district:''}),signal:AbortSignal.timeout(60000)})
+    .then(function(r){return r.json();}).then(function(j){ if(j&&j.sourceIssue){ mBox.innerHTML='<span style="color:var(--tx2)">⚠ Maa-amet hetkel kättesaamatu.</span>'; } else if(j&&(j.unsupported)){ mBox.innerHTML='<span style="color:var(--tx2)">'+esc(j.message||'See tüüp pole turuhinna võrdluseks toetatud.')+'</span>'; } else if(j&&j.data){ renderMarketPrice(mBox, j, {price:null,area:null}); } else { mBox.innerHTML='<span style="color:var(--tx2)">Maa-amet: '+esc((j&&j.error)||'piirkonda ei tuvastatud')+'</span>'; } }).catch(function(){ mBox.innerHTML='<span style="color:var(--tx2)">Maa-amet ebaõnnestus.</span>'; });
 }
 
 async function openMell(){
