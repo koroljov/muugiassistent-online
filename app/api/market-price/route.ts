@@ -141,7 +141,7 @@ function parseKokku(html: string): {
 
 // Ehita Scrapfly js_scenario, mis juhib htraru-vormi nagu päris kasutaja.
 // omavCode (valikuline) = Tallinna linnaosa kood (DDOmavalitsus), nt 298 Kesklinn → linnaosa-täpne päring.
-function buildScenario(typeCode: string, countyCode: string, omavCode?: string, asumName?: string, algMY?: string, loppMY?: string): string {
+function buildScenario(typeCode: string, countyCode: string, omavCode?: string, asumName?: string, algMY?: string, loppMY?: string, captureState?: boolean): string {
   // NB: dropdownid value+change (vallandab AutoPostBack); maakond ja periood vajavad .click()
   // (sündmustega) — .checked=true EI tööta. Omavalitsuse cascade: __doPostBack('DDMaakond',''). Submit päris-klõpsuga.
   const steps: any[] = [
@@ -193,13 +193,19 @@ function buildScenario(typeCode: string, countyCode: string, omavCode?: string, 
     steps.push({ execute: { script: "var rb=document.getElementById('RBLAeg_3');if(rb){rb.click();}" } });
     steps.push({ wait: 1000 });
   }
+  if (captureState) {
+    // DEBUG: kirjuta vormiseis pealkirja, ÄRA esita — näeme, mis on valitud submit-katse hetkel.
+    steps.push({ execute: { script: "var sel=document.getElementById('DDMaakond');var v=sel?[].slice.call(sel.selectedOptions).map(function(o){return o.value;}).join(','):'NO_SEL';var a=document.getElementById('txtAlgus');var l=document.getElementById('txtLopp');var r=document.getElementById('RBLAeg_0');document.title='DBG|cty='+v+'|alg='+(a?a.value:'?')+'|lopp='+(l?l.value:'?')+'|rb0='+(r?r.checked:'?');" } });
+    steps.push({ wait: 800 });
+    return Buffer.from(JSON.stringify(steps)).toString("base64");
+  }
   steps.push({ click: { selector: "#btnTryki" } });
   // Submit navigeerib Result.aspx-le. ÄRA oota geneerilist 'table' (vormi lehel ON tabeleid → lahendub liiga vara).
   steps.push({ wait: 9000 });
   return Buffer.from(JSON.stringify(steps)).toString("base64");
 }
 
-async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: string, asumName?: string, algMY?: string, loppMY?: string): Promise<string> {
+async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: string, asumName?: string, algMY?: string, loppMY?: string, captureState?: boolean): Promise<string> {
   const key = process.env.SCRAPFLY_KEY;
   if (!key) throw new Error("SCRAPFLY_KEY puudub serveris");
   const params = new URLSearchParams({
@@ -209,7 +215,7 @@ async function scrapflyFetch(typeCode: string, countyCode: string, omavCode?: st
     asp: "true", // Anti Scraping Protection (Cloudflare bypass)
     country: "ee",
     rendering_wait: "3000",
-    js_scenario: buildScenario(typeCode, countyCode, omavCode, asumName, algMY, loppMY),
+    js_scenario: buildScenario(typeCode, countyCode, omavCode, asumName, algMY, loppMY, captureState),
   });
   const r = await fetch("https://api.scrapfly.io/scrape?" + params.toString(), {
     signal: AbortSignal.timeout(55000),
@@ -267,7 +273,8 @@ export async function POST(request: Request) {
     const algD = _pad2(_startD2.getMonth() + 1) + "." + _startD2.getFullYear();
     const loppD = _pad2(_endD2.getMonth() + 1) + "." + _endD2.getFullYear();
     try {
-      const h = await scrapflyFetch(ptype.code, county.code, undefined, undefined, algD, loppD);
+      const h = await scrapflyFetch(ptype.code, county.code, undefined, undefined, algD, loppD, true);
+      const titleDbg = (h.match(/<title[^>]*>([^<]*)<\/title>/i) || [])[1] || "NO_TITLE";
       const dec = h.replace(/&nbsp;/gi, " ").replace(/&#160;/g, " ").replace(/ /g, " ");
       const kIdx = dec.indexOf("KOKKU");
       const algInput = dec.match(/id="txtAlgus"[^>]*?value="([^"]*)"/i) || dec.match(/value="([^"]*)"[^>]*?id="txtAlgus"/i);
@@ -281,7 +288,7 @@ export async function POST(request: Request) {
         debug: true, alg: algD, lopp: loppD, len: h.length, finalUrl: lastScrapflyUrl,
         hasKOKKU: kIdx >= 0, parsed: parseKokku(h),
         formAlg: algInput ? algInput[1] : "NO_FIELD", formLopp: loppInput ? loppInput[1] : "NO_FIELD",
-        rb0checked, harjuChecked, valMsg, scrapflyMeta: lastScrapflyMeta,
+        rb0checked, harjuChecked, valMsg, scrapflyMeta: lastScrapflyMeta, titleDbg,
       });
     } catch (e: any) {
       return NextResponse.json({ debug: true, err: String(e?.message || e) });
