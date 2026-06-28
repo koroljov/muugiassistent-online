@@ -15,8 +15,9 @@ const FRESH_MS = 180 * 24 * 3600 * 1000;
 function num(v: any): number | null { if (v == null || v === "") return null; const n = parseFloat(String(v).replace(",", ".")); return isNaN(n) ? null : n; }
 function yr(v: any): number | null { if (!v) return null; const m = String(v).match(/(\d{4})/); if (!m) return null; const y = parseInt(m[1], 10); return y >= 1700 && y <= 2100 ? y : null; }
 
-// in-ADS aadress → { ehrCode (hoone tunnus), aptNr, address }
-async function resolveEhrCode(addressRaw: string): Promise<{ ehrCode: string; aptNr: string; address: string } | null> {
+// in-ADS aadress → { ehrCode (hoone), aptNr, aptCode (osa kood), address }
+// NB: korteri in-ADS tunnus on kujul "HOONEKOOD-OSAKOOD" (nt 101014781-2297480) → võta hoonekood; osakood = korteri täpne sobitus.
+async function resolveEhrCode(addressRaw: string): Promise<{ ehrCode: string; aptNr: string; aptCode: string; address: string } | null> {
   async function look(q: string): Promise<any[]> {
     try { const r = await fetch("https://inaadress.maaamet.ee/inaadress/gazetteer?address=" + encodeURIComponent(q) + "&results=5", { signal: AbortSignal.timeout(8000) }); const j = await r.json(); return j.addresses || []; } catch { return []; }
   }
@@ -24,17 +25,19 @@ async function resolveEhrCode(addressRaw: string): Promise<{ ehrCode: string; ap
   let hit = list[0];
   let aptNr = hit?.kort_nr || "";
   let address = hit?.ipikkaadress || hit?.taisaadress || addressRaw;
-  let ehrCode = hit?.tunnus || "";
-  // Korteri aadressil on tunnus tühi → küsi hoone (eemalda korterinumber)
+  const rawTunnus = String(hit?.tunnus || "");
+  let ehrCode = ""; let aptCode = "";
+  if (rawTunnus) { const parts = rawTunnus.split("-"); ehrCode = parts[0]; aptCode = parts[1] || ""; }
+  // Kui koodi pole (mõnel korteril tunnus tühi) → küsi hoone (eemalda korterinumber)
   if (!ehrCode) {
     const noApt = addressRaw.replace(/\s*-\s*\d+\w?(?=\s*,|\s*$)/, "");
     const street = (hit?.liikluspind && hit?.aadress_nr) ? (hit.liikluspind + " " + hit.aadress_nr + ", " + (hit.omavalitsus || "")) : noApt;
     const bl = await look(street);
     const b = bl.find((x: any) => x.tunnus) || bl[0];
-    if (b?.tunnus) { ehrCode = b.tunnus; if (!address) address = b.ipikkaadress; }
+    if (b?.tunnus) { ehrCode = String(b.tunnus).split("-")[0]; if (!address) address = b.ipikkaadress; }
   }
   if (!ehrCode) return null;
-  return { ehrCode, aptNr, address };
+  return { ehrCode, aptNr, aptCode, address };
 }
 
 function parseBuilding(j: any): any {
@@ -79,13 +82,17 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   let ehrCode = (body?.ehrCode || "").toString().trim();
   let aptNr = (body?.aptNr || "").toString().trim();
+  let aptCode = "";
   const address = (body?.address || "").toString().trim();
+
+  // Kui klient saatis liitkoodi "HOONE-OSA", lahuta.
+  if (ehrCode.indexOf("-") >= 0) { const p = ehrCode.split("-"); ehrCode = p[0]; aptCode = p[1] || ""; }
 
   // 1) Lahenda aadress → EHR kood (kui koodi pole)
   if (!ehrCode && address) {
     const res = await resolveEhrCode(address);
     if (!res) return NextResponse.json({ found: false, message: "Aadressile ei leitud Ehitisregistri koodi." });
-    ehrCode = res.ehrCode; if (!aptNr) aptNr = res.aptNr;
+    ehrCode = res.ehrCode; if (!aptNr) aptNr = res.aptNr; aptCode = res.aptCode;
   }
   if (!ehrCode) return NextResponse.json({ error: "Anna ehrCode või address", needs: "address" }, { status: 422 });
 
@@ -120,13 +127,14 @@ export async function POST(request: Request) {
     }
   }
 
-  // 4) Korteri pind (kui eluruumi-osa olemas ja number klapib)
+  // 4) Korteri pind: täpne sobitus osa-koodi järgi (in-ADS tunnus tagaosa), muidu korterinumbri järgi.
   let apt: any = null;
   const apts: any[] = building.apts || [];
-  if (aptNr) {
+  if (aptNr || aptCode) {
     const elu = apts.filter((o: any) => /eluruum/i.test(o.liik || ""));
-    const match = elu.find((o: any) => String(o.nr) === String(aptNr));
-    if (match) apt = { nr: aptNr, pind: match.pind };
+    let match = aptCode ? apts.find((o: any) => String(o.kood) === String(aptCode)) : null;
+    if (!match) match = elu.find((o: any) => String(o.nr) === String(aptNr));
+    if (match) apt = { nr: aptNr || match.nr, pind: match.pind, otstarve: match.otstarve };
     else if (elu.length === 0 && apts.length > 0) apt = { nr: aptNr, pind: null, note: "EHR-is pole eluruumi-osa (hoone tüüp: " + (building.use_purpose || building.building_type || "?") + ")" };
   }
 
