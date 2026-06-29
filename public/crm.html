@@ -427,18 +427,18 @@ input, select, textarea, button {
 
 /* LEAD CARD */
 .kard {
-  background: var(--cd);
-  border-radius: 8px;
+  background: var(--sf);
+  border-radius: 12px;
   padding: 9px 9px 9px 12px;
   cursor: pointer;
-  border: none;
+  border: 1px solid var(--bd);
   border-left: 3px solid transparent;
-  transition: border-left-color 0.12s, opacity 0.12s, transform 0.12s, box-shadow 0.12s;
+  transition: filter 0.12s, transform 0.12s, box-shadow 0.12s, border-color 0.12s;
   position: relative;
   overflow: hidden;
   flex-shrink: 0;   /* KRIITILINE: paljude leadidega veerg ei tohi kaarte kokku suruda (kukkusid 18px ribaks) — veerg kerib */
 }
-.kard:hover { opacity: 0.88; }
+.kard:hover { filter: brightness(1.07); }
 .kard.s-overdue { box-shadow: inset 0 0 0 1px rgba(239,68,68,0.3); }
 .kard.s-today   { box-shadow: inset 0 0 0 1px rgba(245,158,11,0.3); }
 .kard.s-ok      { box-shadow: inset 0 0 0 1px rgba(34,197,94,0.15); }
@@ -1177,8 +1177,8 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
   <!-- TABS -->
   <div id="tabs">
-    <div class="tab" onclick="setView('fookus',this)">⊙ Fookus</div>
-    <div class="tab active" onclick="setView('kanban',this)">📋 Töövoog</div>
+    <div class="tab active" onclick="setView('fookus',this)">⊙ Fookus</div>
+    <div class="tab" onclick="setView('kanban',this)">📋 Töövoog</div>
     <div class="tab" onclick="setView('list',this)">☰ Nimekiri</div>
     <div class="tab" onclick="setView('tasks',this)">✓ Ülesanded</div>
     <div class="tab" onclick="setView('stats',this)">📊 Statistika</div>
@@ -1200,9 +1200,9 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     </div>
 
     <!-- FOOKUS -->
-    <div class="view" id="view-fookus"></div>
+    <div class="view active" id="view-fookus"></div>
     <!-- KANBAN -->
-    <div class="view active" id="view-kanban"></div>
+    <div class="view" id="view-kanban"></div>
 
     <!-- LIST -->
     <div class="view" id="view-list">
