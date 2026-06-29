@@ -2548,12 +2548,23 @@ async function onDrop(e, statusKey, isReadOnly) {
   dragId = null;
 }
 
+// Konversiooni-vundament (#14): logi iga etapi-liikumine (stage_events). Hiljem saab siduda
+// kõne-atribuutidega (calls: inimtüüp/takistus) ja tulemusega (leads.outcome) → mis konverteerib.
+// Fire-and-forget: ei blokeeri ega katkesta staatusemuutust ka siis kui logimine ebaõnnestub.
+async function logStageEvent(leadId, fromKey, toKey){
+  if (!leadId || fromKey === toKey) return;
+  try { await sb.from('stage_events').insert({ lead_id: leadId, user_id: (USER && USER.id) || null, from_status: fromKey || null, to_status: toKey || null }); }
+  catch(e){}
+}
+
 async function changeStatusById(id, newKey) {
   const lead = LEADS.find(l => l.id === id);
   if (!lead || lead.status === newKey) return;
+  const fromKey = lead.status;
   const now_ts = new Date().toISOString();
   const { error } = await sb.from('leads').update({ status: newKey, status_changed_at: now_ts }).eq('id', id);
   if (error) { toast('❌ ' + error.message); return; }
+  logStageEvent(id, fromKey, newKey);
   const st  = STAATUSED.find(s => s.key === newKey);
   const pts = st?.xp || 0;
   lead.status = newKey;
@@ -2785,8 +2796,10 @@ function openLead(id, defaultStatus) {
 
 async function changeStatus(newKey) {
   if (!CURRENT || CURRENT.status === newKey) return;
-  const { error } = await sb.from('leads').update({ status: newKey }).eq('id', CURRENT.id);
+  const fromKey = CURRENT.status;
+  const { error } = await sb.from('leads').update({ status: newKey, status_changed_at: new Date().toISOString() }).eq('id', CURRENT.id);
   if (error) { toast('❌ ' + error.message); return; }
+  logStageEvent(CURRENT.id, fromKey, newKey);
 
   const idx = LEADS.findIndex(l => l.id === CURRENT.id);
   if (idx >= 0) LEADS[idx].status = newKey;
