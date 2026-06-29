@@ -429,18 +429,16 @@ input, select, textarea, button {
 .kard {
   background: var(--sf);
   border-radius: 12px;
-  padding: 9px 9px 9px 12px;
+  padding: 9px 11px 9px 12px;
   cursor: pointer;
-  border: 1.5px solid var(--bd);
-  transition: filter 0.12s, transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+  border: 1px solid var(--bd);
+  border-left: 2.5px solid transparent;   /* puhas õhuke vasak aktsent (etapi värv) — mitte täisring+kuma */
+  transition: background 0.12s, border-color 0.12s;
   position: relative;
   overflow: hidden;
   flex-shrink: 0;   /* KRIITILINE: paljude leadidega veerg ei tohi kaarte kokku suruda (kukkusid 18px ribaks) — veerg kerib */
 }
-.kard:hover { filter: brightness(1.07); }
-.kard.s-overdue { box-shadow: inset 0 0 0 1px rgba(239,68,68,0.3); }
-.kard.s-today   { box-shadow: inset 0 0 0 1px rgba(245,158,11,0.3); }
-.kard.s-ok      { box-shadow: inset 0 0 0 1px rgba(34,197,94,0.15); }
+.kard:hover { background: #1c1c23; }
 
 .k-name { font-size: 11px; font-weight: 600; margin-bottom: 2px; padding-right: 16px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .k-sub  { font-size: 9px; color: var(--tx2); margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2372,7 +2370,7 @@ function makeKol(st, isReadOnly) {
     return `<div class="kard ${dcs}" draggable="true"
       data-lid="${l.id}"
       data-kurl="${!l.img_url && hasUrl ? esc(l.listing_note) : ''}"
-      style="border-color:${st.color};box-shadow:0 0 11px ${st.color}33"
+      style="border-left-color:${st.color}"
       onclick="openLead('${l.id}')"
       ondragstart="startDrag('${l.id}',event)"
       ondragend="endDrag(event)">
