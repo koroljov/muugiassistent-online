@@ -431,8 +431,7 @@ input, select, textarea, button {
   border-radius: 12px;
   padding: 9px 9px 9px 12px;
   cursor: pointer;
-  border: 1px solid var(--bd);
-  border-left: 3px solid transparent;
+  border: 1.5px solid var(--bd);
   transition: filter 0.12s, transform 0.12s, box-shadow 0.12s, border-color 0.12s;
   position: relative;
   overflow: hidden;
@@ -1073,9 +1072,9 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .fk-cnt{ font-size:12px; color:var(--ac); font-weight:600; background:var(--acb); padding:2px 9px; border-radius:20px }
 .fk-card{ background:var(--sf); border:1px solid var(--bd); border-radius:16px; padding:15px 15px 13px; margin-bottom:11px; cursor:pointer; transition:filter .15s }
 .fk-card:hover{ filter:brightness(1.06) }
-.fk-card.ov{ border:1.5px solid rgba(239,68,68,0.50); background:#241a1b }
-.fk-card.td{ border:1.5px solid rgba(245,158,11,0.50); background:#242017 }
-.fk-card.ok{ border:1.5px solid rgba(40,168,94,0.48); background:#172019 }
+.fk-card.ov{ border:1.5px solid rgba(239,68,68,0.55); background:#241a1b; box-shadow:0 0 13px rgba(239,68,68,0.16) }
+.fk-card.td{ border:1.5px solid rgba(245,158,11,0.52); background:#242017; box-shadow:0 0 13px rgba(245,158,11,0.16) }
+.fk-card.ok{ border:1.5px solid rgba(40,168,94,0.50); background:#172019; box-shadow:0 0 13px rgba(40,168,94,0.15) }
 .fk-row1{ display:flex; align-items:flex-start; gap:12px }
 .fk-ph{ width:50px; height:50px; border-radius:11px; background:var(--cd); flex-shrink:0; background-size:cover; background-position:center }
 .fk-who{ flex:1; min-width:0 }
@@ -2339,7 +2338,7 @@ function makeKol(st, isReadOnly) {
     return `<div class="kard ${dcs}" draggable="true"
       data-lid="${l.id}"
       data-kurl="${!l.img_url && hasUrl ? esc(l.listing_note) : ''}"
-      style="border-left-color:${st.color}"
+      style="border-color:${st.color};box-shadow:0 0 11px ${st.color}33"
       onclick="openLead('${l.id}')"
       ondragstart="startDrag('${l.id}',event)"
       ondragend="endDrag(event)">
