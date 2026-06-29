@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MüügiAssistent</title>
+<title>Töövoog</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 /* ============================================================
@@ -169,6 +169,8 @@ input, select, textarea, button {
   min-width: 0;
   overflow: hidden;
 }
+/* XP ajutiselt peidetud — hiljem timmitav. Jätab .xpw tühjaks vaheks (ribakujundus säilib). */
+.xpw > * { display: none; }
 
 .lvl-badge {
   background: var(--acb);
@@ -769,6 +771,11 @@ tbody tr:hover td { background: var(--cd); cursor: pointer; }
 
 @media (max-width: 540px) { .kv-grid { grid-template-columns: 1fr; } }
 
+/* Lead-vorm: vorm (lai) + ajalugu (kitsas); vormi sees Kontakt | Objekt kõrvuti */
+.lead-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 18px; align-items: start; }
+.lead-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 18px; }
+@media (max-width: 820px) { .lead-grid { grid-template-columns: 1fr; } .lead-cols { grid-template-columns: 1fr; } }
+
 .kv-row {
   display: flex;
   align-items: center;
@@ -1108,7 +1115,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
   <div class="login-box">
     <div class="login-logo">
       <div class="login-dot"></div>
-      <span class="login-title">MüügiAssistent</span>
+      <span class="login-title">Töövoog</span>
     </div>
     <div class="field">
       <label>E-post</label>
@@ -1132,7 +1139,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
   <div id="topbar">
     <div class="logo">
       <div class="logo-dot"></div>
-      MüügiAssistent
+      Töövoog
     </div>
 
     <div class="xpw">
@@ -1176,7 +1183,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
   <!-- TABS -->
   <div id="tabs">
     <div class="tab" onclick="setView('fookus',this)">🎯 Fookus</div>
-    <div class="tab active" onclick="setView('kanban',this)">📋 Töövoog</div>
+    <div class="tab active" onclick="setView('kanban',this)">📋 Müügitoru</div>
     <div class="tab" onclick="setView('list',this)">☰ Nimekiri</div>
     <div class="tab" onclick="setView('tasks',this)">✓ Ülesanded</div>
     <div class="tab" onclick="setView('stats',this)">📊 Statistika</div>
@@ -2649,36 +2656,42 @@ function openLead(id, defaultStatus) {
     <div class="pbar">${pbar}</div>
     ${l.img_url ? `<img class="lead-img" src="${esc(l.img_url)}" onerror="this.style.display='none'">` : ''}
 
-    <div class="kv-grid">
-      <div>
-        <div class="lead-sec-h">Kontakt</div>
-        <div class="kv-row"><span class="kv-lbl">Kontakti nimi</span><input class="kv-inp" id="lNimi" value="${esc(l.contact_name)}"></div>
-        <div class="kv-row"><span class="kv-lbl">Telefon</span><input class="kv-inp" id="lTel" value="${esc(l.phone)}"></div>
-        <div class="kv-row"><span class="kv-lbl">E-post</span><input class="kv-inp" id="lEmail" value="${esc(l.email)}"></div>
-        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Aadress</span>
-          <div style="flex:1;position:relative">
-            <input class="kv-inp" id="lAadress" autocomplete="off" value="${esc(l.property_address)}" oninput="addrSearch(this.value)" onblur="setTimeout(addrHideSuggest,200)" style="width:100%">
-            <div id="lAddrSuggest" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;background:var(--sf);border:1px solid var(--bd);border-radius:6px;max-height:190px;overflow:auto;box-shadow:0 6px 16px rgba(0,0,0,.25)"></div>
-            <div id="lAddrInfo" style="font-size:9px;color:var(--tx2);margin-top:2px">${l.county ? '📍 '+esc([l.county,l.municipality,l.district,l.asum].filter(Boolean).join(', ')) : 'Trüki aadress → vali pakutust, siis maakond/linnaosa/asum täidetakse automaatselt.'}</div>
-            <input type="hidden" id="lCounty" value="${esc(l.county)}">
-            <input type="hidden" id="lMunicipality" value="${esc(l.municipality)}">
-            <input type="hidden" id="lDistrict" value="${esc(l.district)}">
-            <input type="hidden" id="lAsum" value="${esc(l.asum)}">
-            <input type="hidden" id="lLat" value="${l.addr_lat||''}">
-            <input type="hidden" id="lLng" value="${l.addr_lng||''}">
-            <input type="hidden" id="lEhrCode" value="${esc(l.ehr_code)}">
+    <div class="lead-grid">
+      <div class="lead-main">
+        <div class="lead-cols">
+          <div>
+            <div class="lead-sec-h">Kontakt</div>
+            <div class="kv-row"><span class="kv-lbl">Kontakti nimi</span><input class="kv-inp" id="lNimi" value="${esc(l.contact_name)}"></div>
+            <div class="kv-row"><span class="kv-lbl">Telefon</span><input class="kv-inp" id="lTel" value="${esc(l.phone)}"></div>
+            <div class="kv-row"><span class="kv-lbl">E-post</span><input class="kv-inp" id="lEmail" value="${esc(l.email)}"></div>
+            <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Aadress</span>
+              <div style="flex:1;position:relative">
+                <input class="kv-inp" id="lAadress" autocomplete="off" value="${esc(l.property_address)}" oninput="addrSearch(this.value)" onblur="setTimeout(addrHideSuggest,200)" style="width:100%">
+                <div id="lAddrSuggest" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;background:var(--sf);border:1px solid var(--bd);border-radius:6px;max-height:190px;overflow:auto;box-shadow:0 6px 16px rgba(0,0,0,.25)"></div>
+                <div id="lAddrInfo" style="font-size:9px;color:var(--tx2);margin-top:2px">${l.county ? '📍 '+esc([l.county,l.municipality,l.district,l.asum].filter(Boolean).join(', ')) : 'Trüki aadress → vali pakutust, siis maakond/linnaosa/asum täidetakse automaatselt.'}</div>
+                <input type="hidden" id="lCounty" value="${esc(l.county)}">
+                <input type="hidden" id="lMunicipality" value="${esc(l.municipality)}">
+                <input type="hidden" id="lDistrict" value="${esc(l.district)}">
+                <input type="hidden" id="lAsum" value="${esc(l.asum)}">
+                <input type="hidden" id="lLat" value="${l.addr_lat||''}">
+                <input type="hidden" id="lLng" value="${l.addr_lng||''}">
+                <input type="hidden" id="lEhrCode" value="${esc(l.ehr_code)}">
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="lead-sec-h">Objekt</div>
+            <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup" onchange="onTypeChange()"><option value="">—</option>${Object.keys(PROPERTY_TAXONOMY).map(o => `<option${normType(l.property_type)===o?' selected':''}>${o}</option>`).join('')}</select></div>
+            <div class="kv-row" id="lOtstarveRow" style="display:none"><span class="kv-lbl">Otstarve</span><select class="kv-inp" id="lOtstarve"><option value="">—</option></select></div>
+            <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
+            <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
+            <div class="kv-row"><span class="kv-lbl">Pindala m²</span><input class="kv-inp" id="lPindala" type="number" value="${l.area||''}"></div>
+            <div class="kv-row"><span class="kv-lbl">Tube</span><input class="kv-inp" id="lTube" type="number" min="0" value="${l.rooms||''}"></div>
+            <div class="kv-row"><span class="kv-lbl">Korrus</span><input class="kv-inp" id="lKorrus" placeholder="nt 3/5" value="${esc(l.floor)}"></div>
+            <div class="kv-row"><span class="kv-lbl">Ehitusaasta</span><input class="kv-inp" id="lEhitusaasta" type="number" min="1800" max="2100" placeholder="nt 1998" value="${l.build_year||''}"></div>
+            <div class="kv-row"><span class="kv-lbl">Seisukord</span><select class="kv-inp" id="lSeisukord"><option value="">—</option>${['Uusarendus','Uus','Renoveeritud','Heas korras','San. remont tehtud','Keskmine','Vajab san. remonti','Vajab renoveerimist'].map(o=>`<option${l.condition===o?' selected':''}>${o}</option>`).join('')}</select></div>
           </div>
         </div>
-        <div class="lead-sec-h">Objekt</div>
-        <div class="kv-row"><span class="kv-lbl">Hind €</span><input class="kv-inp" id="lHind" type="number" value="${l.price||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Pindala m²</span><input class="kv-inp" id="lPindala" type="number" value="${l.area||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Tube</span><input class="kv-inp" id="lTube" type="number" min="0" value="${l.rooms||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Korrus</span><input class="kv-inp" id="lKorrus" placeholder="nt 3/5" value="${esc(l.floor)}"></div>
-        <div class="kv-row"><span class="kv-lbl">Ehitusaasta</span><input class="kv-inp" id="lEhitusaasta" type="number" min="1800" max="2100" placeholder="nt 1998" value="${l.build_year||''}"></div>
-        <div class="kv-row"><span class="kv-lbl">Tüüp</span><select class="kv-inp" id="lTuup" onchange="onTypeChange()"><option value="">—</option>${Object.keys(PROPERTY_TAXONOMY).map(o => `<option${normType(l.property_type)===o?' selected':''}>${o}</option>`).join('')}</select></div>
-        <div class="kv-row" id="lOtstarveRow" style="display:none"><span class="kv-lbl">Otstarve</span><select class="kv-inp" id="lOtstarve"><option value="">—</option></select></div>
-        <div class="kv-row"><span class="kv-lbl">Tehing</span><select class="kv-inp" id="lTehing"><option value="">—</option><option value="muuk"${l.deal_type==='muuk'?' selected':''}>Müük</option><option value="uur"${l.deal_type==='uur'?' selected':''}>Üür</option></select></div>
-        <div class="kv-row"><span class="kv-lbl">Seisukord</span><select class="kv-inp" id="lSeisukord"><option value="">—</option>${['Uusarendus','Uus','Renoveeritud','Heas korras','San. remont tehtud','Keskmine','Vajab san. remonti','Vajab renoveerimist'].map(o=>`<option${l.condition===o?' selected':''}>${o}</option>`).join('')}</select></div>
         <div class="lead-sec-h">Turg</div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Turuhind</span><div style="flex:1;font-size:11px;line-height:1.5;padding-top:3px">
           <span id="mpOwnLine">${(l.price && l.area) ? `Sinu objekt: <b>${Math.round(l.price/l.area).toLocaleString('et-EE')} €/m²</b>` : `<span style="color:var(--tx2)">Vali maakond ja vajuta — oma €/m² arvutatakse hinnast + pindalast (ka salvestamata).</span>`}</span>
@@ -2712,7 +2725,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${esc(l.lead_comment)}</textarea></div>
       </div>
 
-      <div>
+      <div class="lead-side">
         <div class="sec-lbl" style="margin-top:0">Ajalugu</div>
         ${isNew
           ? '<div style="font-size:11px;color:var(--tx2);padding:4px 0">Salvesta lead (Lisa lead), siis saad kohe helistada (Kõneabi) ja näed ajalugu.</div>'
@@ -3441,7 +3454,7 @@ function helpAsk(q){ var i=document.getElementById('helpInput'); if(i) i.value=q
 async function sendHelp(){
   var q=(document.getElementById('helpInput').value||'').trim(); if(!q) return;
   var ans=document.getElementById('helpAnswer'); ans.style.color='var(--tx2)'; ans.textContent='Mõtlen…';
-  var sys='Oled selle CRM-i (Müügiassistent, kinnisvaramüük) abiline. Vasta eesti keeles, lühidalt ja praktiliselt, kuidas CRM-i kasutada. FUNKTSIOONID: Vahekaardid — Töövoog (kanban, lohista kaarte etappide vahel), Nimekiri, Ülesanded (järelkõned/tegevused), Statistika. Lead lisamine: "+ Uus lead" (avab täisakna) VÕI kuulutuse kiirnupp (Seaded → Kuulutuse kiirlisamine → lohista nupp brauseri ribale; kuulutuse lehel klõpsa nuppu → AI täidab aadressi/hinna/pindala/nime/telefoni/pildi). Lead avades: Kõneabi (kõne ajal tugi — avalöök, inimtüüp, andmekorje klõpsuga, AI väljundid: kokkuvõte/kuulutuse tagasiside/kliendikiri), Küsi Mellilt (AI nõu ja sõnumid), ajalugu, Salvesta. Seaded: oma kõneskript, kiirnupp, pehmed vihjed, tutvustus. Statistikas näeb kogutud kõneandmete mustreid. Kui küsimus pole CRM-i kohta, ütle lühidalt et aitad CRM-i kasutamisega.'+AI_STIIL;
+  var sys='Oled selle CRM-i (Müügiassistent, kinnisvaramüük) abiline. Vasta eesti keeles, lühidalt ja praktiliselt, kuidas CRM-i kasutada. FUNKTSIOONID: Vahekaardid — Müügitoru (kanban, lohista kaarte etappide vahel), Nimekiri, Ülesanded (järelkõned/tegevused), Statistika. Lead lisamine: "+ Uus lead" (avab täisakna) VÕI kuulutuse kiirnupp (Seaded → Kuulutuse kiirlisamine → lohista nupp brauseri ribale; kuulutuse lehel klõpsa nuppu → AI täidab aadressi/hinna/pindala/nime/telefoni/pildi). Lead avades: Kõneabi (kõne ajal tugi — avalöök, inimtüüp, andmekorje klõpsuga, AI väljundid: kokkuvõte/kuulutuse tagasiside/kliendikiri), Küsi Mellilt (AI nõu ja sõnumid), ajalugu, Salvesta. Seaded: oma kõneskript, kiirnupp, pehmed vihjed, tutvustus. Statistikas näeb kogutud kõneandmete mustreid. Kui küsimus pole CRM-i kohta, ütle lühidalt et aitad CRM-i kasutamisega.'+AI_STIIL;
   var r=await aiFetch({ system:sys, max_tokens:400, messages:[{role:'user',content:q}] });
   r=(r||'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').replace(/^#{1,6}\s*/gm,'').replace(/^\s*[-*]\s+/gm,'• ');
   ans.style.color='var(--tx)'; ans.textContent=r;
@@ -3723,10 +3736,15 @@ function closeMell(){
   document.getElementById('mellPanel').classList.remove('open');
 }
 
+// Kerge markdown Mellile: escape + **rasvane**. Muu jääb tekstiks (pre-wrap hoiab reavahetused).
+function mellMd(t){
+  var e = String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return e.replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+}
 function mellAddMsg(role, text){
   const m = document.createElement('div');
   m.className = 'mell-msg ' + role;
-  m.textContent = text;
+  if(role === 'a') m.innerHTML = mellMd(text); else m.textContent = text;
   const c = document.getElementById('mellMsgs');
   c.appendChild(m); c.scrollTop = c.scrollHeight;
   return m;
@@ -3749,7 +3767,7 @@ async function sendMell(){
   const system = 'Oled "Mell", Uus Maa kinnisvarabüroo müügiassistent. Vastad eesti keeles, otsekohe, lühidalt ja praktiliselt. Aitad müügispetsialisti selle konkreetse leadiga: anna konkreetne järgmine samm, mitte üldine jutt. Kui kasutaja palub sõnumi, anna valmis, kohe saadetav tekst ilma emojideta.' + AI_STIIL + '\n\nLEADI ANDMED:\n' + mellLeadContext() + marketLine + ehrLine;
   try{
     const ans = await aiFetch({ system: system, messages: MELL_HISTORY, max_tokens:700 });
-    thinking.textContent = ans;
+    thinking.innerHTML = mellMd(ans);
     MELL_HISTORY.push({ role:'assistant', content:ans });
     document.getElementById('mellMsgs').scrollTop = 999999;
     try{ await sb.from('mell_conversations').insert({ user_id: USER?.id, lead_id: CURRENT?.id, question: q, answer: ans }); }catch(e){}
