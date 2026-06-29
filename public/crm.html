@@ -3142,11 +3142,14 @@ function renderStats(){
   var objN = new Set(CALLS.map(function(c){ return c.lead_id; })).size;
   var html = '<div class="stats-head"><button class="btn-sm" style="width:100%;margin-bottom:12px" onclick="statsAnalyze()">AI turuanalüüs</button><div id="statsAiOut" style="display:none;margin-bottom:14px;background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:12px"></div><div class="stat-summary">Kõnesid kokku: <b>'+n+'</b> · objekte: <b>'+objN+'</b></div></div>';
   html += '<div class="stat-grid">';
-  // Objektid tüübi järgi (taksonoomia normType) — leadipõhine, mitte kõnepõhine
-  var tc={}; LEADS.forEach(function(l){ var t=normType(l.property_type)||'Määramata'; tc[t]=(tc[t]||0)+1; });
-  var tcTot=LEADS.length||1;
-  var tcRows=Object.keys(tc).sort(function(a,b){return tc[b]-tc[a];}).map(function(k){var pct=Math.round(tc[k]/tcTot*100);return '<div class="stat-row"><div class="stat-bar" style="width:'+pct+'%"></div><span class="stat-lbl">'+kabiEsc(k)+'</span><span class="stat-val">'+tc[k]+' · '+pct+'%</span></div>';}).join('');
-  html += '<div class="stat-block"><div class="stat-title">Objektid tüübi järgi ('+LEADS.length+')</div>'+(tcRows||'<div class="stat-empty">Andmeid pole.</div>')+'</div>';
+  // Objektid tüübi järgi — NÄITA AINULT MÄÄRATUD tüüpe (muidu "Määramata" domineerib ja varjab pildi).
+  // Tüübita leadid eraldi tegevus-signaalina (andmekvaliteet → täpsem statistika + turuhind).
+  var tc={}, tcUntyped=0;
+  LEADS.forEach(function(l){ var t=normType(l.property_type); if(!t){ tcUntyped++; return; } tc[t]=(tc[t]||0)+1; });
+  var tcTyped=LEADS.length-tcUntyped, tcDen=tcTyped||1;
+  var tcRows=Object.keys(tc).sort(function(a,b){return tc[b]-tc[a];}).map(function(k){var pct=Math.round(tc[k]/tcDen*100);return '<div class="stat-row"><div class="stat-bar" style="width:'+pct+'%"></div><span class="stat-lbl">'+kabiEsc(k)+'</span><span class="stat-val">'+tc[k]+' · '+pct+'%</span></div>';}).join('');
+  var tcNote=tcUntyped?'<div class="stat-empty" style="margin-top:6px;color:var(--amber)">'+tcUntyped+' leadi ilma tüübita — täida leadi aknas (Objekt → Tüüp), et statistika ja turuhind oleksid täpsemad.</div>':'';
+  html += '<div class="stat-block"><div class="stat-title">Objektid tüübi järgi ('+tcTyped+' määratud)</div>'+(tcRows||'<div class="stat-empty">Ühelgi leadil pole tüüpi määratud.</div>')+tcNote+'</div>';
   html += '<div id="statsOutcome"></div>'; // müügitulemused (arhiveeritud) — täidetakse async
   html += statsBlock('Veel müügis', statsCount('still_listed', false));
   html += statsBlock('Aeg turul', statsCount('time_on_market', false));
@@ -3155,8 +3158,43 @@ function renderStats(){
   html += statsBlock('Mis paneks meelt muutma', statsCount('change_mind_reason', true));
   html += statsBlock('Inimtüübid', statsCount('personality_type', false));
   html += '</div>';
+  html += conversionHtml();   // #17 konversiooni-seos: mis kõne-muster viib edasi (esialgne, kasvab ajas)
   w.innerHTML = html;
   renderOutcomeStats(); // müügitulemused arhiveeritud leadidest (eraldi päring, sest LEADS on ainult aktiivsed)
+}
+
+// #17 Konversiooni-analüüs (esialgne, ehitatud stage_events/#14 vundamendile + olemasolevatele kõnedele).
+// Seob kõne-atribuudid (inimtüüp, takistus) leadi edasiliikumisega. AUS: ainult aktiivsed leadid +
+// väike valim → kuvab N ja hoiatuse; süveneb ajas, kui kõnesid/etapi-liikumisi koguneb. EI ML-i.
+function conversionHtml(){
+  var ADV = {prospect:1,k_kontakt:1,leping:1,ettevalmistus:1,ostja:1,t_ettevalmistus:1,k_tehing:1}; // "edasi" = Edasta →/Minu toru
+  var byLead = {};
+  (typeof CALLS!=='undefined'?CALLS:[]).forEach(function(c){
+    if(!c.lead_id) return;
+    var t = c.call_time ? new Date(c.call_time).getTime() : 0;
+    var prev = byLead[c.lead_id];
+    if(!prev || t >= prev._t) byLead[c.lead_id] = { _t:t, personality_type:c.personality_type, obstacle:c.obstacle };
+  });
+  var idx = {}; (typeof LEADS!=='undefined'?LEADS:[]).forEach(function(l){ idx[l.id]=l; });
+  var ids = Object.keys(byLead).filter(function(id){ return idx[id]; });
+  var N = ids.length;
+  function aggRows(field){
+    var m = {};
+    ids.forEach(function(id){ var v=byLead[id][field]; if(!v) return; if(!m[v]) m[v]={n:0,adv:0}; m[v].n++; if(ADV[idx[id].status]) m[v].adv++; });
+    var keys = Object.keys(m).sort(function(a,b){ return m[b].n-m[a].n; });
+    if(!keys.length) return '<div class="stat-empty">—</div>';
+    return keys.map(function(k){ var o=m[k], pct=Math.round(o.adv/o.n*100); return '<div class="stat-row"><div class="stat-bar" style="width:'+pct+'%"></div><span class="stat-lbl">'+kabiEsc(k)+'</span><span class="stat-val">'+o.adv+'/'+o.n+' · '+pct+'%</span></div>'; }).join('');
+  }
+  var caveat = N
+    ? ('N=<b>'+N+'</b> kõnega aktiivset leadi. "Edasi" = jõudis Edasta →/Minu torusse. Väike valim — usaldusväärsem ~30+ juures; süveneb ajas.')
+    : 'Andmeid pole veel — salvesta kõnesid Kõneabis, siis tekib konversiooni-muster.';
+  var body = N
+    ? ('<div class="lead-cols" style="margin-top:8px">'
+        + '<div><div class="stat-title" style="font-size:11px;margin-bottom:6px">Inimtüüp → edasi %</div>'+aggRows('personality_type')+'</div>'
+        + '<div><div class="stat-title" style="font-size:11px;margin-bottom:6px">Takistus → edasi %</div>'+aggRows('obstacle')+'</div>'
+        + '</div>')
+    : '';
+  return '<div class="stat-block" style="margin-top:10px;border-top:1px solid var(--bd);padding-top:14px"><div class="stat-title">Konversioon — mis viib edasi (esialgne)</div><div class="stat-empty">'+caveat+'</div>'+body+'</div>';
 }
 
 // Müügitulemuste statistika (S2 vundament): arhiveeritud leadid outcome järgi + meie-võiduprotsent.
