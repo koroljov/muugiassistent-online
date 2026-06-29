@@ -62,6 +62,13 @@ Lugemisjuhend: iga ploki all on **Mis · Miks · Avastused/lõksud · Kus koodis
 
 **Kus koodis:** `app/api/market-price/route.ts` (buildScenario, fetch-loop, fallback), `buildMpLevels`/`loadMarketPriceLevel`/`autoLoadMarketPrice`/`mpPeriod`/`mpLevelShort` (crm.html).
 
+### 4e. Turu TREND (maaruum.ee hinnaindeks) — täiendab taset
+**Mis:** htraru annab hinna TASEME (asumi mediaan €/m²). maaruum.ee hinnaindeks annab SUUNA (kvartaalne %, kui palju turg liigub). Tase = "kui palju", trend = "mis suunas". Koos = parem nõu hinna+ajastuse kohta.
+**Allikas (töökindlus-valik):** indeks POLE htraru-päringus (htraru DDTrykis = ainult D üldine + G hinnastatistika) ega puhtas API-s (livekluster av/v1 rajad 404). Ametlik allikas = **kvartali-PDF** (maaruum.ee/.../Kinnisvara hinnaindeksite KOKKUVÕTE YYYY N.pdf). `web_fetch` LOEB selle PDF-i puhtalt (tabel parseeritav). Aga PDF-URL muutub kvartalis → **EI auto-fetchi live'is** (hapra URL-i risk). Selle asemel: salvestan väheste trend-numbrid `market_index` tabelisse, **uuendan ~4×/aastas** (loen uue PDF-i, update rida). Aeglane kvartali-näit → salvestatud väärtus on täpne ja töökindel.
+**Indeksid:** korteriomandid (17 linna), hoonestatud elamumaa (majad — ei arvutata iga kvartal), hoonestamata maa, üldindeks. Riigi/sektori tase, MITTE asum → trend täiendab, ei asenda meie täpset taset.
+**Kus koodis:** `market_index` tabel; `marketIndexLatest`/`marketTrendFor`/`appendMarketTrend` (crm.html); trend lisatud renderMarketPrice + mellMarketLine (AI) + fkFillIntel (Fookus). behavior.js katab `marketTrendFor`.
+**Kvartali-uuendus:** loe uus PDF web_fetch'iga → võta viimane rida (kvartalis/aastas % iga indeksi kohta) → upsert market_index (period_end = kvartali lõpp).
+
 ## 5. AI — Mell, Kõneabi, tagasiside
 
 **Mis:** "Mell" (lead-abimees), "Kõneabi" (kõne-tugi reaalajas), kuulutuse AI-tagasiside. Kõik saavad SAMA leadi tervikpildi (asukoht, taksonoomia, €/m², kõneajalugu) + Maa-ameti FAKT (sama tase mis Turuhind).

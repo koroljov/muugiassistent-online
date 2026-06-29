@@ -22,7 +22,7 @@ function extractFn(src, name) {
   throw new Error('Keha lõppu ei leitud: ' + name);
 }
 
-const NAMES = ['tallinnLabel', 'leadDistrictLabel', 'buildMpLevels', 'mpPeriod', 'mpLevelShort', 'leadSegKey'];
+const NAMES = ['tallinnLabel', 'leadDistrictLabel', 'buildMpLevels', 'mpPeriod', 'mpLevelShort', 'leadSegKey', 'marketTrendFor'];
 let code = 'var guessCounty = function(){ return ""; };\n';            // leaf-sõltuvus, stub (ainult fallback-rajal)
 for (const n of NAMES) code += extractFn(html, n) + '\n';
 code += '\nthis.__exports = { ' + NAMES.join(', ') + ' };';
@@ -65,6 +65,15 @@ check('buildMpLevels[1] label', lv[1].label, 'Mustamäe linnaosa');
 check('buildMpLevels[1] cacheDistrict', lv[1].cacheDistrict, 'Mustamäe linnaosa');
 check('buildMpLevels[2] label', lv[2].label, 'Harju maakond');
 check('buildMpLevels[2] cacheDistrict', lv[2].cacheDistrict, '');
+
+// marketTrendFor — turu-trend õigesse sektorisse (maaruum hinnaindeks)
+const IDX = { korter_yoy: 5.0, maa_yoy: -0.4, maja_yoy: null, kokku_yoy: 3.1 };
+check('trend korter label', F.marketTrendFor('T13', IDX).label, 'korterid');
+check('trend korter yoy', F.marketTrendFor('T13', IDX).yoy, 5.0);
+check('trend maa', F.marketTrendFor('T12:elamumaa', IDX).label, 'hoonestamata maa');
+check('trend maja fallback (maja null → üldine)', F.marketTrendFor('T11:elamumaa', IDX).label, 'turg üldiselt');
+check('trend maja fallback yoy', F.marketTrendFor('T11:elamumaa', IDX).yoy, 3.1);
+check('trend null idx', F.marketTrendFor('T13', null), null);
 
 if (fails.length) {
   console.error('❌ BEHAVIOR FAIL (' + fails.length + '):');
