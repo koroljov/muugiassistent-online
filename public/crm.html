@@ -403,7 +403,13 @@ input, select, textarea, button {
 .kol-empty .kard-add { display: none; }
 .kol-empty:hover .kard-add { display: block; }
 
-.kol-head { padding: 2px 4px 8px; }
+/* Kokkuvolditud tulp (nt Ei soovi) — kitsas, kaardid peidus, klõps päisel avab */
+.kol-collapsed { flex: 0 0 150px; opacity: 0.65; }
+.kol-collapsed:hover { opacity: 1; }
+.kol-collapsed .kol-cards { display: none; }
+
+.kol-head { padding: 2px 4px 8px; cursor: pointer; }
+.kol-caret { margin-right: 4px; color: var(--tx2); }
 
 .kol-name {
   font-size: 11px;
@@ -1044,6 +1050,11 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .stat-summary{font-size:12px;color:var(--tx);margin:4px 0 16px}
 .stat-summary b{color:var(--ac)}
 .stat-block{margin-bottom:18px}
+/* Statistika/Juhtimine: täida ekraani laius, plokid mitmes veerus */
+#statsWrap, #mgrWrap { flex:1; width:100%; align-self:stretch; overflow-y:auto; }
+.stats-head{ max-width:520px; }
+.stat-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:0 28px; align-items:start; }
+.stat-grid > * { break-inside:avoid; }
 .stat-title{font-size:12px;color:var(--tx2);margin-bottom:8px;font-weight:600}
 .stat-row{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;margin-bottom:4px;border-radius:6px;background:var(--cd);overflow:hidden;font-size:12px}
 .stat-bar{position:absolute;left:0;top:0;bottom:0;background:var(--acb);z-index:0}
@@ -2392,25 +2403,37 @@ function makeKol(st, isReadOnly) {
     </div>`;
   }).join('');
 
+  const collapsed = COLLAPSED.has(st.key);
   const col = document.createElement('div');
-  col.className = 'kol' + (leads.length === 0 ? ' kol-empty' : '');
+  col.className = 'kol' + (leads.length === 0 ? ' kol-empty' : '') + (collapsed ? ' kol-collapsed' : '');
   // Drop-tsoon on terve kolumn, mitte ainult kol-cards
   col.setAttribute('ondragover', `onDragOver(event)`);
   col.setAttribute('ondragleave', `onDragLeave(event)`);
   col.setAttribute('ondrop', `onDrop(event,'${st.key}',${isReadOnly})`);
   col.innerHTML = `
-    <div class="kol-head">
+    <div class="kol-head" onclick="toggleKol('${st.key}')" title="${collapsed ? 'Ava tulp' : 'Voldi tulp kokku'}">
       <div class="kol-name">
         <div class="kol-badge" style="background:${st.color};opacity:.85"></div>
         ${st.nimi}
       </div>
-      <div class="kol-meta"><b>${leads.length}</b>${total ? ` · <b>${eur(total)}</b>` : ''}</div>
+      <div class="kol-meta"><span class="kol-caret">${collapsed ? '▸' : '▾'}</span><b>${leads.length}</b>${total ? ` · <b>${eur(total)}</b>` : ''}</div>
     </div>
     <div class="kol-cards">
       ${cards}
       ${!isReadOnly ? `<div class="kard-add" onclick="openNew('${st.key}')">+ Lisa</div>` : ''}
     </div>`;
   return col;
+}
+
+// Kokkuvolditud tulbad (nt "Ei soovi" surnud leadid) — hoia ekraan puhtana. Püsib localStorage'is.
+var COLLAPSED = (function(){
+  try { return new Set(JSON.parse(localStorage.getItem('ma_collapsed_cols') || '["ei soovi abi"]')); }
+  catch(e){ return new Set(['ei soovi abi']); }
+})();
+function toggleKol(key){
+  if (COLLAPSED.has(key)) COLLAPSED.delete(key); else COLLAPSED.add(key);
+  try { localStorage.setItem('ma_collapsed_cols', JSON.stringify([...COLLAPSED])); } catch(e){}
+  renderKanban();
 }
 
 function renderKanban() {
@@ -2430,6 +2453,8 @@ function renderKanban() {
   colsA.className = 'kol-sec-cols';
   const labelA = `<div class="kol-sec-label"><div class="sec-dot"></div>Assistendi müügitoru</div>`;
   STAATUSED.filter(s => s.section === 'A').forEach(st => {
+    // Peida tühjad legacy "(vana)" tulbad — näita ainult kui neis on veel leade
+    if (/\(vana\)/i.test(st.nimi) && LEADS.filter(l => l.status === st.key).length === 0) return;
     // Assistent saab dropida ainult kui assistantDrop=true; spetsialist saab alati
     const readOnly = isAssistant ? !st.assistantDrop : false;
     colsA.appendChild(makeKol(st, readOnly));
@@ -3092,7 +3117,8 @@ function renderStats(){
   var w = document.getElementById('statsWrap'); if(!w) return;
   var n = CALLS.length;
   var objN = new Set(CALLS.map(function(c){ return c.lead_id; })).size;
-  var html = '<button class="btn-sm" style="width:100%;margin-bottom:12px" onclick="statsAnalyze()">AI turuanalüüs</button><div id="statsAiOut" style="display:none;margin-bottom:14px;background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:12px"></div><div class="stat-summary">Kõnesid kokku: <b>'+n+'</b> · objekte: <b>'+objN+'</b></div>';
+  var html = '<div class="stats-head"><button class="btn-sm" style="width:100%;margin-bottom:12px" onclick="statsAnalyze()">AI turuanalüüs</button><div id="statsAiOut" style="display:none;margin-bottom:14px;background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:12px"></div><div class="stat-summary">Kõnesid kokku: <b>'+n+'</b> · objekte: <b>'+objN+'</b></div></div>';
+  html += '<div class="stat-grid">';
   // Objektid tüübi järgi (taksonoomia normType) — leadipõhine, mitte kõnepõhine
   var tc={}; LEADS.forEach(function(l){ var t=normType(l.property_type)||'Määramata'; tc[t]=(tc[t]||0)+1; });
   var tcTot=LEADS.length||1;
@@ -3105,6 +3131,7 @@ function renderStats(){
   html += statsBlock('Takistused (ostja tagasiside)', statsCount('buyer_feedback', true));
   html += statsBlock('Mis paneks meelt muutma', statsCount('change_mind_reason', true));
   html += statsBlock('Inimtüübid', statsCount('personality_type', false));
+  html += '</div>';
   w.innerHTML = html;
   renderOutcomeStats(); // müügitulemused arhiveeritud leadidest (eraldi päring, sest LEADS on ainult aktiivsed)
 }
@@ -3176,7 +3203,7 @@ function renderManager(){
   var activeEur   = active.reduce(function(s,l){ return s + leadEur(l); }, 0);
   var forecastEur = mLeads.reduce(function(s,l){ return s + leadEur(l) * prob[l.status]; }, 0);
 
-  var html = '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">'
+  var html = '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;max-width:520px">'
     + mgrHero('Aktiivne toru', eur(activeEur) || '0 €', active.length + ' objekti')
     + mgrHero('Prognoos (hinnang)', eur(Math.round(forecastEur)) || '0 €', 'kaalutud etapi tõenäosusega')
     + '</div>';
@@ -3196,6 +3223,7 @@ function renderManager(){
       + '<span class="stat-lbl">'+s.nimi+' <span style="opacity:.45">'+Math.round(s.p*100)+'%</span></span>'
       + '<span class="stat-val">'+cnt+(e? ' · '+eur(e):'')+'</span></div>';
   }).join('');
+  html += '<div class="stat-grid">';
   html += '<div class="stat-block"><div class="stat-title">Etapid — kus objektid on</div>'+rows+'</div>';
 
   var today = new Date(); today.setHours(0,0,0,0); var todayMs = today.getTime();
@@ -3226,6 +3254,7 @@ function renderManager(){
     + mgrLine('Kõnesid viimase 7 päeva jooksul', String(callsWk))
     + mgrLine('Võiduprotsent', winRate + '% (' + won.length + '/' + mLeads.length + ')' + (small ? ' · esialgne' : ''))
     + '</div>';
+  html += '</div>';
 
   w.innerHTML = html;
 }
