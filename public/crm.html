@@ -335,6 +335,12 @@ input, select, textarea, button {
 .tab.active { color: var(--ac); border-bottom-color: var(--ac); }
 .tab:hover:not(.active) { color: var(--tx); }
 
+/* Ühtne monokroomne ikoonikomplekt (vahekaardid + ülariba) — pärib värvi (currentColor) */
+.tab { display: inline-flex; align-items: center; gap: 6px; }
+.tab svg { width: 14px; height: 14px; }
+.ib svg { width: 16px; height: 16px; }
+.tab svg, .ib svg { stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
 /* ============================================================
    PIPELINE BAR
    ============================================================ */
@@ -1179,11 +1185,11 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
           </div>
         </div>
       </div>
-      <button class="ib" onclick="openKiir()" title="Kiirpäring — aadressi turuhind + ehitise andmed (ilma leadita)">🔎</button>
-      <button class="ib" id="newsBtn" onclick="openNews()" title="Mis on uut" style="position:relative">🔔<span id="newsDot" style="display:none;position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#ef4444;border:1.5px solid var(--bg)"></span></button>
-      <button class="ib" onclick="openHelp()" title="Abi — küsi kuidas">?</button>
-      <button class="ib" id="modeBtn" onclick="toggleMode()" title="Hele/Tume">☀</button>
-      <button class="ib" onclick="toggleSet()" title="Seaded">⚙</button>
+      <button class="ib" onclick="openKiir()" title="Kiirpäring — aadressi turuhind + ehitise andmed (ilma leadita)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.2" y1="16.2" x2="21" y2="21"/></svg></button>
+      <button class="ib" id="newsBtn" onclick="openNews()" title="Mis on uut" style="position:relative"><svg viewBox="0 0 24 24"><path d="M18 8.5a6 6 0 0 0-12 0c0 6-2.5 8-2.5 8h17s-2.5-2-2.5-8"/><path d="M13.5 20.5a2 2 0 0 1-3 0"/></svg><span id="newsDot" style="display:none;position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#ef4444;border:1.5px solid var(--bg)"></span></button>
+      <button class="ib" onclick="openHelp()" title="Abi — küsi kuidas"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.4 9.2a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.3-2.6 4"/><circle cx="12" cy="17" r="1.05" fill="currentColor" stroke="none"/></svg></button>
+      <button class="ib" id="modeBtn" onclick="toggleMode()" title="Hele/Tume"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.2 5.2l1.8 1.8M17 17l1.8 1.8M18.8 5.2 17 7M7 17l-1.8 1.8"/></svg></button>
+      <button class="ib" onclick="toggleSet()" title="Seaded"><svg viewBox="0 0 24 24"><line x1="4" y1="8" x2="20" y2="8"/><circle cx="15" cy="8" r="2.4"/><line x1="4" y1="16" x2="20" y2="16"/><circle cx="9" cy="16" r="2.4"/></svg></button>
       <button class="user-btn" onclick="doLogout()">
         <div class="user-av" id="userAv">MK</div>
         <div class="user-name" id="userName">Meelis</div>
@@ -1193,12 +1199,12 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
   <!-- TABS -->
   <div id="tabs">
-    <div class="tab" onclick="setView('fookus',this)">🎯 Fookus</div>
-    <div class="tab active" onclick="setView('kanban',this)">📋 Müügitoru</div>
-    <div class="tab" onclick="setView('list',this)">☰ Nimekiri</div>
-    <div class="tab" onclick="setView('tasks',this)">✓ Ülesanded</div>
-    <div class="tab" onclick="setView('stats',this)">📊 Statistika</div>
-    <div class="tab" onclick="setView('manager',this)">📈 Juhtimine</div>
+    <div class="tab" onclick="setView('fookus',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>Fookus</div>
+    <div class="tab active" onclick="setView('kanban',this)"><svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="4.5" height="16" rx="1.2"/><rect x="9.75" y="4" width="4.5" height="11" rx="1.2"/><rect x="16" y="4" width="4.5" height="14" rx="1.2"/></svg>Müügitoru</div>
+    <div class="tab" onclick="setView('list',this)"><svg viewBox="0 0 24 24"><line x1="8.5" y1="6.5" x2="20" y2="6.5"/><line x1="8.5" y1="12" x2="20" y2="12"/><line x1="8.5" y1="17.5" x2="20" y2="17.5"/><circle cx="4.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="17.5" r="1.1" fill="currentColor" stroke="none"/></svg>Nimekiri</div>
+    <div class="tab" onclick="setView('tasks',this)"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 12.2l2.8 2.8L16.5 9"/></svg>Ülesanded</div>
+    <div class="tab" onclick="setView('stats',this)"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><rect x="6.5" y="11" width="3" height="6.5" rx="0.6"/><rect x="11.5" y="7" width="3" height="10.5" rx="0.6"/><rect x="16.5" y="13.5" width="3" height="4" rx="0.6"/></svg>Statistika</div>
+    <div class="tab" onclick="setView('manager',this)"><svg viewBox="0 0 24 24"><path d="M3 16.5l5.5-5.5 4 4 8-8.5"/><path d="M21 6.5v5h-5"/></svg>Juhtimine</div>
   </div>
 
   <!-- PIPELINE BAR -->
@@ -3443,7 +3449,9 @@ function toggleMode() {
   const html = document.documentElement;
   const isD  = html.getAttribute('data-theme') === 'dark';
   html.setAttribute('data-theme', isD ? 'light' : 'dark');
-  document.getElementById('modeBtn').textContent = isD ? '🌙' : '☀';
+  document.getElementById('modeBtn').innerHTML = isD
+    ? '<svg viewBox="0 0 24 24"><path d="M20.5 13.2A7.5 7.5 0 1 1 10.8 3.5a6 6 0 0 0 9.7 9.7z"/></svg>'
+    : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.2 5.2l1.8 1.8M17 17l1.8 1.8M18.8 5.2 17 7M7 17l-1.8 1.8"/></svg>';
   localStorage.setItem('ma_mode', isD ? 'light' : 'dark');
 }
 
@@ -3607,7 +3615,9 @@ function toast(msg) {
 
   window.addEventListener('DOMContentLoaded', () => {
     const mb = document.getElementById('modeBtn');
-    if (mb) mb.textContent = mode === 'light' ? '🌙' : '☀';
+    if (mb) mb.innerHTML = mode === 'light'
+      ? '<svg viewBox="0 0 24 24"><path d="M20.5 13.2A7.5 7.5 0 1 1 10.8 3.5a6 6 0 0 0 9.7 9.7z"/></svg>'
+      : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.2 5.2l1.8 1.8M17 17l1.8 1.8M18.8 5.2 17 7M7 17l-1.8 1.8"/></svg>';
     const cp = document.getElementById('cpMain');
     if (cp) cp.style.background = colorHex;
   });
