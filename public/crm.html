@@ -1066,11 +1066,12 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
 /* FOOKUS vaade — "Mida teen nüüd" (meie originaal, ATH-fookus) */
 #view-fookus{ padding:18px 20px; overflow-y:auto }
-.fk-page{ max-width:760px; margin:0 auto }
+.fk-page{ max-width:1040px; margin:0 auto }
+.fk-cards{ display:grid; grid-template-columns:repeat(auto-fit, minmax(330px, 1fr)); gap:11px }
 .fk-heroh{ display:flex; align-items:baseline; gap:10px; margin:2px 0 14px }
 .fk-heroh h1{ font-size:19px; font-weight:600; letter-spacing:-0.01em }
 .fk-cnt{ font-size:12px; color:var(--ac); font-weight:600; background:var(--acb); padding:2px 9px; border-radius:20px }
-.fk-card{ background:var(--sf); border:1px solid var(--bd); border-radius:16px; padding:15px 15px 13px; margin-bottom:11px; cursor:pointer; transition:filter .15s }
+.fk-card{ background:var(--sf); border:1px solid var(--bd); border-radius:16px; padding:15px 15px 13px; cursor:pointer; transition:filter .15s }
 .fk-card:hover{ filter:brightness(1.06) }
 .fk-card.ov{ border:1.5px solid rgba(239,68,68,0.55); background:#241a1b; box-shadow:0 0 13px rgba(239,68,68,0.16) }
 .fk-card.td{ border:1.5px solid rgba(245,158,11,0.52); background:#242017; box-shadow:0 0 13px rgba(245,158,11,0.16) }
@@ -1144,6 +1145,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     </div>
 
     <div class="tbr">
+      <button class="ib" id="fookusBtn" onclick="setView('fookus',this)" title="Fookus — mida teen nüüd" style="width:auto;padding:0 12px;gap:6px;color:var(--ac);border-color:var(--ac);font-weight:600">⊙ Fookus</button>
       <div class="cpr" id="cpr">
         <div class="cp-dot-main" id="cpMain" onclick="togglePicker()"></div>
         <div class="cp-drop" id="cpDrop">
@@ -1176,7 +1178,6 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
   <!-- TABS -->
   <div id="tabs">
-    <div class="tab" onclick="setView('fookus',this)">⊙ Fookus</div>
     <div class="tab active" onclick="setView('kanban',this)">📋 Töövoog</div>
     <div class="tab" onclick="setView('list',this)">☰ Nimekiri</div>
     <div class="tab" onclick="setView('tasks',this)">✓ Ülesanded</div>
@@ -3229,7 +3230,7 @@ function renderFookus(){
     }).join('') : '<div class="fk-empty">Täna pole midagi kiiret. Vaata <a onclick="setView(\'kanban\',document.querySelectorAll(\'.tab\')[1])" style="color:var(--ac);cursor:pointer">müügitoru</a> või lisa järelkõne kuupäev leadile.</div>';
     box.innerHTML='<div class="fk-page"><div class="fk-heroh"><h1>Mida teen nüüd</h1>'
       +(top.length?'<span class="fk-cnt">'+top.length+' ootavad sind</span>':'')+'</div>'
-      +cards+'<div class="fk-pipeh">Müügitoru — kus leadid on</div><div class="fk-pipe">'+pipeHtml+'</div></div>';
+      +(top.length?('<div class="fk-cards">'+cards+'</div>'):cards)+'<div class="fk-pipeh">Müügitoru — kus leadid on</div><div class="fk-pipe">'+pipeHtml+'</div></div>';
     top.forEach(function(x){ fkFillIntel(x.l); });
   }catch(e){ box.innerHTML='<div class="fk-empty">Fookuse kuvamisel tekkis viga. Vaata müügitoru.</div>'; }
 }
