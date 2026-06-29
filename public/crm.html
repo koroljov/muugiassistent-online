@@ -345,6 +345,12 @@ input, select, textarea, button {
 .bi { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: -2px; margin-right: 4px; flex-shrink: 0; }
 .k-cm svg.bi { width: 9px; height: 9px; vertical-align: -1px; margin-right: 3px; }
 
+/* Nimekirja filter */
+.list-filter { display: flex; align-items: center; gap: 14px; padding: 10px 4px 12px; }
+.list-toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--tx2); cursor: pointer; }
+.list-toggle input { accent-color: var(--ac); cursor: pointer; }
+.list-count { font-size: 11px; color: var(--tx2); opacity: 0.75; }
+
 /* ============================================================
    PIPELINE BAR
    ============================================================ */
@@ -1092,7 +1098,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
 /* FOOKUS vaade — "Mida teen nüüd" (meie originaal, ATH-fookus) */
 #view-fookus{ padding:18px 20px; overflow-y:auto }
-.fk-page{ max-width:1040px; margin:0 auto }
+.fk-page{ max-width:1240px; margin:0 auto }
 .fk-cards{ display:grid; grid-template-columns:repeat(auto-fit, minmax(330px, 1fr)); gap:11px }
 .fk-heroh{ display:flex; align-items:baseline; gap:10px; margin:2px 0 14px }
 .fk-heroh h1{ font-size:19px; font-weight:600; letter-spacing:-0.01em }
@@ -1104,6 +1110,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .fk-card.ok{ border:1.5px solid rgba(40,168,94,0.50); background:#172019; box-shadow:0 0 13px rgba(40,168,94,0.15) }
 .fk-row1{ display:flex; align-items:flex-start; gap:12px }
 .fk-ph{ width:50px; height:50px; border-radius:11px; background:var(--cd); flex-shrink:0; background-size:cover; background-position:center }
+.fk-ph-empty{ display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; color:var(--tx2); background:var(--cd) }
 .fk-who{ flex:1; min-width:0 }
 .fk-nm{ font-size:16px; font-weight:600; letter-spacing:-0.01em }
 .fk-ob{ font-size:13px; color:var(--tx2); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
@@ -1233,6 +1240,10 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     <!-- LIST -->
     <div class="view" id="view-list">
       <div id="listWrap">
+        <div class="list-filter">
+          <label class="list-toggle"><input type="checkbox" id="listHideDead" onchange="toggleListDead(this.checked)"> Peida "Ei soovi"</label>
+          <span id="listCount" class="list-count"></span>
+        </div>
         <table>
           <thead>
             <tr>
@@ -2574,9 +2585,23 @@ async function changeStatusById(id, newKey) {
   render();
 }
 
+// Nimekirja "Ei soovi" peitmine (vaikimisi sees) — surnud leadid ei sega aktiivseid. Püsib localStorage'is.
+var LIST_HIDE_DEAD = (function(){ try { return localStorage.getItem('ma_list_hide_dead') !== '0'; } catch(e){ return true; } })();
+function toggleListDead(on){
+  LIST_HIDE_DEAD = !!on;
+  try { localStorage.setItem('ma_list_hide_dead', on ? '1' : '0'); } catch(e){}
+  renderList();
+}
+
 function renderList() {
   const tbody = document.getElementById('listBody');
-  tbody.innerHTML = LEADS.map(l => {
+  const cb = document.getElementById('listHideDead'); if (cb) cb.checked = LIST_HIDE_DEAD;
+  const deadKeys = { 'ei soovi abi': 1 };
+  const shown = LEADS.filter(l => !(LIST_HIDE_DEAD && deadKeys[l.status]));
+  const hidden = LEADS.length - shown.length;
+  const cnt = document.getElementById('listCount');
+  if (cnt) cnt.textContent = shown.length + ' nähtaval' + (hidden ? ' · ' + hidden + ' peidetud' : '');
+  tbody.innerHTML = shown.map(l => {
     const st = STAATUSED.find(s => s.key === l.status);
     const di = dateInfo(l.next_action_at);
     return `<tr onclick="openLead('${l.id}')">
@@ -2586,7 +2611,7 @@ function renderList() {
       <td style="color:var(--ac);font-weight:600">${eur(leadEur(l))}</td>
       <td>${di ? `<span class="${di.cls.split(' ')[0]}">${di.txt}</span>` : '—'}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="5" class="empty">Leade pole.</td></tr>';
+  }).join('') || '<tr><td colspan="5" class="empty">' + (hidden ? 'Kõik leadid on peidetud (Ei soovi). Eemalda filter, et näha.' : 'Leade pole.') + '</td></tr>';
 }
 
 function renderTasks() {
@@ -3352,14 +3377,16 @@ function renderFookus(){
       var l=x.l, u=x.u;
       var own=(l.price&&l.area)?Math.round(l.price/l.area):null;
       var ob=esc(l.property_address||l.property_type||'—')+(l.area?' · '+l.area+' m²':'');
-      var ph=l.img_url?(' style="background-image:url(\''+esc(l.img_url)+'\')"'):'';
+      var phHtml=l.img_url
+        ? '<div class="fk-ph" style="background-image:url(\''+esc(l.img_url)+'\')"></div>'
+        : '<div class="fk-ph fk-ph-empty">'+esc(initials(l.contact_name||'?'))+'</div>';
       return '<div class="fk-card '+u.cls+'" onclick="openLead(\''+l.id+'\')">'
-        +'<div class="fk-row1"><div class="fk-ph"'+ph+'></div>'
+        +'<div class="fk-row1">'+phHtml
         +'<div class="fk-who"><div class="fk-nm">'+esc(l.contact_name||'(nimi puudub)')+'</div><div class="fk-ob">'+ob+'</div></div>'
         +(u.txt?'<div class="fk-when '+u.cls+'">● '+esc(u.txt)+'</div>':'')+'</div>'
         +'<div class="fk-intel" id="fkintel-'+l.id+'">'+(own?('Objekt <b>'+own.toLocaleString('et-EE')+' €/m²</b> · turuhind laeb…'):'Lisa hind + pindala, et turuga võrrelda')+'</div>'
         +'<div class="fk-act"><button class="fk-btn go" onclick="event.stopPropagation();openLead(\''+l.id+'\')">Ava lead</button>'
-        +(l.phone?('<a class="fk-btn alt" href="tel:'+esc(l.phone)+'" onclick="event.stopPropagation()">☎ '+esc(l.phone)+'</a>'):'')+'</div>'
+        +(l.phone?('<a class="fk-btn alt" href="tel:'+esc(l.phone)+'" onclick="event.stopPropagation()"><svg class="bi" viewBox="0 0 24 24"><path d="M21 16.5v2.6a2 2 0 0 1-2.2 2 17 17 0 0 1-7.4-2.6 16 16 0 0 1-5-5A17 17 0 0 1 3.8 6 2 2 0 0 1 5.8 4h2.6a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1l-1 1a13 13 0 0 0 5 5l1-1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>'+esc(l.phone)+'</a>'):'')+'</div>'
         +'</div>';
     }).join('') : '<div class="fk-empty">Täna pole midagi kiiret. Vaata <a onclick="setView(\'kanban\',document.querySelectorAll(\'.tab\')[1])" style="color:var(--ac);cursor:pointer">müügitoru</a> või lisa järelkõne kuupäev leadile.</div>';
     box.innerHTML='<div class="fk-page"><div class="fk-heroh"><h1>Mida teen nüüd</h1>'
