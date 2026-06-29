@@ -1145,7 +1145,6 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     </div>
 
     <div class="tbr">
-      <button class="ib" id="fookusBtn" onclick="setView('fookus',this)" title="Fookus — mida teen nüüd" style="width:auto;padding:0 12px;gap:6px;color:var(--ac);border-color:var(--ac);font-weight:600">⊙ Fookus</button>
       <div class="cpr" id="cpr">
         <div class="cp-dot-main" id="cpMain" onclick="togglePicker()"></div>
         <div class="cp-drop" id="cpDrop">
@@ -1178,6 +1177,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
   <!-- TABS -->
   <div id="tabs">
+    <div class="tab" onclick="setView('fookus',this)">🎯 Fookus</div>
     <div class="tab active" onclick="setView('kanban',this)">📋 Töövoog</div>
     <div class="tab" onclick="setView('list',this)">☰ Nimekiri</div>
     <div class="tab" onclick="setView('tasks',this)">✓ Ülesanded</div>
@@ -1707,12 +1707,11 @@ function mpLoadingTicker(box, label){
   // NB: Maa-ameti hinnastatistika on AVALIK — sõnastus mängulised, aga selgelt avaliku statistika pärimine
   // (mitte "sissehiilimine" vms, et juriidiliselt mitte haakuv).
   var msgs = [
-    'Avan Maa-ameti avaliku hinnastatistika…',
-    'Küsin '+(label||'piirkonna')+' viimase 12 kuu tehingud…',
-    'Sirvin avalikku tehingute tabelit, ükshaaval…',
-    'Loen numbreid kokku, sõrmega järge ajades…',
-    'Otsin KOKKU-rida — seal istub mediaan ja teeskleb, et teda pole…',
-    'Toon numbri puhtalt kohale…'
+    'Avan Maa-ameti hinnastatistika…',
+    'Korjan '+(label||'piirkonna')+' viimase 12 kuu tehingud kokku…',
+    'Mediaan ei tüki esiritta — otsin ta tuhandete tehingute seast…',
+    'Sõelun tehingud üheks ausaks numbriks…',
+    'Veel hetk — usaldusväärne number ei sünni kiirustades…'
   ];
   var i = 0;
   function paint(){
