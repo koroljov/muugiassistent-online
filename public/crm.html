@@ -1064,6 +1064,41 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 /* Sektsioonipealkiri = sama keel mis müügitoru sektsioonisildid (hall, väike, vaikne) — puhas, mitte lärmakas */
 .lead-sec-h{ font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--tx2); margin:16px 0 3px; padding-bottom:4px; border-bottom:1px solid var(--bd); }
 .lead-sec-h:first-child{ margin-top:2px; }
+
+/* FOOKUS vaade — "Mida teen nüüd" (meie originaal, ATH-fookus) */
+#view-fookus{ padding:18px 20px; overflow-y:auto }
+.fk-page{ max-width:760px; margin:0 auto }
+.fk-heroh{ display:flex; align-items:baseline; gap:10px; margin:2px 0 14px }
+.fk-heroh h1{ font-size:19px; font-weight:600; letter-spacing:-0.01em }
+.fk-cnt{ font-size:12px; color:var(--ac); font-weight:600; background:var(--acb); padding:2px 9px; border-radius:20px }
+.fk-card{ background:var(--sf); border:1px solid var(--bd); border-radius:16px; padding:15px 15px 13px; margin-bottom:11px; cursor:pointer; transition:filter .15s }
+.fk-card:hover{ filter:brightness(1.06) }
+.fk-card.ov{ border:1.5px solid rgba(239,68,68,0.50); background:#241a1b }
+.fk-card.td{ border:1.5px solid rgba(245,158,11,0.50); background:#242017 }
+.fk-card.ok{ border:1.5px solid rgba(40,168,94,0.48); background:#172019 }
+.fk-row1{ display:flex; align-items:flex-start; gap:12px }
+.fk-ph{ width:50px; height:50px; border-radius:11px; background:var(--cd); flex-shrink:0; background-size:cover; background-position:center }
+.fk-who{ flex:1; min-width:0 }
+.fk-nm{ font-size:16px; font-weight:600; letter-spacing:-0.01em }
+.fk-ob{ font-size:13px; color:var(--tx2); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.fk-when{ font-size:12px; font-weight:500; white-space:nowrap; color:#ef4444 }
+.fk-when.td{ color:#f59e0b } .fk-when.ok{ color:var(--ac) }
+.fk-intel{ font-size:12.5px; color:var(--tx); line-height:1.45; margin:12px 0 13px; padding:10px 12px; background:var(--cd); border-radius:11px }
+.fk-up{ color:#f59e0b; font-weight:600 } .fk-dn{ color:var(--ac); font-weight:600 } .fk-lvl{ color:var(--tx2) }
+.fk-act{ display:flex; gap:8px }
+.fk-btn{ flex:1; border:none; border-radius:10px; padding:9px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px }
+.fk-btn.go{ background:var(--ac); color:#fff } .fk-btn.go:hover{ background:#1c7a44 }
+.fk-btn.alt{ background:#2a2a34; color:var(--tx) } .fk-btn.alt:hover{ background:#33333f }
+.fk-empty{ font-size:13px; color:var(--tx2); padding:30px 0; text-align:center }
+.fk-pipeh{ font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--tx2); font-weight:700; margin:24px 0 10px }
+.fk-pipe{ display:flex; gap:7px; flex-wrap:wrap }
+.fk-seg{ flex:1; min-width:120px; background:var(--sf); border:1px solid var(--bd); border-radius:11px; padding:10px 11px; cursor:pointer }
+.fk-seg:hover{ border-color:rgba(255,255,255,0.10) }
+.fk-segtop{ display:flex; align-items:center; gap:6px; margin-bottom:3px }
+.fk-dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0 }
+.fk-segnm{ font-size:11px; color:var(--tx2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.fk-segn{ font-size:18px; font-weight:600 }
+.fk-sege{ font-size:11px; color:var(--tx2); margin-top:1px }
 </style>
 </head>
 <body>
@@ -1142,6 +1177,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 
   <!-- TABS -->
   <div id="tabs">
+    <div class="tab" onclick="setView('fookus',this)">⊙ Fookus</div>
     <div class="tab active" onclick="setView('kanban',this)">📋 Töövoog</div>
     <div class="tab" onclick="setView('list',this)">☰ Nimekiri</div>
     <div class="tab" onclick="setView('tasks',this)">✓ Ülesanded</div>
@@ -1163,6 +1199,8 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
       <span onclick="document.getElementById('tipBar').style.display='none'" style="cursor:pointer;padding:0 4px;flex-shrink:0" title="Peida">×</span>
     </div>
 
+    <!-- FOOKUS -->
+    <div class="view" id="view-fookus"></div>
     <!-- KANBAN -->
     <div class="view active" id="view-kanban"></div>
 
@@ -2258,6 +2296,7 @@ function render() {
   renderKanban();
   renderList();
   renderTasks();
+  if (document.getElementById('view-fookus') && document.getElementById('view-fookus').classList.contains('active')) renderFookus();
   // Taustal portaali og-pildi tõmme eemaldatud: portaalid blokeerivad serveri.
   // Imporditud leadid saavad pildi storeLeadImage kaudu (Supabase Storage).
 }
@@ -3147,11 +3186,85 @@ function renderManager(){
   w.innerHTML = html;
 }
 
+// ===== FOOKUS vaade: "Mida teen nüüd" (meie originaal, ATH-fookus) =====
+function fkUrgency(l){
+  var ds = l.next_action_at;
+  if(!ds) return { rank:5, cls:'', txt:'' };
+  var d=new Date(ds); d.setHours(0,0,0,0);
+  var now=new Date(); now.setHours(0,0,0,0);
+  var diff=Math.round((d-now)/86400000);
+  if(diff<0)   return { rank:0, cls:'ov', txt:'hilinenud · '+d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}) };
+  if(diff===0) return { rank:1, cls:'td', txt:'täna' };
+  if(diff===1) return { rank:2, cls:'ok', txt:'homme' };
+  return         { rank:3, cls:'ok', txt:d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}) };
+}
+function renderFookus(){
+  var box=document.getElementById('view-fookus'); if(!box) return;
+  try{
+    var active=(LEADS||[]).filter(function(l){ return l && !l.archived_at; });
+    var top=active.map(function(l){ return { l:l, u:fkUrgency(l) }; })
+      .filter(function(x){ return x.u.rank<=2; })  // hilinenud / täna / homme
+      .sort(function(a,b){ return a.u.rank-b.u.rank || (new Date(a.l.next_action_at||0)-new Date(b.l.next_action_at||0)); })
+      .slice(0,8);
+    var stages=(typeof STAATUSED!=='undefined'?STAATUSED:[]).filter(function(s){ return s.section==='A' && !/\(vana\)/i.test(s.nimi); });
+    var pipeHtml=stages.map(function(s){
+      var ls=active.filter(function(l){ return l.status===s.key; });
+      var sum=ls.reduce(function(a,l){ return a+(typeof leadEur==='function'?leadEur(l):0); },0);
+      return '<div class="fk-seg" onclick="setView(\'kanban\',document.querySelectorAll(\'.tab\')[1])">'
+        +'<div class="fk-segtop"><span class="fk-dot" style="background:'+s.color+'"></span><span class="fk-segnm">'+esc(s.nimi)+'</span></div>'
+        +'<div class="fk-segn">'+ls.length+'</div><div class="fk-sege">'+eur(sum)+'</div></div>';
+    }).join('');
+    var cards = top.length ? top.map(function(x){
+      var l=x.l, u=x.u;
+      var own=(l.price&&l.area)?Math.round(l.price/l.area):null;
+      var ob=esc(l.property_address||l.property_type||'—')+(l.area?' · '+l.area+' m²':'');
+      var ph=l.img_url?(' style="background-image:url(\''+esc(l.img_url)+'\')"'):'';
+      return '<div class="fk-card '+u.cls+'" onclick="openLead(\''+l.id+'\')">'
+        +'<div class="fk-row1"><div class="fk-ph"'+ph+'></div>'
+        +'<div class="fk-who"><div class="fk-nm">'+esc(l.contact_name||'(nimi puudub)')+'</div><div class="fk-ob">'+ob+'</div></div>'
+        +(u.txt?'<div class="fk-when '+u.cls+'">● '+esc(u.txt)+'</div>':'')+'</div>'
+        +'<div class="fk-intel" id="fkintel-'+l.id+'">'+(own?('Objekt <b>'+own.toLocaleString('et-EE')+' €/m²</b> · turuhind laeb…'):'Lisa hind + pindala, et turuga võrrelda')+'</div>'
+        +'<div class="fk-act"><button class="fk-btn go" onclick="event.stopPropagation();openLead(\''+l.id+'\')">Ava lead</button>'
+        +(l.phone?('<a class="fk-btn alt" href="tel:'+esc(l.phone)+'" onclick="event.stopPropagation()">☎ '+esc(l.phone)+'</a>'):'')+'</div>'
+        +'</div>';
+    }).join('') : '<div class="fk-empty">Täna pole midagi kiiret. Vaata <a onclick="setView(\'kanban\',document.querySelectorAll(\'.tab\')[1])" style="color:var(--ac);cursor:pointer">müügitoru</a> või lisa järelkõne kuupäev leadile.</div>';
+    box.innerHTML='<div class="fk-page"><div class="fk-heroh"><h1>Mida teen nüüd</h1>'
+      +(top.length?'<span class="fk-cnt">'+top.length+' ootavad sind</span>':'')+'</div>'
+      +cards+'<div class="fk-pipeh">Müügitoru — kus leadid on</div><div class="fk-pipe">'+pipeHtml+'</div></div>';
+    top.forEach(function(x){ fkFillIntel(x.l); });
+  }catch(e){ box.innerHTML='<div class="fk-empty">Fookuse kuvamisel tekkis viga. Vaata müügitoru.</div>'; }
+}
+async function fkFillIntel(l){
+  var el=document.getElementById('fkintel-'+l.id); if(!el) return;
+  try{
+    if(typeof leadSegKey!=='function'||typeof buildMpLevels!=='function') return;
+    var sk=leadSegKey(l.property_type,l.use_purpose); if(!sk.segKey || !l.county) return;
+    var levels=buildMpLevels(l);
+    for(var i=0;i<levels.length;i++){
+      var lv=levels[i];
+      var resp=await sb.from('market_prices').select('median_eur_m2,median_price,tx_count,district,period_end').eq('county',lv.county).eq('municipality','').eq('district',lv.cacheDistrict||'').eq('property_type',sk.segKey).order('period_end',{ascending:false}).limit(1).maybeSingle();
+      if(resp.data && Number(resp.data.tx_count)>0){
+        var d=resp.data, lvl=mpLevelShort(d.district);
+        if(sk.metric==='eur_m2' && d.median_eur_m2){
+          var m=Math.round(d.median_eur_m2), own=(l.price&&l.area)?Math.round(l.price/l.area):null;
+          var cmp=own?(' · objekt '+(own>m?'<span class="fk-up">+'+Math.round((own/m-1)*100)+'% üle</span>':'<span class="fk-dn">'+Math.round((1-own/m)*100)+'% alla</span>')):'';
+          el.innerHTML='<b>'+esc(lvl)+' '+m.toLocaleString('et-EE')+' €/m²</b>'+cmp+' <span class="fk-lvl">· '+d.tx_count+' tehingut</span>';
+        } else if(d.median_price){
+          el.innerHTML='<b>'+esc(lvl)+' mediaan '+Math.round(d.median_price).toLocaleString('et-EE')+' €</b> <span class="fk-lvl">· '+d.tx_count+' tehingut</span>';
+        }
+        return;
+      }
+    }
+    if(l.price&&l.area) el.innerHTML='Objekt <b>'+Math.round(l.price/l.area).toLocaleString('et-EE')+' €/m²</b> · ava lead turuvõrdluseks';
+  }catch(e){}
+}
+
 function setView(v, el) {
   document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
   document.getElementById('view-' + v).classList.add('active');
   document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
   if (el) el.classList.add('active');
+  if (v === 'fookus') renderFookus();
   if (v === 'stats') renderStats();
   if (v === 'manager') renderManager();
   showTip(v);
@@ -3159,6 +3272,7 @@ function setView(v, el) {
 
 // ---- Pehmed vihjed (jäävad peale kuni kasutaja loobub) ----
 var TIP_TEXTS = {
+  fookus: 'Fookus: mida pead NÜÜD tegema — kiireloomulised leadid koos turuhinnaga. Värv ütleb kui kiire: punane = hilinenud, merevaik = täna, roheline = homme.',
   list:  'Nimekiri: kõik leadid korraga. Klõpsa real, et avada lead ja näha ajalugu.',
   tasks: 'Ülesanded: siia kogunevad järelkõned. Alusta päeva siit — kellele pead täna tagasi helistama.',
   stats: 'Statistika: kogutud kõned muutuvad pildiks. Mida rohkem kõnesid salvestad, seda täpsem ülevaade.',
