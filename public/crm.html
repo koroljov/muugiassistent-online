@@ -2318,7 +2318,9 @@ async function generateListing(){
     +'RANGE REEGEL — ÄRA LEIUTA: ära lisa ühtegi omadust, ruumi, materjali, vaadet, seisukorda ega eelist, mida andmetes pole (nt ära kirjuta "renoveeritud köök", "avar rõdu", "vaikne ja roheline piirkond", "päikesepoolne", kui seda pole antud). Kui olemasolev kirjeldus on antud, võid selle professionaalselt ümber sõnastada, kuid MITTE lisada uusi väiteid. '
     +'Ära leiuta numbreid — hind, pindala, tube, korrus, ehitusaasta kasuta täpselt antud kujul. '
     +'STRUKTUUR: (1) haarav, aus avalause; (2) objekti faktid sujuvas tekstis (tüüp, pindala, tube, korrus, ehitusaasta, seisukord); (3) asukoht, kui antud (maakond/linnaosa/asum) — neutraalselt, ilma väljamõeldud iseloomustusteta; (4) lõpetus üleskutsega võtta ühendust vaatamise kokkuleppimiseks. '
-    +'Kui mõni väli puudub, jäta lihtsalt välja — ära maini puudumist. Professionaalne, usaldusväärne, kuiv-konkreetne eesti kirjakeel, ilma emojideta, ilma garantiide/lubadusteta. Pikkus ~120-200 sõna.'+AI_STIIL;
+    +'Kui mõni väli puudub, jäta lihtsalt välja — ära maini puudumist. '
+    +'OLULINE: see on ÜHEKORDNE genereerimine — vastad AINULT valmis kuulutustekstiga. ÄRA küsi lisaandmeid, ära keeldu, ära kirjuta juhiseid kasutajale. Kui fakte on vähe (nt ainult tüüp ja asukoht), koosta lühem kuulutus täpselt nendest faktidest. '
+    +'Professionaalne, usaldusväärne, kuiv-konkreetne eesti kirjakeel, ilma emojideta, ilma garantiide/lubadusteta. Pikkus vastavalt faktide hulgale (~60-200 sõna).'+AI_STIIL;
   try{
     var out=await aiFetch({ system:sys, max_tokens:600, model:'claude-sonnet-4-6', messages:[{role:'user', content:'Objekti faktid:\n'+lines+ehr}] });
     if(out && out.indexOf('Viga')!==0 && out.indexOf('Sessioon aegus')!==0){ box.value=out; window._leadDirty=true; toast('Kuulutustekst genereeritud — kontrolli ja salvesta'); }
