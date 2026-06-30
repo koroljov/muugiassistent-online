@@ -1601,6 +1601,10 @@ function addrPick(i){
   if(a.tunnus){ var ec=document.getElementById('lEhrCode'); if(ec) ec.value=a.tunnus; } // hoone EHR kood (korteril tühi → endpoint lahendab)
   var info = document.getElementById('lAddrInfo');
   if(info) info.textContent = '📍 ' + [a.maakond,a.omavalitsus,a.asustusyksus].filter(Boolean).join(', ');
+  // Aadress muutus → vanad lähedalasuvad objektid ei kehti; nulli + värskenda kaart
+  window._leadPois = []; if(typeof renderPoiList==='function') renderPoiList();
+  var _ps=document.getElementById('lPoiStatus'); if(_ps) _ps.textContent='';
+  if(typeof renderLeadMap==='function') renderLeadMap();
   addrHideSuggest();
   // sünkroni Turuhinna maakond, kui väli olemas
   var mp = document.getElementById('mpCounty'); if(mp && a.maakond){ mp.value = a.maakond; }
@@ -1645,6 +1649,7 @@ async function addrStructureFromText(q){
   if(lat) set('lLat',lat); if(lng) set('lLng',lng);
   var info=document.getElementById('lAddrInfo');
   if(info && mk) info.textContent='📍 '+[mk,ov,as,asu].filter(Boolean).join(', ')+(as?'':' · täpsusta linnaosa, trükkides aadressi uuesti');
+  if(lat&&lng&&typeof renderLeadMap==='function') renderLeadMap();
   addrHideSuggest();
   if(typeof loadEhr==='function') loadEhr(true); // impordil struktureeritud aadress → tõmba EHR
 }
@@ -2364,6 +2369,51 @@ async function generateArguments(){
 }
 
 // ============================================================
+// MOODUL 1B-2 — lähedalasuvad objektid (POI) kaardile, valitavad
+// ============================================================
+var POI_LBL = { kool:'Kool', lasteaed:'Lasteaed', pood:'Pood', peatus:'Peatus', veekogu:'Veekogu' };
+function poiSelMarkers(){
+  return (window._leadPois||[]).filter(function(p){return p.sel;})
+    .slice(0,12).map(function(p){ return p.lng+','+p.lat+','+p.cat; }).join(';');
+}
+function renderLeadMap(){
+  var box=document.getElementById('lMapBox'); if(!box) return;
+  var lat=(document.getElementById('lLat')||{}).value, lng=(document.getElementById('lLng')||{}).value;
+  if(!lat||!lng){ box.innerHTML='<span style="color:var(--tx2);font-size:11px">Vali aadress pakutust → koordinaadid → kaart ilmub. (Salvesta lead, et kaart püsiks.)</span>'; return; }
+  var poi=poiSelMarkers();
+  var src='/api/staticmap?lat='+encodeURIComponent(lat)+'&lng='+encodeURIComponent(lng)+(poi?('&poi='+encodeURIComponent(poi)):'');
+  box.innerHTML='<img src="'+esc(src)+'" alt="Asukohakaart" loading="lazy" style="width:100%;max-width:480px;border-radius:8px;border:1px solid var(--bd);display:block" onerror="this.style.display=\'none\'"><div style="font-size:9px;color:var(--tx2);margin-top:4px">Asukohakaart (paremklõps → salvesta kuulutusele).</div>';
+}
+function renderPoiList(){
+  var box=document.getElementById('lPoiBox'); if(!box) return;
+  var pois=window._leadPois||[];
+  if(!pois.length){ box.innerHTML=''; return; }
+  var cats={}; pois.forEach(function(p,i){ (cats[p.cat]=cats[p.cat]||[]).push(i); });
+  box.innerHTML=Object.keys(cats).map(function(c){
+    var rows=cats[c].map(function(i){ var p=pois[i];
+      return '<label style="display:flex;align-items:center;gap:7px;font-size:11px;padding:2px 0;cursor:pointer"><input type="checkbox" '+(p.sel?'checked':'')+' onchange="togglePoi('+i+',this.checked)" style="accent-color:var(--ac)"><span>'+esc(p.name||POI_LBL[c])+'</span><span style="color:var(--tx2);margin-left:auto">'+p.dist+' m</span></label>';
+    }).join('');
+    return '<div style="margin-bottom:7px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:var(--tx2);letter-spacing:.05em;margin-bottom:2px">'+POI_LBL[c]+'</div>'+rows+'</div>';
+  }).join('');
+}
+function togglePoi(i,on){ if(window._leadPois&&window._leadPois[i]){ window._leadPois[i].sel=on; window._leadDirty=true; renderLeadMap(); } }
+async function loadNearby(){
+  var lat=(document.getElementById('lLat')||{}).value, lng=(document.getElementById('lLng')||{}).value;
+  var st=document.getElementById('lPoiStatus');
+  if(!lat||!lng){ if(st) st.textContent='Vali esmalt aadress (koordinaadid).'; return; }
+  if(st) st.textContent='Otsin lähedalt…';
+  try{
+    var r=await fetch('/api/nearby?lat='+encodeURIComponent(lat)+'&lng='+encodeURIComponent(lng));
+    var j=await r.json();
+    if(j.error){ if(st) st.textContent=j.error; return; }
+    window._leadPois=(j.pois||[]).map(function(p){ p.sel=true; return p; });
+    window._leadDirty=true;
+    if(st) st.textContent=window._leadPois.length?(window._leadPois.length+' leitud — vali, mida hoida'):'Lähedalt ei leitud midagi.';
+    renderPoiList(); renderLeadMap();
+  }catch(e){ if(st) st.textContent='Otsing ebaõnnestus.'; }
+}
+
+// ============================================================
 // DATA
 // ============================================================
 async function loadData() {
@@ -2867,9 +2917,11 @@ function openLead(id, defaultStatus) {
           <div id="lEhrBox" style="flex:1;font-size:11px;line-height:1.5;padding-top:3px"><span style="color:var(--tx2)">Vali aadress — ehitise ametlikud andmed (ehitusaasta, korruseid, kasutusotstarve, energiamärgis) tulevad automaatselt.</span></div>
         </div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Kaart</span>
-          <div id="lMapBox" style="flex:1;padding-top:3px">${(l.addr_lat&&l.addr_lng)
-            ? `<img src="/api/staticmap?lat=${encodeURIComponent(l.addr_lat)}&lng=${encodeURIComponent(l.addr_lng)}" alt="Asukohakaart" loading="lazy" style="width:100%;max-width:480px;border-radius:8px;border:1px solid var(--bd);display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><div style="display:none;font-size:11px;color:var(--tx2);margin-top:4px">Kaarti ei õnnestunud laadida.</div><div style="font-size:9px;color:var(--tx2);margin-top:4px">Asukohakaart (paremklõps → salvesta kuulutusele).</div>`
-            : `<span style="color:var(--tx2);font-size:11px">Vali aadress pakutust → koordinaadid → kaart ilmub. (Salvesta lead, et kaart püsiks.)</span>`}</div>
+          <div style="flex:1;padding-top:3px">
+            <div id="lMapBox"></div>
+            <div style="margin-top:8px"><button type="button" class="btn-ghost" style="font-size:10px;padding:2px 8px" onclick="loadNearby()"><svg class="bi" viewBox="0 0 24 24"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Otsi lähedal</button><span id="lPoiStatus" style="font-size:10px;color:var(--tx2);margin-left:8px"></span></div>
+            <div id="lPoiBox" style="margin-top:8px"></div>
+          </div>
         </div>
         <div class="lead-sec-h">Tegevus</div>
         <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
@@ -2912,6 +2964,10 @@ function openLead(id, defaultStatus) {
   var _lb = document.getElementById('leadBody'); if(_lb) _lb.oninput = function(){ window._leadDirty = true; updateOwnEurLine(); };
   autoLoadMarketPrice(l);        // näita turuhinda kohe, kui segment juba baasis (ilma Scrapflyta)
   loadEhr(false);                // EHR ehitise faktid (tasuta, auto kui aadress/kood olemas)
+  // 1B-2: taasta salvestatud lähedalasuvad objektid + renderda kaart valitutega
+  window._leadPois = (Array.isArray(l.poi_selected) ? l.poi_selected : []).map(function(p){ return Object.assign({}, p, {sel:true}); });
+  renderPoiList();
+  renderLeadMap();
 }
 
 async function changeStatus(newKey) {
@@ -2972,6 +3028,9 @@ async function saveLead() {
     ai_summary:       document.getElementById('lAiSummary')?.value.trim()  || null,
     listing_text:     document.getElementById('lListingText')?.value.trim() || null,
     arguments_text:   document.getElementById('lArguments')?.value.trim()   || null,
+    poi_selected:     (window._leadPois && window._leadPois.some(p=>p.sel))
+                        ? window._leadPois.filter(p=>p.sel).map(p=>({cat:p.cat,name:p.name,dist:p.dist,lat:p.lat,lng:p.lng}))
+                        : null,
   };
   if (!CURRENT.id) {
     // UUS lead → insert
@@ -3683,8 +3742,11 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 11;
+var APP_BUILD = 12;
 var CHANGELOG = [
+  { v:12, major:true, date:'30.06.2026', title:'Lähedalasuvad objektid kaardile',
+    why:'Leadi aknas vajuta "Otsi lähedal" → leiab kooli, lasteaia, poe, peatuse ja veekogu kaugustega. Vali linnukestega, mida hoida — kaart uueneb ainult valitutega. Valik salvestub leadi külge ja sobib kuulutusele.',
+    viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava lead → Turg → Kaart → "Otsi lähedal" → vali ja salvesta.' },
   { v:11, major:true, date:'30.06.2026', title:'Asukohakaart leadi juures',
     why:'Kui leadi aadress on valitud (koordinaadid olemas), näed leadi aknas Turg-sektsioonis asukohakaarti. Saad selle paremklõpsuga salvestada ja kuulutusele lisada. Kaart tuleb Mapboxist, aadressi koordinaatide järgi.',
     viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava lead → vali aadress pakutust → Turg-sektsioonis "Kaart".' },
