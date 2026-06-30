@@ -2865,6 +2865,11 @@ function openLead(id, defaultStatus) {
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Ehitisregister<button type="button" class="btn-ghost" style="display:block;margin-top:6px;font-size:10px;padding:2px 6px" onclick="loadEhr(true)" title="Tõmba ehitise ametlikud andmed Ehitisregistrist (tasuta)"><svg class="bi" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-.5 4"/><path d="M20 5v6h-6"/></svg>EHR</button></span>
           <div id="lEhrBox" style="flex:1;font-size:11px;line-height:1.5;padding-top:3px"><span style="color:var(--tx2)">Vali aadress — ehitise ametlikud andmed (ehitusaasta, korruseid, kasutusotstarve, energiamärgis) tulevad automaatselt.</span></div>
         </div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:5px">Kaart</span>
+          <div id="lMapBox" style="flex:1;padding-top:3px">${(l.addr_lat&&l.addr_lng)
+            ? `<img src="/api/staticmap?lat=${encodeURIComponent(l.addr_lat)}&lng=${encodeURIComponent(l.addr_lng)}" alt="Asukohakaart" loading="lazy" style="width:100%;max-width:480px;border-radius:8px;border:1px solid var(--bd);display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><div style="display:none;font-size:11px;color:var(--tx2);margin-top:4px">Kaarti ei õnnestunud laadida.</div><div style="font-size:9px;color:var(--tx2);margin-top:4px">Asukohakaart (paremklõps → salvesta kuulutusele).</div>`
+            : `<span style="color:var(--tx2);font-size:11px">Vali aadress pakutust → koordinaadid → kaart ilmub. (Salvesta lead, et kaart püsiks.)</span>`}</div>
+        </div>
         <div class="lead-sec-h">Tegevus</div>
         <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
           <select class="kv-inp" id="lKontaktViis">
@@ -3677,8 +3682,11 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 10;
+var APP_BUILD = 11;
 var CHANGELOG = [
+  { v:11, major:true, date:'30.06.2026', title:'Asukohakaart leadi juures',
+    why:'Kui leadi aadress on valitud (koordinaadid olemas), näed leadi aknas Turg-sektsioonis asukohakaarti. Saad selle paremklõpsuga salvestada ja kuulutusele lisada. Kaart tuleb Mapboxist, aadressi koordinaatide järgi.',
+    viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava lead → vali aadress pakutust → Turg-sektsioonis "Kaart".' },
   { v:10, major:true, date:'30.06.2026', title:'Läbirääkimiste argumendid',
     why:'Leadi aknas saad nupuga "Genereeri" valmis müügiläbirääkimiste ettevalmistuse: levinud vastuväited (hind kõrge, müün ise, ootan paremat) ja faktipõhised vastused, mis põhinevad selle objekti turuhinnal ja andmetel. AI eristab fakti ja hinnangu ega leiuta numbreid.',
     viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava lead → keri alla "Argumendid" → "Genereeri".' },
