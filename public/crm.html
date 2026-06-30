@@ -2440,7 +2440,7 @@ function calcKulu(){
   var km = notNet * 0.24;                                           // käibemaks 24%
   // RIIGILÕIV (käibemaksuta)
   var rOmand = stateFull(H);                                        // omandi kanne (täismäär)
-  var rHyp   = hyp>0 ? stateFull(2/3*hyp) : 0;                      // hüpoteegi kanne (2/3 summast)
+  var rHyp   = hyp>0 ? 0.5 * stateFull(2/3*hyp) : 0;                // hüpoteegi kanne koos omandi ülekandmisega = 50% täismäärast (2/3 summast)
   var riigil = rOmand + rHyp;
   var kokku = notNet + km + riigil;
   var row=function(l,v,mut){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px'+(mut?';color:var(--tx2)':'')+'"><span>'+l+'</span><span'+(mut?'':' style="font-weight:600"')+'>'+eur2(v)+'</span></div>'; };
