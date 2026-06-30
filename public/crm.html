@@ -12,14 +12,14 @@
    CSS VARIABLES — DARK (vaikimisi)
    ============================================================ */
 :root {
-  --bg: #141418;
-  --sf: #1d1d23;
-  --cd: #25252e;
+  --bg: #1a1c22;
+  --sf: #22252e;
+  --cd: #2b2f39;
   --bd: rgba(255,255,255,0.07);
-  --tx: #dde0ec;
-  --tx2: #66677e;
-  --ac: #28a85e;
-  --acb: rgba(40,168,94,0.12);
+  --tx: #e6e8f0;
+  --tx2: #9094a8;
+  --ac: #35b46f;
+  --acb: rgba(53,180,111,0.14);
   --red: #ef4444;
   --amber: #f59e0b;
   --green: #22c55e;
@@ -1903,6 +1903,7 @@ function renderMarketPrice(box, j, l){
     var hinnangP;
     if(ownP){ var dfp=Math.round((ownP/mpv-1)*100); hinnangP='Sinu objekt '+Math.round(ownP).toLocaleString('et-EE')+' € — mediaanist '+(dfp>0?'<b>'+dfp+'% ÜLE</b>':dfp<0?'<b>'+Math.abs(dfp)+'% ALLA</b>':'samal tasemel')+'.'; }
     else { hinnangP='Lisa hind, et mediaaniga võrrelda.'; }
+    window._mpCurrent={ leadId:(typeof CURRENT!=='undefined'&&CURRENT)?CURRENT.id:null, d:d }; // AI kasutab sama andmt mis UI näitab
     box.innerHTML='<div style="border:1px solid var(--bd);border-radius:6px;padding:8px;background:var(--cd)">'+
       '<div style="font-size:12px;color:var(--tx)">Mediaan tehinguhind <b>'+Math.round(mpv).toLocaleString('et-EE')+' €</b> · '+tx.toLocaleString('et-EE')+' tehingut · '+esc(mpLevelShort(d.district))+'</div>'+
       '<div style="font-size:11px;color:var(--tx);margin-top:2px">'+hinnangP+'</div>'+
