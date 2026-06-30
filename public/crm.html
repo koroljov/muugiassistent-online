@@ -2287,6 +2287,46 @@ async function genImportFeedback(){
 }
 
 // ============================================================
+// MOODUL 1A — KUULUTUSE TEKSTIGENERAATOR
+// Leadi faktidest (aadress, tüüp, hind, pindala, toad, korrus, ehitusaasta, seisukord, asukoht, EHR,
+// Turuhind) → AI (Sonnet) → valmis professionaalne kuulutustekst → lListingText (salvesta saveLead'iga).
+// RANGE ANTI-HALLU: ainult antud faktid, EI lisa omadusi/eeliseid mida andmetes pole (õiguslik risk).
+// ============================================================
+async function generateListing(){
+  var box=document.getElementById('lListingText'); if(!box) return;
+  if(box.value && box.value.trim() && !confirm('Kuulutustekst on juba olemas. Genereerin uue (asendab praeguse)?')) return;
+  var f=function(id){ var e=document.getElementById(id); return e?e.value.trim():''; };
+  var loc=[f('lCounty'),f('lDistrict'),f('lAsum')].filter(Boolean).join(', ');
+  var lines=[
+    f('lAadress')&&('Aadress: '+f('lAadress')),
+    loc&&('Asukoht: '+loc),
+    f('lTuup')&&('Tüüp: '+f('lTuup')+(f('lOtstarve')?' / '+f('lOtstarve'):'')),
+    f('lTehing')&&('Tehing: '+(f('lTehing')==='uur'?'üür':'müük')),
+    f('lSeisukord')&&('Seisukord: '+f('lSeisukord')),
+    f('lHind')&&('Hind: '+f('lHind')+' €'),
+    f('lPindala')&&('Pindala: '+f('lPindala')+' m²'),
+    f('lTube')&&('Tube: '+f('lTube')),
+    f('lKorrus')&&('Korrus: '+f('lKorrus')),
+    f('lEhitusaasta')&&('Ehitusaasta: '+f('lEhitusaasta')),
+    f('lKirjeldus')&&('Olemasolev kirjeldus (võib professionaalselt ümber sõnastada, MITTE lisada uusi väiteid): '+f('lKirjeldus'))
+  ].filter(Boolean).join('\n');
+  if(!lines || (!f('lAadress')&&!f('lTuup'))){ toast('Lisa vähemalt aadress ja tüüp, siis genereeri'); return; }
+  // EHR ametlikud faktid, kui laetud
+  var ehr=''; var eb=document.getElementById('lEhrBox'); if(eb && eb.textContent && eb.textContent.indexOf('Vali aadress')<0){ ehr='\nEhitisregister (ametlikud faktid): '+eb.textContent.replace(/\s+/g,' ').trim().slice(0,300); }
+  var prev=box.value; box.value='AI koostab kuulutusteksti…';
+  var sys='Oled Uus Maa kinnisvarabüroo kuulutuse koostaja. Koosta valmis, kohe avaldatav müügikuulutuse tekst eesti keeles AINULT antud faktide põhjal. '
+    +'RANGE REEGEL — ÄRA LEIUTA: ära lisa ühtegi omadust, ruumi, materjali, vaadet, seisukorda ega eelist, mida andmetes pole (nt ära kirjuta "renoveeritud köök", "avar rõdu", "vaikne ja roheline piirkond", "päikesepoolne", kui seda pole antud). Kui olemasolev kirjeldus on antud, võid selle professionaalselt ümber sõnastada, kuid MITTE lisada uusi väiteid. '
+    +'Ära leiuta numbreid — hind, pindala, tube, korrus, ehitusaasta kasuta täpselt antud kujul. '
+    +'STRUKTUUR: (1) haarav, aus avalause; (2) objekti faktid sujuvas tekstis (tüüp, pindala, tube, korrus, ehitusaasta, seisukord); (3) asukoht, kui antud (maakond/linnaosa/asum) — neutraalselt, ilma väljamõeldud iseloomustusteta; (4) lõpetus üleskutsega võtta ühendust vaatamise kokkuleppimiseks. '
+    +'Kui mõni väli puudub, jäta lihtsalt välja — ära maini puudumist. Professionaalne, usaldusväärne, kuiv-konkreetne eesti kirjakeel, ilma emojideta, ilma garantiide/lubadusteta. Pikkus ~120-200 sõna.'+AI_STIIL;
+  try{
+    var out=await aiFetch({ system:sys, max_tokens:600, model:'claude-sonnet-4-6', messages:[{role:'user', content:'Objekti faktid:\n'+lines+ehr}] });
+    if(out && out.indexOf('Viga')!==0 && out.indexOf('Sessioon aegus')!==0){ box.value=out; window._leadDirty=true; toast('Kuulutustekst genereeritud — kontrolli ja salvesta'); }
+    else { box.value=prev; toast('AI ei suutnud genereerida — proovi uuesti'); }
+  }catch(e){ box.value=prev; toast('Viga genereerimisel'); }
+}
+
+// ============================================================
 // DATA
 // ============================================================
 async function loadData() {
@@ -2803,6 +2843,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kirjeldus</span><textarea class="kv-inp" id="lKirjeldus" rows="3" placeholder="Kuulutuse kirjeldus — täitub impordil; annab AI-le päris sisu hinnata" style="font-size:11px;line-height:1.45">${esc(l.description)}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?esc(l.listing_note):''}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">AI tagasiside<button type="button" class="btn-ghost" style="display:block;margin-top:6px;font-size:10px;padding:2px 6px" onclick="refreshAiFeedback()" title="Genereeri uuesti praeguste andmete + linnaosa/asumi turuhinna põhjal"><svg class="bi" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-.5 4"/><path d="M20 5v6h-6"/></svg>Värskenda</button></span><textarea class="kv-inp" id="lAiSummary" rows="5" placeholder="AI tagasiside — täitub kuulutuse importimisel; täienda Küsi Mellilt kaudu" style="font-size:11px;line-height:1.5">${esc(l.ai_summary)}</textarea></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kuulutustekst<button type="button" class="btn-ghost" style="display:block;margin-top:6px;font-size:10px;padding:2px 6px" onclick="generateListing()" title="AI koostab andmetest valmis professionaalse kuulutusteksti (ainult faktidest)"><svg class="bi" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>Genereeri</button></span><textarea class="kv-inp" id="lListingText" rows="8" placeholder="Vajuta Genereeri — AI koostab andmetest (aadress, tüüp, pindala, toad, seisukord, asukoht) valmis kuulutusteksti. Ainult faktidest, ei leiuta omadusi." style="font-size:11px;line-height:1.55">${esc(l.listing_text)}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${esc(l.lead_comment)}</textarea></div>
       </div>
 
@@ -2885,6 +2926,7 @@ async function saveLead() {
     lead_comment:     document.getElementById('lKommentaar').value.trim()  || null,
     img_url:          document.getElementById('lImgUrl')?.value.trim()     || null,
     ai_summary:       document.getElementById('lAiSummary')?.value.trim()  || null,
+    listing_text:     document.getElementById('lListingText')?.value.trim() || null,
   };
   if (!CURRENT.id) {
     // UUS lead → insert
@@ -3596,8 +3638,11 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 8;
+var APP_BUILD = 9;
 var CHANGELOG = [
+  { v:9, major:true, date:'30.06.2026', title:'Kuulutuse tekstigeneraator',
+    why:'Leadi aknas saad nupuga "Genereeri" AI-lt valmis professionaalse kuulutusteksti — koostatud objekti faktidest (aadress, tüüp, pindala, toad, korrus, ehitusaasta, seisukord, asukoht, ehitisregistri andmed). AI ei leiuta omadusi ega numbreid — kasutab ainult sinu andmeid. Kontrolli ja salvesta.',
+    viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava lead → keri alla "Kuulutustekst" → "Genereeri".' },
   { v:8, major:true, date:'26.06.2026', title:'Objektihaldus: müügitulemus, ehitusaasta, asum',
     why:'Arhiveerimisel valid nüüd tulemuse (müüdud meie kaudu / mujal / omanik loobus / aegus) — objekt ei kao statistikast, vaid annab õppesignaali. Lisandus Ehitusaasta väli (import täidab kuulutusest) ja asum on aadressi all nähtav — mõlemad toetavad hinnastamist. Kuulutuse kiirnupp ei kuhja enam uusi aknaid (kasutab üht). Salvestamata muudatuse korral hoiatab enne akna sulgemist.',
     viewKey:'kanban', tabLabel:'Töövoog', hint:'Ava lead → "Arhiveeri" annab nüüd tulemuse valiku; Ehitusaasta on Tube-välja all.' },
