@@ -414,8 +414,10 @@ input, select, textarea, button {
   transition: flex-basis 0.15s ease, opacity 0.15s ease;
 }
 /* Tühjad etapid kitsaks ja tuhmiks — vähem müra, täidetud veerud paistavad. +Lisa ilmub hiirega peale. */
-.kol-empty { flex: 0 0 116px; opacity: 0.4; }
+.kol-empty { flex: 0 0 150px; opacity: 0.55; }
 .kol-empty:hover { opacity: 1; }
+/* Tühja tulba kaardiala = selge, kõrgem drop-tsoon (lihtsam sinna lohistada) */
+.kol-empty .kol-cards { min-height: 110px; border: 1.5px dashed var(--bd); border-radius: 10px; padding: 6px; }
 .kol-empty .kard-add { display: none; }
 .kol-empty:hover .kard-add { display: block; }
 
@@ -2502,8 +2504,11 @@ function renderKanban() {
   secM.appendChild(colsM);
 
   wrap.appendChild(secA);
-  wrap.appendChild(div);
-  wrap.appendChild(secM);
+  // Assistent (Raul) ei näe Minu müügitoru (M) sektsiooni — tema skoop on assistendi toru kuni Edasta →/Potentsiaalne.
+  if (!isAssistant) {
+    wrap.appendChild(div);
+    wrap.appendChild(secM);
+  }
 
   // Restore previous scroll if re-rendering (e.g., after drag-drop),
   // otherwise scroll to show Minu pipeline by default.
@@ -2687,6 +2692,11 @@ function openLead(id, defaultStatus) {
   var isNew = (id == null);
   CURRENT = isNew ? { status: defaultStatus || 'uus' } : LEADS.find(l => l.id === id);
   if (!CURRENT) return;
+  // Assistent (Raul): ei tohi avada/muuta Minu müügitoru (M) kontakte — tema skoop lõpeb Potentsiaalsel (Edasta →).
+  if (!isNew && (localStorage.getItem('ma_role') || 'specialist') === 'assistant') {
+    var M_ONLY = { k_kontakt:1, leping:1, ettevalmistus:1, ostja:1, t_ettevalmistus:1, k_tehing:1 };
+    if (M_ONLY[CURRENT.status]) { toast('See kontakt on müügispetsialisti torus — assistendil pole ligipääsu.'); return; }
+  }
   const l         = CURRENT;
   // 'prospect' on jagatud võti A+M — eelistame M sektsiooni vaate
   const curSt   = STAATUSED.find(s => s.key === l.status && s.section === 'M')
