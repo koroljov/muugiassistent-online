@@ -2329,6 +2329,41 @@ async function generateListing(){
 }
 
 // ============================================================
+// MOODUL 4 — KONSULTATSIOON + ARGUMENTEERIMINE
+// Leadi andmed + Maa-ameti turuhind → AI (Sonnet) → läbirääkimiste argumendid + vastused
+// levinud vastuväidetele (hinnasurve, seisukord, aeg turul). FAKT vs HINNANG eraldi, anti-hallu.
+// ============================================================
+async function generateArguments(){
+  var box=document.getElementById('lArguments'); if(!box) return;
+  if(box.value && box.value.trim() && !confirm('Argumendid on juba olemas. Genereerin uued (asendab praeguse)?')) return;
+  var f=function(id){ var e=document.getElementById(id); return e?e.value.trim():''; };
+  var own=(parseFloat(f('lHind'))>0 && parseFloat(f('lPindala'))>0) ? Math.round(parseFloat(f('lHind'))/parseFloat(f('lPindala'))) : null;
+  var lines=[
+    f('lAadress')&&('Aadress: '+f('lAadress')),
+    f('lTuup')&&('Tüüp: '+f('lTuup')+(f('lOtstarve')?' / '+f('lOtstarve'):'')),
+    f('lTehing')&&('Tehing: '+(f('lTehing')==='uur'?'üür':'müük')),
+    f('lSeisukord')&&('Seisukord: '+f('lSeisukord')),
+    f('lHind')&&('Hind: '+f('lHind')+' €'),
+    f('lPindala')&&('Pindala: '+f('lPindala')+' m²'),
+    own&&('Objekti €/m²: '+own),
+    f('lEhitusaasta')&&('Ehitusaasta: '+f('lEhitusaasta'))
+  ].filter(Boolean).join('\n');
+  if(!lines){ toast('Lisa vähemalt hind ja pindala, siis genereeri'); return; }
+  var market='';
+  try{ market = await mellMarketLine({ county:f('lCounty'), district:f('lDistrict'), asum:f('lAsum'), property_type:f('lTuup'), use_purpose:f('lOtstarve'), price:parseFloat(f('lHind'))||null, area:parseFloat(f('lPindala'))||null }); }catch(e){}
+  var prev=box.value; box.value='AI koostab argumente…';
+  var sys='Oled Uus Maa kinnisvaramüügi strateeg. Koosta selle objekti müügiläbirääkimiste ettevalmistus eesti keeles: levinud vastuväited ja faktipõhised vastused. '
+    +'Vorming: 3-5 vastuväidet (nt "hind on liiga kõrge", "müün ise", "ootan paremat pakkumist", "seisukord pole probleem"), igaühe all 1-3 lauset turuloogikal põhinevat vastust. '
+    +'KRIITILINE — ERISTA FAKT JA HINNANG: kui kasutad Maa-ameti turuhinda või antud andmeid, märgi need faktidena; kui tegu on tõlgenduse/soovitusega, sõnasta hinnanguna ("tõenäoliselt", "kogemus näitab"). Ära leiuta numbreid ega statistikat — kasuta ainult antud andmeid ja turuhinda. '
+    +'Eesmärk on aidata müüjal mõista reaalsust ja teha hea otsus — mitte survestada. Aus, rahulik, professionaalne. Ilma emojideta, ilma garantiide/lubadusteta.'+AI_STIIL;
+  try{
+    var out=await aiFetch({ system:sys, max_tokens:700, model:'claude-sonnet-4-6', messages:[{role:'user', content:'Objekti andmed:\n'+lines+market}] });
+    if(out && out.indexOf('Viga')!==0 && out.indexOf('Sessioon aegus')!==0){ box.value=out; window._leadDirty=true; toast('Argumendid genereeritud — kontrolli ja salvesta'); }
+    else { box.value=prev; toast('AI ei suutnud genereerida — proovi uuesti'); }
+  }catch(e){ box.value=prev; toast('Viga genereerimisel'); }
+}
+
+// ============================================================
 // DATA
 // ============================================================
 async function loadData() {
@@ -2846,6 +2881,7 @@ function openLead(id, defaultStatus) {
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Märkus</span><textarea class="kv-inp" id="lMarkus">${l.listing_note&&!l.listing_note.startsWith('http')?esc(l.listing_note):''}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">AI tagasiside<button type="button" class="btn-ghost" style="display:block;margin-top:6px;font-size:10px;padding:2px 6px" onclick="refreshAiFeedback()" title="Genereeri uuesti praeguste andmete + linnaosa/asumi turuhinna põhjal"><svg class="bi" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-.5 4"/><path d="M20 5v6h-6"/></svg>Värskenda</button></span><textarea class="kv-inp" id="lAiSummary" rows="5" placeholder="AI tagasiside — täitub kuulutuse importimisel; täienda Küsi Mellilt kaudu" style="font-size:11px;line-height:1.5">${esc(l.ai_summary)}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kuulutustekst<button type="button" class="btn-ghost" style="display:block;margin-top:6px;font-size:10px;padding:2px 6px" onclick="generateListing()" title="AI koostab andmetest valmis professionaalse kuulutusteksti (ainult faktidest)"><svg class="bi" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>Genereeri</button></span><textarea class="kv-inp" id="lListingText" rows="8" placeholder="Vajuta Genereeri — AI koostab andmetest (aadress, tüüp, pindala, toad, seisukord, asukoht) valmis kuulutusteksti. Ainult faktidest, ei leiuta omadusi." style="font-size:11px;line-height:1.55">${esc(l.listing_text)}</textarea></div>
+        <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Argumendid<button type="button" class="btn-ghost" style="display:block;margin-top:6px;font-size:10px;padding:2px 6px" onclick="generateArguments()" title="AI koostab läbirääkimiste argumendid + vastused levinud vastuväidetele (turuloogika, ainult andmetest)"><svg class="bi" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Genereeri</button></span><textarea class="kv-inp" id="lArguments" rows="8" placeholder="Vajuta Genereeri — AI koostab müügiläbirääkimiste argumendid + vastused levinud vastuväidetele (hinnasurve, seisukord, aeg turul) turuhinna loogikaga. FAKT vs HINNANG eraldi." style="font-size:11px;line-height:1.55">${esc(l.arguments_text)}</textarea></div>
         <div class="kv-row" style="align-items:flex-start"><span class="kv-lbl" style="padding-top:6px">Kommentaar</span><textarea class="kv-inp" id="lKommentaar" rows="3" placeholder="Lisa kommentaar...">${esc(l.lead_comment)}</textarea></div>
       </div>
 
@@ -2929,6 +2965,7 @@ async function saveLead() {
     img_url:          document.getElementById('lImgUrl')?.value.trim()     || null,
     ai_summary:       document.getElementById('lAiSummary')?.value.trim()  || null,
     listing_text:     document.getElementById('lListingText')?.value.trim() || null,
+    arguments_text:   document.getElementById('lArguments')?.value.trim()   || null,
   };
   if (!CURRENT.id) {
     // UUS lead → insert
@@ -3640,8 +3677,11 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 9;
+var APP_BUILD = 10;
 var CHANGELOG = [
+  { v:10, major:true, date:'30.06.2026', title:'Läbirääkimiste argumendid',
+    why:'Leadi aknas saad nupuga "Genereeri" valmis müügiläbirääkimiste ettevalmistuse: levinud vastuväited (hind kõrge, müün ise, ootan paremat) ja faktipõhised vastused, mis põhinevad selle objekti turuhinnal ja andmetel. AI eristab fakti ja hinnangu ega leiuta numbreid.',
+    viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava lead → keri alla "Argumendid" → "Genereeri".' },
   { v:9, major:true, date:'30.06.2026', title:'Kuulutuse tekstigeneraator',
     why:'Leadi aknas saad nupuga "Genereeri" AI-lt valmis professionaalse kuulutusteksti — koostatud objekti faktidest (aadress, tüüp, pindala, toad, korrus, ehitusaasta, seisukord, asukoht, ehitisregistri andmed). AI ei leiuta omadusi ega numbreid — kasutab ainult sinu andmeid. Kontrolli ja salvesta.',
     viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava lead → keri alla "Kuulutustekst" → "Genereeri".' },
