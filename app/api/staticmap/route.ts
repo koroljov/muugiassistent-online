@@ -28,10 +28,34 @@ export async function GET(request: Request) {
 
   const w = 640, h = 360;
   const la = lat.toFixed(5), ln = lng.toFixed(5);
-  const marker = `pin-l+2aa55e(${ln},${la})`;
+
+  // Kategooriavärvid POI-markeritele
+  const CAT_COLOR: Record<string, string> = {
+    kool: "3b82f6", lasteaed: "8b5cf6", pood: "f59e0b", peatus: "ef4444", veekogu: "06b6d4",
+  };
+
+  const overlays: string[] = [];
+  // POI-markerid (poi=lng,lat,cat;lng,lat,cat;...), kuni 12
+  const poiRaw = searchParams.get("poi") || "";
+  let hasPoi = false;
+  if (poiRaw) {
+    for (const part of poiRaw.split(";").slice(0, 12)) {
+      const [pl, pa, pc] = part.split(",");
+      const plng = parseFloat(pl), plat = parseFloat(pa);
+      if (!isFinite(plng) || !isFinite(plat) || plat < 57 || plat > 60 || plng < 21 || plng > 29) continue;
+      const color = CAT_COLOR[pc] || "777777";
+      overlays.push(`pin-s+${color}(${plng.toFixed(5)},${plat.toFixed(5)})`);
+      hasPoi = true;
+    }
+  }
+  // Objekti marker viimasena (peale, suur roheline)
+  overlays.push(`pin-l+2aa55e(${ln},${la})`);
+
+  // Kui POI-d olemas → auto-sobita kõik vaatesse; muidu keskenda objektile
+  const viewport = hasPoi ? "auto" : `${ln},${la},${zoom}`;
   const url =
-    `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${marker}/${ln},${la},${zoom}/${w}x${h}@2x` +
-    `?access_token=${encodeURIComponent(token)}`;
+    `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${overlays.join(",")}/${viewport}/${w}x${h}@2x` +
+    `?access_token=${encodeURIComponent(token)}` + (hasPoi ? "&padding=40" : "");
 
   try {
     const r = await fetch(url);

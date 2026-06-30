@@ -2788,7 +2788,8 @@ function openLead(id, defaultStatus) {
 
   const role = localStorage.getItem('ma_role') || 'specialist';
   const isAssistant = role === 'assistant';
-  const canChangeSection = section === 'M' ? !isAssistant : isAssistant;
+  // Spetsialist (Meelis) saab muuta KÕIKI etappe (A ja M); assistent (Raul) ainult assistendi-toru (A).
+  const canChangeSection = isAssistant ? (section === 'A') : true;
 
   const pbar = pipeSteps.map((s, i) => {
     const cls = i < aktIdx ? 'done' : (i === aktIdx ? 'current' : '');
