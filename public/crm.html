@@ -1400,6 +1400,24 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
   </div>
 </div>
 
+<!-- OSTJA KULUD (notar + riigilõiv) -->
+<div class="modal-overlay" id="kuluModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head">
+      <div class="modal-title">Ostja kulud — notar + riigilõiv</div>
+      <button class="modal-x" onclick="closeModal('kuluModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="kv-row"><span class="kv-lbl">Müügihind €</span><input class="kv-inp" id="kuluHind" type="number" oninput="calcKulu()"></div>
+      <div class="kv-row"><span class="kv-lbl">Hüpoteek € <span style="color:var(--tx2);font-weight:400">(kui laen)</span></span><input class="kv-inp" id="kuluHyp" type="number" oninput="calcKulu()"></div>
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;padding:4px 0;cursor:pointer"><input type="checkbox" id="kuluKaug" onchange="calcKulu()" style="accent-color:var(--ac)"> Kaugtõestus (+20 €)</label>
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;padding:4px 0;cursor:pointer"><input type="checkbox" id="kuluDep" onchange="calcKulu()" style="accent-color:var(--ac)"> Notari deposiitkonto</label>
+      <div id="kuluOut" style="margin-top:12px;background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:12px"></div>
+      <div style="font-size:9px;color:var(--tx2);margin-top:8px;line-height:1.5">Ligikaudne, notari tasu seaduse (§22) ja riigilõivuseaduse alusel. Iga tehing võib erineda — täpse summa annab notar. Riigilõiv võib seadusega muutuda.<br><a href="https://www.notar.ee/et/teabekeskus/notari-tasu-kalkuleerimine" target="_blank" rel="noopener" style="color:var(--ac);text-decoration:none">Ava ametlik notari kalkulaator →</a></div>
+    </div>
+  </div>
+</div>
+
 <!-- MIS ON UUT -->
 <div class="modal-overlay" id="newsModal">
   <div class="modal" style="max-width:460px">
@@ -2369,6 +2387,77 @@ async function generateArguments(){
 }
 
 // ============================================================
+// MOODUL 3B — OSTJA KULUÜLEVAADE (notari tasu + riigilõiv arvuti)
+// Ametlikud tabelid: notari TÄISTASU (notari tasu seadus §22, stabiilne 2011) +
+// riigilõiv TÄISMÄÄR (Riigilõivuseadus, RIK juhend 2024). Reeglid: ostu-müük = täistasu×2;
+// hüpoteek/deposiit tehinguväärtus 2/3; deposiit = ¼ täistasust (min 6,39); kaugtõestus +20€; KM 24%.
+// AUS: kuvab läbipaistva jaotuse + "ligikaudne, seaduse alusel" + link ametlikule kalkulaatorile.
+// ============================================================
+var NOTARY_FULL = [[32,1.60],[64,3],[96,4.50],[128,6],[256,10.80],[383,14.50],[511,17.35],[639,19.15],[1278,19.80],[1917,20.40],[2556,21],[3196,21.75],[3835,22.35],[4474,23],[5113,23.65],[5752,24.25],[6391,24.90],[7669,25],[8948,25.45],[10226,25.70],[11504,26],[12782,26.20],[14061,28.10],[15338,30],[16617,32],[17895,33.85],[19173,35.75],[20452,37.70],[21730,39.60],[23008,41.50],[24287,43.50],[25565,45.40],[26843,47.30],[28121,49.15],[29399,51.10],[30678,53],[31956,55],[35151,59.75],[38347,64.55],[41543,69.35],[44738,74.10],[47934,78.90],[51129,83.70],[54325,88.50],[57520,93.30],[60716,98.10],[63912,102.90],[70303,112.50],[76694,122.10],[83085,131.65],[89480,141.20],[95870,150.80],[102260,160.40],[108650,170],[115040,179.55],[121435,189.15],[127825,198.75],[134215,208.35],[140605,217.90],[147000,227.50],[153390,237.10],[159780,246.65],[166170,256.25],[172565,265.85],[178955,275.45],[185345,285],[191735,294.60],[198130,304.20],[204520,313.80],[210910,323.35],[217300,332.95],[223690,342.55],[230085,352.10],[236475,361.70],[242865,371.30],[249255,380.90],[255650,390.50],[262040,400],[268430,409.50],[274820,419.25],[281220,428.80],[287610,438.40],[294000,448],[300390,457.60],[306780,467.15],[313170,476.75],[319560,486.35],[332340,505.50],[345130,524.70],[357910,543.85],[370690,563.05],[383470,582.20],[396260,601.40],[409040,620.55],[421820,639.75],[434600,658.90],[447390,678.10],[460170,697.25],[472950,716.40],[485730,735.60],[498510,754.75],[511300,773.95],[524100,793.10],[536860,812.30],[549640,831.45],[562430,850.65],[575210,869.80],[587990,889],[600770,908.15],[613560,927.35],[626340,946.50],[639120,958.65]];
+function notaryFull(v){
+  v = Math.max(v, 6391); // kinnisasja min tehinguväärtus
+  if(v > 639120){
+    if(v<=1278235) return 958.65 + 0.0014*(v-639120);
+    if(v<=1917350) return 1853.40 + 0.0012*(v-1278235);
+    if(v<=2556470) return 2620.35 + 0.0010*(v-1917350);
+    if(v<=3195585) return 3259.45 + 0.0008*(v-2556470);
+    if(v<=6391165) return 3770.75 + 0.0005*(v-3195585);
+    return 5368.55 + 0.0002*(v-6391165);
+  }
+  for(var i=0;i<NOTARY_FULL.length;i++){ if(v<=NOTARY_FULL[i][0]) return NOTARY_FULL[i][1]; }
+  return NOTARY_FULL[NOTARY_FULL.length-1][1];
+}
+var STATE_FULL = [[65,3],[385,4],[640,5],[1920,6],[3200,7],[4480,8],[5760,9],[6400,10],[7670,12],[8950,13],[10230,15],[11510,16],[12790,17],[14070,18],[15340,20],[16620,21],[17900,22],[19180,24],[20460,25],[21730,26],[23010,28],[24290,29],[25570,30],[26850,32],[28130,33],[29400,34],[30680,36],[31960,37],[35160,40],[38350,42],[41550,45],[44740,48],[47940,50],[51130,53],[54330,56],[57530,58],[60720,61],[63920,64],[70310,72],[76700,80],[83090,87],[89480,95],[95870,105],[102260,110],[108650,120],[115050,130],[121440,135],[127830,145],[134220,150],[140610,160],[147000,165],[153390,175],[159780,180],[166180,190],[172570,195],[178960,205],[185350,210],[191740,220],[198130,225],[204520,235],[210910,245],[217300,250],[223700,260],[230090,265],[236480,275],[242870,280],[249260,290],[255650,295],[262040,305],[268430,310],[274830,320],[281220,325],[287610,335],[294000,340],[300390,350],[306780,360],[313170,365],[319560,375],[325950,385],[332350,400],[338740,410],[345130,435],[351520,450],[357910,465],[364300,475],[370690,490],[377080,500],[383470,515],[389870,525],[396260,540],[402650,550],[409040,565],[415430,580],[421820,590],[428210,605],[434600,615],[441000,630],[447390,640],[453780,655],[460170,665],[466560,680],[472950,695],[479340,705],[485730,720],[492120,730],[498520,745],[504910,755],[511300,770],[517690,780],[524080,795],[530470,810],[536860,820],[543250,835],[549650,845],[556040,860],[562430,870],[568820,885],[575210,895],[581600,910],[587990,925],[594380,935],[600770,950],[607170,960],[613560,975],[619950,985],[626340,1000],[632730,1010],[639120,1030]];
+function stateFull(v){
+  if(v<=0) return 0;
+  if(v > 639120) return Math.min(2560, 0.0016*v);
+  for(var i=0;i<STATE_FULL.length;i++){ if(v<=STATE_FULL[i][0]) return STATE_FULL[i][1]; }
+  return STATE_FULL[STATE_FULL.length-1][1];
+}
+var KULU_LINK = 'https://www.notar.ee/et/teabekeskus/notari-tasu-kalkuleerimine';
+function openKulu(){
+  var price = parseFloat((document.getElementById('lHind')||{}).value) || 0;
+  document.getElementById('kuluHind').value = price || '';
+  document.getElementById('kuluHyp').value = '';
+  document.getElementById('kuluDep').checked = false;
+  document.getElementById('kuluKaug').checked = false;
+  calcKulu();
+  document.getElementById('kuluModal').classList.add('open');
+}
+function eur2(x){ return (Math.round(x*100)/100).toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
+function calcKulu(){
+  var H = parseFloat((document.getElementById('kuluHind')||{}).value) || 0;
+  var hyp = parseFloat((document.getElementById('kuluHyp')||{}).value) || 0;
+  var dep = document.getElementById('kuluDep').checked;
+  var kaug = document.getElementById('kuluKaug').checked;
+  var out = document.getElementById('kuluOut');
+  if(!(H>0)){ out.innerHTML='<div style="color:var(--tx2);font-size:12px">Sisesta müügihind.</div>'; return; }
+  // NOTARI TASU (käibemaksuta)
+  var notSale = 2 * notaryFull(H);                                  // ostu-müük = täistasu × 2
+  var notDep  = dep ? Math.max(6.39, 0.25 * notaryFull(H)) : 0;     // deposiit = ¼ täistasust, min 6,39
+  var notKaug = kaug ? 20 : 0;                                      // kaugtõestus +20
+  var notNet  = notSale + notDep + notKaug;
+  var km = notNet * 0.24;                                           // käibemaks 24%
+  // RIIGILÕIV (käibemaksuta)
+  var rOmand = stateFull(H);                                        // omandi kanne (täismäär)
+  var rHyp   = hyp>0 ? stateFull(2/3*hyp) : 0;                      // hüpoteegi kanne (2/3 summast)
+  var riigil = rOmand + rHyp;
+  var kokku = notNet + km + riigil;
+  var row=function(l,v,mut){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px'+(mut?';color:var(--tx2)':'')+'"><span>'+l+'</span><span'+(mut?'':' style="font-weight:600"')+'>'+eur2(v)+'</span></div>'; };
+  var html='';
+  html+=row('Notari tasu — müügileping', notSale, true);
+  if(dep) html+=row('Notari tasu — deposiit', notDep, true);
+  if(kaug) html+=row('Kaugtõestus', notKaug, true);
+  html+=row('Notari tasu kokku', notNet);
+  html+=row('Käibemaks (24%)', km, true);
+  html+=row('Riigilõiv — omandi kanne', rOmand, true);
+  if(hyp>0) html+=row('Riigilõiv — hüpoteegi kanne', rHyp, true);
+  html+='<div style="border-top:1px solid var(--bd);margin-top:6px;padding-top:6px"></div>';
+  html+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700"><span>Kokku (ligikaudne)</span><span style="color:var(--ac)">'+eur2(kokku)+'</span></div>';
+  out.innerHTML=html;
+}
+
+// ============================================================
 // MOODUL 1B-2 — lähedalasuvad objektid (POI) kaardile, valitavad
 // ============================================================
 var POI_LBL = { kool:'Kool', lasteaed:'Lasteaed', pood:'Pood', peatus:'Peatus', veekogu:'Veekogu' };
@@ -2923,6 +3012,7 @@ function openLead(id, defaultStatus) {
             <div id="lPoiBox" style="margin-top:8px"></div>
           </div>
         </div>
+        <div class="kv-row"><span class="kv-lbl">Ostja kulud</span><div style="flex:1"><button type="button" class="btn-ghost" style="font-size:10px;padding:3px 9px" onclick="openKulu()"><svg class="bi" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg>Arvuta notar + riigilõiv</button></div></div>
         <div class="lead-sec-h">Tegevus</div>
         <div class="kv-row"><span class="kv-lbl">Kontakteerimise viis</span>
           <select class="kv-inp" id="lKontaktViis">
@@ -3742,8 +3832,11 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 12;
+var APP_BUILD = 13;
 var CHANGELOG = [
+  { v:13, major:true, date:'30.06.2026', title:'Ostja kulud — notar + riigilõiv arvuti',
+    why:'Leadi aknas (Turg → Ostja kulud) saad nupuga arvutada ostja ligikaudsed tehingukulud: notari tasu, käibemaks ja riigilõiv. Müügihind tuleb leadist, lisada saab hüpoteegi, kaugtõestuse ja deposiitkonto. Arvutus põhineb notari tasu seadusel ja riigilõivuseadusel; täpse summa annab notar.',
+    viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava lead → Turg → "Ostja kulud" → Arvuta.' },
   { v:12, major:true, date:'30.06.2026', title:'Lähedalasuvad objektid kaardile',
     why:'Leadi aknas vajuta "Otsi lähedal" → leiab kooli, lasteaia, poe, peatuse ja veekogu kaugustega. Vali linnukestega, mida hoida — kaart uueneb ainult valitutega. Valik salvestub leadi külge ja sobib kuulutusele.',
     viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava lead → Turg → Kaart → "Otsi lähedal" → vali ja salvesta.' },
