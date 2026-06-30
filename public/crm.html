@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Töövoog</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 /* ============================================================
    CSS VARIABLES — DARK (vaikimisi)
@@ -1198,6 +1200,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
           </div>
         </div>
       </div>
+      <button class="ib" onclick="openSheetCurrent()" title="Ettevalmistuse leht — viimati avatud kontakti esitlus (PDF/PNG)"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><line x1="8.5" y1="13" x2="15.5" y2="13"/><line x1="8.5" y1="16.5" x2="13" y2="16.5"/></svg></button>
       <button class="ib" onclick="openKiir()" title="Kiirpäring — aadressi turuhind + ehitise andmed (ilma leadita)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.2" y1="16.2" x2="21" y2="21"/></svg></button>
       <button class="ib" id="newsBtn" onclick="openNews()" title="Mis on uut" style="position:relative"><svg viewBox="0 0 24 24"><path d="M18 8.5a6 6 0 0 0-12 0c0 6-2.5 8-2.5 8h17s-2.5-2-2.5-8"/><path d="M13.5 20.5a2 2 0 0 1-3 0"/></svg><span id="newsDot" style="display:none;position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#ef4444;border:1.5px solid var(--bg)"></span></button>
       <button class="ib" onclick="openHelp()" title="Abi — küsi kuidas"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.4 9.2a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.3-2.6 4"/><circle cx="12" cy="17" r="1.05" fill="currentColor" stroke="none"/></svg></button>
@@ -1372,6 +1375,7 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
     <div class="modal-foot">
       <button class="btn-danger" id="leadDeleteBtn" onclick="deleteLead()" style="display:none;margin-right:auto" title="Kustuta jäädavalt (ainult sina)">Kustuta</button>
       <button class="btn-ghost" id="leadArchiveBtn" onclick="openArchive()">Arhiveeri</button>
+      <button class="btn-ghost" id="leadSheetBtn" onclick="if(CURRENT&&CURRENT.id)openSheet(CURRENT.id)">Esitlus</button>
       <button class="btn-ghost" id="leadMellBtn" onclick="openMell()">Küsi Mellilt</button>
       <button class="btn-ghost" id="leadKabiBtn" onclick="openKabi()">Kõneabi</button>
       <button class="btn-ghost" onclick="closeModal('leadModal')">Sulge</button>
@@ -1415,6 +1419,22 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
       <div id="kuluOut" style="margin-top:12px;background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:12px"></div>
       <div style="font-size:9px;color:var(--tx2);margin-top:8px;line-height:1.5">Ligikaudne, notari tasu seaduse (§22) ja riigilõivuseaduse alusel. Iga tehing võib erineda — täpse summa annab notar. Riigilõiv võib seadusega muutuda.<br><a href="https://www.notar.ee/et/teabekeskus/notari-tasu-kalkuleerimine" target="_blank" rel="noopener" style="color:var(--ac);text-decoration:none">Ava ametlik notari kalkulaator →</a></div>
     </div>
+  </div>
+</div>
+
+<!-- ETTEVALMISTUSE LEHT -->
+<div class="modal-overlay" id="sheetModal">
+  <div style="background:#fff;color:#1a1a1a;max-width:860px;width:96%;max-height:94vh;border-radius:10px;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+    <div style="position:sticky;top:0;background:#fff;border-bottom:1px solid #eee;padding:9px 14px;display:flex;align-items:center;gap:10px;z-index:2">
+      <span style="font-weight:700;font-size:13px;color:#1a1a1a">Ettevalmistuse leht</span>
+      <label style="font-size:11px;color:#555">Vahendustasu % <input id="sheetComm" type="number" value="3" step="0.5" oninput="sheetSetComm(this.value)" style="width:52px;padding:3px 5px;border:1px solid #ccc;border-radius:5px;color:#1a1a1a;background:#fff"></label>
+      <span style="flex:1"></span>
+      <span id="sheetExportStatus" style="font-size:11px;color:#2aa55e"></span>
+      <button onclick="exportSheet('png')" style="border:1px solid #2aa55e;background:#fff;color:#2aa55e;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">PNG</button>
+      <button onclick="exportSheet('pdf')" style="border:none;background:#2aa55e;color:#fff;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer">PDF</button>
+      <button onclick="closeModal('sheetModal')" style="border:none;background:#f0f0f0;color:#555;border-radius:6px;width:28px;height:28px;font-size:16px;cursor:pointer">×</button>
+    </div>
+    <div id="sheetBody" style="padding:24px 28px;background:#fff"></div>
   </div>
 </div>
 
@@ -2458,6 +2478,104 @@ function calcKulu(){
 }
 
 // ============================================================
+// ETTEVALMISTUSE LEHT — koondab objekti kõik andmed puhtaks esitluseks + PDF/PNG eksport.
+// Hele, professionaalne A4-paigutus; jagamiseks omaniku/kolleegidega.
+// ============================================================
+var AGENT = { name:'Meelis Koroljov', role:'kinnisvara müügispetsialist', phone:'+372 53 441 365', email:'meelis.koroljov@uusmaa.ee', org:'UUS MAA | Arena, Tallinn' };
+function sheetHead(l){
+  var t=l.property_type||'Objekt';
+  var loc=(l.asum||l.district||l.county||'').replace(/\s+(asum|linnaosa|maakond)$/i,'');
+  var sub=[]; if(l.area) sub.push((''+l.area).replace('.',',')+' m²'); if(l.rooms) sub.push(l.rooms+' tuba');
+  if(l.floor) sub.push(l.floor+'. k'); if(l.build_year) sub.push('ehit. '+l.build_year);
+  return { title:(loc?(t+' — '+loc):t), sub:sub.join(' · '), price:l.price?Number(l.price).toLocaleString('et-EE')+' €':'' };
+}
+function openSheet(id){
+  var l = LEADS.find(function(x){return x.id===id;}); if(!l){ toast('Lead puudub'); return; }
+  window._sheetLead=l;
+  var s = sheetHead(l);
+  var own = (l.price&&l.area)?Math.round(l.price/l.area).toLocaleString('et-EE')+' €/m²':'';
+  // Kulud
+  var H=Number(l.price)||0;
+  var notTotal = H>0 ? 2*notaryFull(H) : 0;          // tehingu notari täistasu (mõlemad pooled)
+  var notKm = notTotal*0.24;
+  var riig = H>0 ? stateFull(H) : 0;
+  var tehKulu = notTotal+notKm+riig;                  // tehingu kulud kokku (notar incl KM + riigilõiv)
+  var commPct = window._sheetComm!=null?window._sheetComm:3;
+  var comm = H*(commPct/100), commIncl = comm*1.24;
+  var sellerNotaryShare = (notTotal+notKm)/2;          // müüja pool notarist (50/50)
+  var sellerNet = H>0 ? (H - commIncl - sellerNotaryShare) : 0;
+  var c=function(n){ return (Math.round(n*100)/100).toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; };
+  // Kaart
+  var mapImg = (l.addr_lat&&l.addr_lng) ? ('/api/staticmap?lat='+encodeURIComponent(l.addr_lat)+'&lng='+encodeURIComponent(l.addr_lng)+(Array.isArray(l.poi_selected)&&l.poi_selected.length?('&poi='+encodeURIComponent(l.poi_selected.slice(0,10).map(function(p){return p.lng+','+p.lat+','+p.cat;}).join(';'))):'')) : '';
+  // POI nimekiri
+  var poiHtml='';
+  if(Array.isArray(l.poi_selected)&&l.poi_selected.length){
+    var lbl={kool:'Kool',lasteaed:'Lasteaed',pood:'Pood',peatus:'Peatus',veekogu:'Veekogu'};
+    poiHtml=l.poi_selected.map(function(p){ return '<span style="display:inline-block;background:#eef3ef;color:#2a5d3a;border-radius:12px;padding:2px 9px;margin:2px 4px 2px 0;font-size:11px">'+esc((p.name||lbl[p.cat]||''))+' · '+p.dist+' m</span>'; }).join('');
+  }
+  var box='font-size:11px;color:#444;line-height:1.55';
+  var secT='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#2a5d3a;margin:0 0 6px;border-bottom:1px solid #e3e8e3;padding-bottom:4px';
+  var H1='font-size:21px;font-weight:700;color:#1a1a1a;letter-spacing:-0.01em';
+  var html=''
+   +'<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #2aa55e;padding-bottom:10px;margin-bottom:14px">'
+   +'<div><div style="font-size:13px;font-weight:800;color:#2aa55e;letter-spacing:.04em">UUS MAA</div><div style="font-size:10px;color:#888">Objekti ettevalmistus</div></div>'
+   +'<div style="text-align:right;font-size:10px;color:#888">'+new Date().toLocaleDateString('et-EE')+'</div></div>'
+   +'<div style="'+H1+'">'+esc(s.title)+'</div>'
+   +'<div style="font-size:12px;color:#666;margin-top:2px">'+esc(l.property_address||'')+'</div>'
+   +'<div style="display:flex;gap:18px;align-items:baseline;margin:8px 0 14px"><div style="font-size:22px;font-weight:800;color:#2aa55e">'+esc(s.price)+'</div><div style="font-size:12px;color:#666">'+esc(s.sub)+(own?(' · '+own):'')+'</div></div>'
+   // foto + kaart
+   +'<div style="display:flex;gap:12px;margin-bottom:14px">'
+   +(l.img_url?('<img crossorigin="anonymous" src="'+esc(l.img_url)+'" style="width:50%;height:170px;object-fit:cover;border-radius:8px" onerror="this.style.display=\'none\'">'):'')
+   +(mapImg?('<img crossorigin="anonymous" src="'+esc(mapImg)+'" style="'+(l.img_url?'width:50%':'width:100%')+';height:170px;object-fit:cover;border-radius:8px" onerror="this.style.display=\'none\'">'):'')
+   +'</div>'
+   +(poiHtml?('<div style="margin-bottom:14px"><div style="'+secT+'">Lähedal</div><div>'+poiHtml+'</div></div>'):'')
+   +'<div style="display:flex;gap:16px;margin-bottom:14px">'
+     +'<div style="flex:1"><div style="'+secT+'">Turuhind</div><div id="sheetMarket" style="'+box+'">'+(own?('Objekt <b>'+own+'</b>. Turuhinna võrdlus avaneb leadis.'):'Lisa hind ja pindala turuvõrdluseks.')+'</div></div>'
+     +'<div style="flex:1"><div style="'+secT+'">Ehitisregister</div><div style="'+box+'">'+(l.build_year?('Ehitusaasta <b>'+l.build_year+'</b>. '):'')+(l.condition?('Seisukord: <b>'+esc(l.condition)+'</b>.'):'')+'</div></div>'
+   +'</div>'
+   +(l.listing_text?('<div style="margin-bottom:14px"><div style="'+secT+'">Kuulutus</div><div style="'+box+';white-space:pre-wrap">'+esc(l.listing_text)+'</div></div>'):'')
+   // KULUD
+   +'<div style="display:flex;gap:16px;margin-bottom:8px">'
+     +'<div style="flex:1"><div style="'+secT+'">Tehingu kulud (notar + riigilõiv)</div><div style="'+box+'">'
+        +(H>0?('Notari tasu: <b>'+c(notTotal)+'</b><br>Käibemaks (24%): '+c(notKm)+'<br>Riigilõiv: '+c(riig)+'<br><b>Kokku ~'+c(tehKulu)+'</b>'):'Lisa müügihind.')+'</div></div>'
+     +'<div style="flex:1"><div style="'+secT+'">Müüja netotulu</div><div style="'+box+'">'
+        +(H>0?('Müügihind: <b>'+c(H)+'</b><br>Vahendustasu ('+commPct+'% + km): −'+c(commIncl)+'<br>Notar (müüja pool): −'+c(sellerNotaryShare)+'<br><b>Müüjale ~'+c(sellerNet)+'</b>'):'Lisa müügihind.')+'</div></div>'
+   +'</div>'
+   +'<div style="font-size:9px;color:#999;margin-bottom:14px">Kulud on ligikaudsed (notari tasu seadus + riigilõivuseadus); täpse summa annab notar. Vahendustasu eeldus '+commPct+'%.</div>'
+   // KONTAKT
+   +'<div style="border-top:2px solid #2aa55e;padding-top:10px;margin-top:6px;display:flex;justify-content:space-between;align-items:flex-end">'
+   +'<div style="font-size:11px;color:#333;line-height:1.5"><b>'+AGENT.name+'</b><br>'+AGENT.role+'<br>'+AGENT.phone+' · '+AGENT.email+'</div>'
+   +'<div style="font-size:11px;font-weight:800;color:#2aa55e;text-align:right">'+AGENT.org+'</div></div>';
+  document.getElementById('sheetBody').innerHTML=html;
+  document.getElementById('sheetComm').value=commPct;
+  document.getElementById('sheetModal').classList.add('open');
+}
+function sheetSetComm(v){ window._sheetComm=parseFloat(v)||0; if(window._sheetLead) openSheet(window._sheetLead.id); }
+function openSheetCurrent(){
+  if(typeof CURRENT!=='undefined' && CURRENT && CURRENT.id){ openSheet(CURRENT.id); }
+  else { toast('Ava esmalt mõni kontakt, siis saad esitluse'); }
+}
+async function exportSheet(kind){
+  var node=document.getElementById('sheetBody');
+  var st=document.getElementById('sheetExportStatus'); if(st) st.textContent='Valmistan…';
+  try{
+    var canvas=await html2canvas(node,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    var name=((window._sheetLead&&window._sheetLead.contact_name)||'objekt').replace(/[^a-zA-Z0-9äöüõ ]/g,'').trim().replace(/\s+/g,'_')||'objekt';
+    if(kind==='png'){
+      var a=document.createElement('a'); a.href=canvas.toDataURL('image/png'); a.download='Ettevalmistus_'+name+'.png'; a.click();
+    } else {
+      var jsPDF=(window.jspdf&&window.jspdf.jsPDF)||window.jsPDF;
+      var pdf=new jsPDF('p','mm','a4');
+      var pw=210, ph=(canvas.height*pw)/canvas.width;
+      pdf.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',0,0,pw,ph,undefined,'FAST');
+      pdf.save('Ettevalmistus_'+name+'.pdf');
+    }
+    if(st) st.textContent='Valmis!';
+    setTimeout(function(){ if(st) st.textContent=''; },2000);
+  }catch(e){ if(st) st.textContent='Eksport ebaõnnestus: '+(e&&e.message||'viga'); }
+}
+
+// ============================================================
 // MOODUL 1B-2 — lähedalasuvad objektid (POI) kaardile, valitavad
 // ============================================================
 var POI_LBL = { kool:'Kool', lasteaed:'Lasteaed', pood:'Pood', peatus:'Peatus', veekogu:'Veekogu' };
@@ -3043,7 +3161,7 @@ function openLead(id, defaultStatus) {
 
   // Jaluse nupud: uue leadi puhul peida Arhiveeri/Mell/Kõneabi (vajavad salvestatud leadi); Salvesta → "Lisa lead"
   var _fb = function(id, show){ var e=document.getElementById(id); if(e) e.style.display = show ? '' : 'none'; };
-  _fb('leadArchiveBtn', !isNew); _fb('leadMellBtn', !isNew); _fb('leadKabiBtn', !isNew);
+  _fb('leadArchiveBtn', !isNew); _fb('leadMellBtn', !isNew); _fb('leadKabiBtn', !isNew); _fb('leadSheetBtn', !isNew);
   // Kustuta (jäädav) ainult Meelisele (uid = sama mis DB "leads delete mell only" poliitika) — paindlikkus katsetamiseks
   _fb('leadDeleteBtn', !isNew && USER && USER.id === MELL_UID);
   var _sb = document.getElementById('leadSaveBtn'); if(_sb) _sb.textContent = isNew ? 'Lisa lead' : 'Salvesta';
@@ -3832,8 +3950,11 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 13;
+var APP_BUILD = 14;
 var CHANGELOG = [
+  { v:14, major:true, date:'30.06.2026', title:'Ettevalmistuse leht + PDF/PNG',
+    why:'Iga kontakti juures (nupp "Esitlus" või ülaribal) saad ühe puhta professionaalse lehe, mis koondab objekti: pealkiri, foto, asukohakaart valitud lähedalasuvate objektidega, turuhind, kuulutustekst, tehingu kulud ja müüja netotulu. Lae alla PDF või PNG, et jagada omaniku või kolleegidega.',
+    viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava kontakt → "Esitlus" → PDF/PNG. Või ülaribal lehe-ikoon.' },
   { v:13, major:true, date:'30.06.2026', title:'Ostja kulud — notar + riigilõiv arvuti',
     why:'Leadi aknas (Turg → Ostja kulud) saad nupuga arvutada ostja ligikaudsed tehingukulud: notari tasu, käibemaks ja riigilõiv. Müügihind tuleb leadist, lisada saab hüpoteegi, kaugtõestuse ja deposiitkonto. Arvutus põhineb notari tasu seadusel ja riigilõivuseadusel; täpse summa annab notar.',
     viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava lead → Turg → "Ostja kulud" → Arvuta.' },
