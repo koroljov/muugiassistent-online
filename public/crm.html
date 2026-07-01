@@ -12,14 +12,14 @@
    CSS VARIABLES — DARK (vaikimisi)
    ============================================================ */
 :root {
-  --bg: #1a1c22;
-  --sf: #22252e;
-  --cd: #2b2f39;
+  --bg: #211e1a;
+  --sf: #2a2722;
+  --cd: #322e28;
   --bd: rgba(255,255,255,0.07);
-  --tx: #e6e8f0;
-  --tx2: #9094a8;
-  --ac: #35b46f;
-  --acb: rgba(53,180,111,0.14);
+  --tx: #ece8df;
+  --tx2: #a59e91;
+  --ac: #46bd79;
+  --acb: rgba(70,189,121,0.14);
   --red: #ef4444;
   --amber: #f59e0b;
   --green: #22c55e;
@@ -47,7 +47,10 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--bg);
+  background:
+    radial-gradient(1100px 560px at 88% -8%, rgba(70,189,121,0.06), transparent 60%),
+    radial-gradient(900px 480px at 6% 2%, rgba(221,141,97,0.05), transparent 55%),
+    var(--bg);
   color: var(--tx);
   height: 100vh;
   display: flex;
@@ -111,17 +114,18 @@ input, select, textarea, button {
 .inp:focus { border-color: var(--ac); }
 
 .btn-primary {
-  background: var(--ac);
-  color: #fff;
+  background: linear-gradient(180deg, #46bd79, #329259);
+  color: #08130d;
   border: none;
-  border-radius: 7px;
+  border-radius: 10px;
   padding: 9px 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   width: 100%;
-  transition: opacity 0.15s;
+  box-shadow: 0 10px 22px -12px rgba(70,189,111,0.55);
+  transition: filter 0.15s, transform 0.15s;
 }
-.btn-primary:hover { opacity: 0.88; }
+.btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
 
 #loginErr { font-size: 11px; color: var(--red); margin-top: 8px; min-height: 16px; }
 
@@ -134,7 +138,7 @@ input, select, textarea, button {
    TOPBAR
    ============================================================ */
 #topbar {
-  background: var(--sf);
+  background: linear-gradient(180deg, var(--cd), var(--sf));
   border-bottom: 1px solid var(--bd);
   padding: 0 14px;
   display: flex;
@@ -142,6 +146,9 @@ input, select, textarea, button {
   gap: 10px;
   height: 44px;
   flex-shrink: 0;
+  box-shadow: 0 6px 20px -14px rgba(0,0,0,0.6);
+  position: relative;
+  z-index: 5;
 }
 
 .logo {
@@ -455,18 +462,19 @@ input, select, textarea, button {
 
 /* LEAD CARD */
 .kard {
-  background: var(--sf);
-  border-radius: 12px;
+  background: linear-gradient(180deg, var(--cd), var(--sf));
+  border-radius: 14px;
   padding: 9px 11px 9px 12px;
   cursor: pointer;
   border: 1px solid var(--bd);
   border-left: 2.5px solid transparent;   /* puhas õhuke vasak aktsent (etapi värv) — mitte täisring+kuma */
-  transition: background 0.12s, border-color 0.12s;
+  transition: transform 0.14s, background 0.12s, border-color 0.12s, box-shadow 0.14s;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 10px 26px -20px rgba(0,0,0,0.7);
   flex-shrink: 0;   /* KRIITILINE: paljude leadidega veerg ei tohi kaarte kokku suruda (kukkusid 18px ribaks) — veerg kerib */
 }
-.kard:hover { background: #1c1c23; }
+.kard:hover:not(.dragging) { background: linear-gradient(180deg,#3a352d,#322e28); transform: translateY(-2px); box-shadow: 0 16px 34px -22px rgba(0,0,0,0.72); }
 
 .k-name { font-size: 11px; font-weight: 600; margin-bottom: 2px; padding-right: 16px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .k-sub  { font-size: 9px; color: var(--tx2); margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1101,17 +1109,19 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .lead-sec-h:first-child{ margin-top:2px; }
 
 /* FOOKUS vaade — "Mida teen nüüd" (meie originaal, ATH-fookus) */
-#view-fookus{ padding:18px 20px; overflow-y:auto }
+#view-fookus{ padding:22px 22px; overflow-y:auto; background:radial-gradient(900px 480px at 88% -6%, rgba(70,189,121,0.07), transparent 60%), radial-gradient(760px 420px at 6% 0%, rgba(221,141,97,0.055), transparent 55%), #211e1a }
 .fk-page{ max-width:1240px; margin:0 auto }
 .fk-cards{ display:grid; grid-template-columns:repeat(auto-fit, minmax(330px, 1fr)); gap:11px }
 .fk-heroh{ display:flex; align-items:baseline; gap:10px; margin:2px 0 14px }
-.fk-heroh h1{ font-size:19px; font-weight:600; letter-spacing:-0.01em }
+.fk-heroh h1{ font-size:26px; font-weight:600; letter-spacing:-0.02em; font-family:Georgia,'Times New Roman',serif }
 .fk-cnt{ font-size:12px; color:var(--ac); font-weight:600; background:var(--acb); padding:2px 9px; border-radius:20px }
-.fk-card{ background:var(--sf); border:1px solid var(--bd); border-radius:16px; padding:15px 15px 13px; cursor:pointer; transition:filter .15s }
-.fk-card:hover{ filter:brightness(1.06) }
+.fk-card{ background:linear-gradient(180deg,#322e28,#2a2722); border:1px solid rgba(255,255,255,0.07); border-radius:18px; padding:17px 17px 15px; cursor:pointer; transition:transform .16s, border-color .16s; box-shadow:0 18px 40px -28px rgba(0,0,0,0.7) }
+.fk-card:hover{ transform:translateY(-2px); border-color:rgba(255,255,255,0.13) }
 .fk-card.ov{ border:1.5px solid rgba(239,68,68,0.55); background:#241a1b; box-shadow:0 0 13px rgba(239,68,68,0.16) }
 .fk-card.td{ border:1.5px solid rgba(245,158,11,0.52); background:#242017; box-shadow:0 0 13px rgba(245,158,11,0.16) }
 .fk-card.ok{ border:1.5px solid rgba(40,168,94,0.50); background:#172019; box-shadow:0 0 13px rgba(40,168,94,0.15) }
+.fk-card.hot{ border:1.5px solid rgba(221,141,97,0.5); background:linear-gradient(180deg,#332a22,#2a2420); box-shadow:0 18px 40px -28px rgba(0,0,0,0.7), 0 0 26px -8px rgba(221,141,97,0.34); animation:fkBreathe 4.6s ease-in-out infinite }
+@keyframes fkBreathe{ 0%,100%{ box-shadow:0 18px 40px -28px rgba(0,0,0,0.7), 0 0 22px -10px rgba(221,141,97,0.3) } 50%{ box-shadow:0 18px 40px -26px rgba(0,0,0,0.7), 0 0 40px -8px rgba(221,141,97,0.5) } }
 .fk-row1{ display:flex; align-items:flex-start; gap:12px }
 .fk-ph{ width:50px; height:50px; border-radius:11px; background:var(--cd); flex-shrink:0; background-size:cover; background-position:center }
 .fk-ph-empty{ display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; color:var(--tx2); background:var(--cd) }
@@ -1136,6 +1146,14 @@ textarea.kv-inp { resize: vertical; min-height: 58px; }
 .fk-segnm{ font-size:11px; color:var(--tx2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
 .fk-segn{ font-size:18px; font-weight:600 }
 .fk-sege{ font-size:11px; color:var(--tx2); margin-top:1px }
+.fk-num{ width:24px; height:24px; border-radius:8px; background:var(--acb); color:var(--ac); font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0 }
+.fk-card.hot .fk-num{ background:rgba(221,141,97,0.16); color:#dd8d61 }
+.fk-head{ font-size:15.5px; font-weight:600; line-height:1.32; margin:12px 0 0; letter-spacing:-0.01em }
+.fk-head b{ color:#dd8d61; font-weight:700 }
+.fk-miks{ font-size:12.5px; color:var(--tx); line-height:1.52; margin:9px 0 13px; padding:11px 12px; background:rgba(0,0,0,0.2); border:1px solid var(--bd); border-radius:12px }
+.fk-miks b{ color:var(--tx); font-weight:700 }
+.fk-morelbl{ font-size:11px; text-transform:uppercase; letter-spacing:.09em; color:var(--tx2); font-weight:700; margin:22px 0 10px }
+.fk-morewrap{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:11px }
 </style>
 </head>
 <body>
@@ -3717,12 +3735,135 @@ function fkUrgency(l){
   var d=new Date(ds); d.setHours(0,0,0,0);
   var now=new Date(); now.setHours(0,0,0,0);
   var diff=Math.round((d-now)/86400000);
-  if(diff<0)   return { rank:0, cls:'ov', txt:'hilinenud · '+d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}) };
-  if(diff===0) return { rank:1, cls:'td', txt:'täna' };
-  if(diff===1) return { rank:2, cls:'ok', txt:'homme' };
-  return         { rank:3, cls:'ok', txt:d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}) };
+  if(diff<0)   return { rank:0, cls:'ov', txt:'hilinenud · '+d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}), daysOver:-diff };
+  if(diff===0) return { rank:1, cls:'td', txt:'täna', daysOver:0 };
+  if(diff===1) return { rank:2, cls:'ok', txt:'homme', daysOver:0 };
+  return         { rank:3, cls:'ok', txt:d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}), daysOver:0 };
 }
-function renderFookus(){
+async function renderFookus(){
+  var box=document.getElementById('view-fookus'); if(!box) return;
+  try{
+    var active=(LEADS||[]).filter(function(l){ return l && !l.archived_at; });
+    var pool=active.map(function(l){ return { l:l, u:fkUrgency(l), fresh:fkIsFresh(l) }; })
+      .filter(function(x){ return x.u.rank<=2 || x.fresh || (x.l.price&&x.l.area&&x.l.county); });
+    pool.sort(function(a,b){ return a.u.rank-b.u.rank; });
+    var checkList=pool.slice(0,16);
+    await Promise.all(checkList.map(async function(x){ x.mkt=await fkMarket(x.l); }));
+    checkList.forEach(function(x){ x.score=fkScore(x.u,x.mkt,x.fresh,x.l); x.miks=fkMiks(x.l,x.u,x.mkt,x.fresh); });
+    var scored=checkList.filter(function(x){ return x.score>0; }).sort(function(a,b){ return b.score-a.score; });
+    if(!scored.length){ renderFookusSimple(); return; }
+    var top3=scored.slice(0,3), rest=scored.slice(3,8);
+    var stages=(typeof STAATUSED!=='undefined'?STAATUSED:[]).filter(function(s){ return s.section==='A' && !/\(vana\)/i.test(s.nimi); });
+    var pipeHtml=stages.map(function(s){
+      var ls=active.filter(function(l){ return l.status===s.key; });
+      var sum=ls.reduce(function(a,l){ return a+(typeof leadEur==='function'?leadEur(l):0); },0);
+      return '<div class="fk-seg" onclick="setView(\'kanban\',document.querySelectorAll(\'.tab\')[1])">'
+        +'<div class="fk-segtop"><span class="fk-dot" style="background:'+s.color+'"></span><span class="fk-segnm">'+esc(s.nimi)+'</span></div>'
+        +'<div class="fk-segn">'+ls.length+'</div><div class="fk-sege">'+eur(sum)+'</div></div>';
+    }).join('');
+    var topHtml=top3.map(function(x,i){ return fkCardHtml(x,i); }).join('');
+    var restHtml=rest.length?('<div class="fk-morelbl">Veel sinu radaril</div><div class="fk-morewrap">'+rest.map(function(x,i){ return fkCardHtml(x,i+3); }).join('')+'</div>'):'';
+    var nWord = top3.length>=3?'kolm asja':(top3.length===2?'kaks asja':'ühe asja');
+    box.innerHTML='<div class="fk-page"><div class="fk-heroh"><h1>Täna vajab sind '+nWord+'</h1>'
+      +'<span class="fk-cnt">'+scored.length+' radaril</span></div>'
+      +'<div class="fk-cards">'+topHtml+'</div>'+restHtml
+      +'<div class="fk-pipeh">Müügitoru — kus objektid on</div><div class="fk-pipe">'+pipeHtml+'</div></div>';
+  }catch(e){ try{ renderFookusSimple(); }catch(_){ box.innerHTML='<div class="fk-empty">Fookuse kuvamisel tekkis viga. Vaata müügitoru.</div>'; } }
+}
+function fkIsFresh(l){
+  if(l.next_action_at) return false;
+  if(!l.created_at) return false;
+  var days=(Date.now()-new Date(l.created_at).getTime())/86400000;
+  return days>=0 && days<=3;
+}
+async function fkMarket(l){
+  window._fkMkt = window._fkMkt || {};
+  var key=l.id+':'+(l.price||0)+':'+(l.area||0);
+  if(window._fkMkt[key]!==undefined) return window._fkMkt[key];
+  var res=null;
+  try{
+    if(typeof leadSegKey==='function' && typeof buildMpLevels==='function' && l.county){
+      var sk=leadSegKey(l.property_type,l.use_purpose);
+      if(sk.segKey){
+        var _it=await marketIndexLatest(); var _trc=marketTrendFor(sk.segKey,_it);
+        var levels=buildMpLevels(l);
+        for(var i=0;i<levels.length;i++){
+          var lv=levels[i];
+          var resp=await sb.from('market_prices').select('median_eur_m2,median_price,tx_count,district').eq('county',lv.county).eq('municipality','').eq('district',lv.cacheDistrict||'').eq('property_type',sk.segKey).order('period_end',{ascending:false}).limit(1).maybeSingle();
+          if(resp.data && Number(resp.data.tx_count)>0){
+            var d=resp.data, lvl=mpLevelShort(d.district);
+            var ownM2=(l.price&&l.area)?Math.round(l.price/l.area):null;
+            var overPct=null, median=null;
+            if(sk.metric==='eur_m2' && d.median_eur_m2){ median=Math.round(d.median_eur_m2); if(ownM2!=null) overPct=Math.round((ownM2/median-1)*100); }
+            res={ level:lvl, median:median, ownM2:ownM2, overPct:overPct, metric:sk.metric, medianPrice:d.median_price?Math.round(d.median_price):null, tx:d.tx_count, trendYoy:_trc?_trc.yoy:null };
+            break;
+          }
+        }
+      }
+    }
+  }catch(e){ res=null; }
+  window._fkMkt[key]=res;
+  return res;
+}
+function fkScore(u, mkt, fresh, l){
+  var s=0;
+  if(u.rank===0) s+=42+Math.min(u.daysOver||0,20)*3;
+  else if(u.rank===1) s+=32;
+  else if(u.rank===2) s+=15;
+  if(mkt && mkt.overPct!=null && mkt.overPct>8) s+=Math.min(mkt.overPct,80)*0.8;
+  if(fresh) s+=24;
+  if(l.phone) s+=3;
+  return s;
+}
+function fkMiks(l, u, mkt, fresh){
+  var head='', reason='', act='Ava lead', cls=u.cls||'';
+  if(mkt && mkt.overPct!=null && mkt.overPct>=15){
+    head='Tehinguväärtus <b>+'+mkt.overPct+'%</b> üle '+esc(mkt.level)+' mediaani — vaja hinnavestlust';
+    reason=esc(mkt.level)+' mediaan <b>'+(mkt.median?mkt.median.toLocaleString('et-EE')+' €/m²':'—')+'</b> · objekt <b>'+(mkt.ownM2?mkt.ownM2.toLocaleString('et-EE')+' €/m²':'—')+'</b>'+(mkt.trendYoy!=null?(' · piirkond '+(mkt.trendYoy>0?'+':'')+mkt.trendYoy+'%/a'):'')+'. Aus hinnajutt annab koostöö-ukse.';
+    act='Helista'; cls='hot';
+  } else if(u.rank===0){
+    head='Lubasid tagasi helistada — <b>'+(u.daysOver||0)+' päeva üle</b>';
+    reason='Järelkontakt on üle tähtaja. Iga päev sööb usaldust ja tõenäosust.';
+    act='Helista';
+  } else if(fresh){
+    head='Värske objekt — helista enne kui jahtub';
+    reason=(mkt && mkt.overPct!=null && mkt.median)?('Piirkonna hind <b>'+mkt.median.toLocaleString('et-EE')+' €/m²</b> · objekt <b>'+(mkt.ownM2?mkt.ownM2.toLocaleString('et-EE')+' €/m²':'—')+'</b>'+(mkt.overPct>=15?' (üle turu)':(mkt.overPct<=-8?' (alla turu)':' — hind turul'))+'.'):'Uus lead, esmakontakti pole. Hea esmamulje viib sammu edasi.';
+    act='Helista';
+  } else if(u.rank===1){
+    head='Tänane järelkontakt';
+    reason='Planeeritud tänaseks. Tee ära, enne kui päev täitub.';
+    act='Helista';
+  } else if(u.rank===2){
+    head='Homme järelkontakt';
+    reason='Planeeritud homseks — hoia meeles.';
+    act='Ava lead';
+  }
+  return { head:head, reason:reason, act:act, cls:cls };
+}
+function fkCardHtml(x, idx){
+  var l=x.l, u=x.u, m=x.miks;
+  var ob=esc(l.property_address||l.property_type||'—')+(l.area?' · '+l.area+' m²':'');
+  var phHtml=l.img_url
+    ? '<div class="fk-ph" style="background-image:url(\''+esc(l.img_url)+'\')"></div>'
+    : '<div class="fk-ph fk-ph-empty">'+esc(initials(l.contact_name||'?'))+'</div>';
+  var svg='<svg class="bi" viewBox="0 0 24 24"><path d="M21 16.5v2.6a2 2 0 0 1-2.2 2 17 17 0 0 1-7.4-2.6 16 16 0 0 1-5-5A17 17 0 0 1 3.8 6 2 2 0 0 1 5.8 4h2.6a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1l-1 1a13 13 0 0 0 5 5l1-1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>';
+  var primary;
+  if(/^Helista/.test(m.act) && l.phone){
+    primary='<a class="fk-btn go" href="tel:'+esc(l.phone)+'" onclick="event.stopPropagation()">'+svg+esc(m.act)+'</a>';
+  } else {
+    primary='<button class="fk-btn go" onclick="event.stopPropagation();openLead(\''+l.id+'\')">'+esc(m.act)+'</button>';
+  }
+  var second='<button class="fk-btn alt" onclick="event.stopPropagation();openLead(\''+l.id+'\')">Ava lead</button>';
+  return '<div class="fk-card '+(m.cls||u.cls)+'" onclick="openLead(\''+l.id+'\')">'
+    +'<div class="fk-row1"><div class="fk-num">'+(idx+1)+'</div>'+phHtml
+    +'<div class="fk-who"><div class="fk-nm">'+esc(l.contact_name||'(nimi puudub)')+'</div><div class="fk-ob">'+ob+'</div></div>'
+    +(u.txt?'<div class="fk-when '+u.cls+'">● '+esc(u.txt)+'</div>':'')+'</div>'
+    +(m.head?'<div class="fk-head">'+m.head+'</div>':'')
+    +(m.reason?'<div class="fk-miks">'+m.reason+'</div>':'')
+    +'<div class="fk-act">'+primary+second+'</div>'
+    +'</div>';
+}
+function renderFookusSimple(){
   var box=document.getElementById('view-fookus'); if(!box) return;
   try{
     var active=(LEADS||[]).filter(function(l){ return l && !l.archived_at; });
@@ -3951,8 +4092,11 @@ async function sendHelp(){
 // sammhaaval tuuri (visuaalse ülevaatuse käigus). Ära dubleeri mujal — lisa siia.
 // Teavitus (punane täpp) AINULT major:true kirjete puhul. major:false läheb vaikselt nimekirja.
 // ============================================================
-var APP_BUILD = 14;
+var APP_BUILD = 15;
 var CHANGELOG = [
+  { v:15, major:true, date:'01.07.2026', title:'Fookus-mootor — täna 3 asja + aus MIKS',
+    why:'Fookus reastab objektid nüüd signaali tugevuse järgi, mitte ainult kuupäeva: üle turu hind + üle tähtaja + värske lead kokku annavad tegelise prioriteedi. Iga esiletõstetud objekt saab ühe ausa MIKS-lause päris Maa-ameti võrdlusega ja ühe selge tegevuse. Uus soe tume Studio ilme. Kui andmeid napib, langeb sujuvalt vanale vaatele.',
+    viewKey:'fookus', tabLabel:'Fookus', hint:'Ava Fookus — top 3 on esile tõstetud, kõige kiireloomulisem hingab pehmelt.' },
   { v:14, major:true, date:'30.06.2026', title:'Ettevalmistuse leht + PDF/PNG',
     why:'Iga kontakti juures (nupp "Esitlus" või ülaribal) saad ühe puhta professionaalse lehe, mis koondab objekti: pealkiri, foto, asukohakaart valitud lähedalasuvate objektidega, turuhind, kuulutustekst, tehingu kulud ja müüja netotulu. Lae alla PDF või PNG, et jagada omaniku või kolleegidega.',
     viewKey:'kanban', tabLabel:'Müügitoru', hint:'Ava kontakt → "Esitlus" → PDF/PNG. Või ülaribal lehe-ikoon.' },
