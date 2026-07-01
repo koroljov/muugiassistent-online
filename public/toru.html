@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Müügitoru & Fookus — Mell</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --bg:#0d1310; --sf:#151f19; --cd:#1b2721; --cd2:#233129; --inp:#0b120e;
+    --ink:#e9efe9; --ink2:#93a89b; --ink3:#5f7166;
+    --line:rgba(255,255,255,.06); --line2:rgba(255,255,255,.12);
+    --gr:#48c281; --gr2:#2b8f5a; --grsoft:rgba(72,194,129,.15);
+    --gold:#d2b06c; --te:#dd8d61; --red:#e0715f; --amber:#d8a24e; --violet:#a78bfa; --blue:#5aa2e0;
+    --sh:0 20px 44px -30px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(1100px 600px at 86% -10%,rgba(72,194,129,.08),transparent 60%),var(--bg);min-height:100vh}
+  .serif{font-family:"Georgia","Times New Roman",serif}
+  .top{display:flex;align-items:center;gap:12px;padding:11px 20px;background:linear-gradient(180deg,var(--cd),var(--sf));border-bottom:1px solid var(--line);box-shadow:0 10px 30px -20px rgba(0,0,0,.7);position:sticky;top:0;z-index:20}
+  .mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(150deg,var(--gr),var(--gr2));color:#06140d;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+  .brand{font-weight:700;font-size:15px} .top .sp{flex:1}
+  .back{font-size:12.5px;color:var(--ink2);text-decoration:none;margin-left:12px} .back:hover{color:var(--gr)}
+  .tabs{display:flex;gap:4px;padding:8px 16px 0;border-bottom:1px solid var(--line);background:rgba(0,0,0,.12)}
+  .tab{padding:9px 15px;font-size:13.5px;font-weight:600;color:var(--ink2);cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+  .tab:hover{color:var(--ink)} .tab.on{color:var(--gr);border-bottom-color:var(--gr)}
+  #authWarn{display:none;margin:16px 20px;background:rgba(224,113,95,.12);border:1px solid rgba(224,113,95,.3);color:var(--red);border-radius:12px;padding:12px 14px;font-size:13px}
+  #authWarn a{color:var(--gr)}
+  .view{display:none} .view.on{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+  /* Fookus */
+  .fk{max-width:1180px;margin:0 auto;padding:22px 20px 50px}
+  .hello{font-size:12.5px;color:var(--ink2)} .h1{font-size:27px;font-weight:600;letter-spacing:-.02em;margin:6px 0 22px;line-height:1.15} .h1 .g{color:var(--gr)}
+  .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);margin-bottom:12px}
+  .fgrid{display:grid;grid-template-columns:1.55fr .9fr;gap:18px;align-items:start} @media(max-width:1000px){.fgrid{grid-template-columns:1fr}}
+  .feed{display:flex;flex-direction:column;gap:13px}
+  .fcard{position:relative;background:linear-gradient(180deg,var(--cd),var(--sf));border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--sh);overflow:hidden;cursor:pointer;transition:transform .16s,border-color .16s}
+  .fcard:hover{transform:translateY(-2px);border-color:var(--line2)}
+  .fcard.hot{border-color:rgba(72,194,129,.34)}
+  .fcard .fglow{position:absolute;top:-40px;right:-30px;width:150px;height:120px;border-radius:50%;background:var(--gr);filter:blur(40px);opacity:.13;pointer-events:none}
+  .fcard.hot .fglow{animation:breathe 4.6s ease-in-out infinite} @keyframes breathe{0%,100%{opacity:.11}50%{opacity:.25}}
+  .frow{display:flex;align-items:flex-start;gap:12px}
+  .num{width:26px;height:26px;border-radius:9px;background:var(--grsoft);color:var(--gr);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+  .why{font-size:15.5px;font-weight:600;line-height:1.3} .why .em{color:var(--te)} .who{font-size:12px;color:var(--ink2);margin-top:2px}
+  .when{margin-left:auto;font-size:11.5px;font-weight:700;white-space:nowrap} .when.r{color:var(--te)} .when.g{color:var(--gr)}
+  .reason{margin:11px 0 12px;font-size:12.5px;color:var(--ink);background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:12px;padding:10px 12px;line-height:1.5}
+  .acts{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:11px;padding:9px 14px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;transition:.15s}
+  .btn.go{background:linear-gradient(180deg,var(--gr),var(--gr2));color:#06140d;box-shadow:0 10px 22px -12px rgba(72,194,129,.55)} .btn.go:hover{filter:brightness(1.07)}
+  .btn.gh{background:var(--cd);color:var(--ink2);border:1px solid var(--line2)} .btn.gh:hover{color:var(--ink)}
+  .rail .panel{background:var(--sf);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--sh);margin-bottom:14px}
+  .stat{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)} .stat:last-child{border:none} .stat .k{font-size:12px;color:var(--ink2)} .stat .v{font-size:14.5px;font-weight:700} .stat .v.up{color:var(--gr)}
+  .empty{font-size:13px;color:var(--ink2);padding:24px 0;text-align:center}
+
+  /* Kanban */
+  .board{display:flex;gap:12px;padding:18px 20px 50px;overflow-x:auto;align-items:flex-start}
+  .col{flex:0 0 234px;display:flex;flex-direction:column;gap:9px}
+  .colh{display:flex;align-items:center;gap:8px;padding:2px 4px} .colh .d{width:8px;height:8px;border-radius:50%} .colnm{font-size:12px;font-weight:700} .colh .c{margin-left:auto;font-size:11px;color:var(--ink3);font-weight:600}
+  .colsum{font-size:11px;color:var(--ink2);padding:0 4px;margin-top:-3px}
+  .card{position:relative;background:linear-gradient(180deg,var(--cd),var(--sf));border:1px solid var(--line);border-radius:15px;overflow:hidden;cursor:pointer;box-shadow:var(--sh);transition:transform .16s,border-color .16s}
+  .card:hover{transform:translateY(-2px);border-color:var(--line2)}
+  .card .glow{position:absolute;top:-24px;right:-24px;width:84px;height:84px;border-radius:50%;filter:blur(22px);opacity:.45;transition:.2s} .card:hover .glow{opacity:.8;transform:scale(1.1)}
+  .ph{height:92px;background:linear-gradient(135deg,#2b3a30,#1c2620);background-size:cover;background-position:center;position:relative}
+  .ph-e{display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--ink3)}
+  .sdot{position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 3px rgba(0,0,0,.25)}
+  .cb{padding:10px 12px 12px} .nm{font-size:13.5px;font-weight:600} .addr{font-size:11px;color:var(--ink2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .price{font-size:13px;font-weight:700;color:var(--gr);margin-top:6px}
+  .next{display:inline-block;font-size:10.5px;font-weight:600;margin-top:8px;padding:3px 8px;border-radius:7px} .next.r{background:rgba(224,113,95,.14);color:var(--red)} .next.g{background:var(--grsoft);color:var(--gr)} .next.a{background:rgba(216,162,78,.14);color:var(--amber)}
+</style>
+</head>
+<body>
+  <div class="top"><span class="mark">UM</span><span class="brand">Mell · müügitoru</span><span class="sp"></span><a class="back" href="/mell.html">Mell</a><a class="back" href="/uus.html">+ Objekt</a><a class="back" href="/crm.html">Vana Töövoog</a></div>
+  <div class="tabs"><div class="tab on" data-v="fookus">◎ Fookus</div><div class="tab" data-v="toru">▥ Müügitoru</div></div>
+  <div id="authWarn">Sa pole sisse logitud. <a href="/crm.html">Logi sisse Töövoos</a>, siis tule tagasi.</div>
+
+  <div class="view on" id="v-fookus"><div class="fk">
+    <div class="hello" id="hello"></div>
+    <div class="h1 serif" id="fkTitle">Täna vajab sind <span class="g">fookust</span>.</div>
+    <div class="fgrid">
+      <div><div class="lbl">Täna — tähtsuse järjekorras</div><div class="feed" id="feed"><div class="empty">Laen...</div></div></div>
+      <div class="rail">
+        <div class="panel"><div class="lbl" style="margin-bottom:6px">Sinu müügitoru</div>
+          <div class="stat"><span class="k">Aktiivne väärtus</span><span class="v" id="sVal">—</span></div>
+          <div class="stat"><span class="k">Objekte kokku</span><span class="v" id="sCnt">—</span></div>
+          <div class="stat"><span class="k">Vajab täna tähelepanu</span><span class="v up" id="sToday">—</span></div>
+        </div>
+        <div class="panel"><div class="lbl" style="margin-bottom:6px">Kiirtee</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <a class="btn gh" href="/uus.html" style="justify-content:center">＋ Loo objekt</a>
+            <a class="btn gh" href="/kuulutus.html" style="justify-content:center">✎ Kirjuta kuulutus</a>
+            <a class="btn gh" href="/pakkumine.html" style="justify-content:center">◈ Koostööpakkumine</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="view" id="v-toru"><div class="board" id="board"><div class="empty">Laen...</div></div></div>
+
+<script>
+  const SB_URL='https://iawvsfylguajkoikbdaf.supabase.co';
+  const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
+  const sb=supabase.createClient(SB_URL,SB_KEY);
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function eur(n){ return Math.round(n).toLocaleString('et-EE'); }
+  function initials(n){ n=(n||'?').trim(); var p=n.split(/\s+/); return ((p[0]||'')[0]||'?').toUpperCase()+((p[1]||'')[0]||'').toUpperCase(); }
+  var LEADS=[];
+  // kanban veerud (võti → nimi, värv)
+  var COLS=[
+    ['uus','Kontakt','#e0715f'],['vestlus toimus','Ühendust võetud','#d8a24e'],['vajab järelkõnet','Järelkontakt','#e08a4e'],
+    ['prospect','Potentsiaalne','#a78bfa'],['k_kontakt','Kontakt (minu)','#5aa2e0'],['leping','Leping','#4a80f0'],
+    ['ettevalmistus','Ettevalmistus','#8b5cf6'],['ostja','Ostja','#ec6ea0'],['t_ettevalmistus','Tehingu ettevalmistus','#d8a24e'],
+    ['k_tehing','Tehing','#48c281'],['ei soovi abi','Ei soovi','#6b7280']
+  ];
+
+  function urg(l){
+    if(!l.next_action_at) return {rank:5,txt:'',cls:'',over:0};
+    var d=new Date(l.next_action_at); d.setHours(0,0,0,0); var n=new Date(); n.setHours(0,0,0,0);
+    var diff=Math.round((d-n)/86400000);
+    if(diff<0) return {rank:0,txt:'hilinenud '+d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}),cls:'r',over:-diff};
+    if(diff===0) return {rank:1,txt:'täna',cls:'a',over:0};
+    if(diff===1) return {rank:2,txt:'homme',cls:'g',over:0};
+    return {rank:3,txt:d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}),cls:'g',over:0};
+  }
+  function fresh(l){ if(l.next_action_at||!l.created_at) return false; var days=(Date.now()-new Date(l.created_at).getTime())/86400000; return days>=0&&days<=3; }
+  function score(l,u,fr){ var s=0; if(u.rank===0)s+=42+Math.min(u.over,20)*3; else if(u.rank===1)s+=32; else if(u.rank===2)s+=15; if(fr)s+=24; if(l.phone)s+=3; return s; }
+  function miks(l,u,fr){
+    var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €/m²'):'';
+    if(u.rank===0) return {head:'Lubasid tagasi helistada — <b>'+u.over+' päeva üle</b>', reason:'Järelkontakt on üle tähtaja. Iga päev sööb usaldust ja tõenäosust.', act:'Helista'};
+    if(u.rank===1) return {head:'Tänane järelkontakt', reason:'Planeeritud tänaseks. Tee ära, enne kui päev täitub.'+m2, act:'Helista'};
+    if(fr) return {head:'Värske objekt — helista enne kui jahtub', reason:'Uus lead, esmakontakti pole. Hea esmamulje viib sammu edasi.'+m2, act:'Helista'};
+    if(u.rank===2) return {head:'Homme järelkontakt', reason:'Planeeritud homseks — hoia meeles.', act:'Ava'};
+    return {head:'Vajab tähelepanu', reason:''+m2, act:'Ava'};
+  }
+
+  function renderFookus(){
+    var scored=LEADS.map(function(l){ var u=urg(l), fr=fresh(l); return {l:l,u:u,fr:fr,s:score(l,u,fr),m:miks(l,u,fr)}; })
+      .filter(function(x){ return x.s>0; }).sort(function(a,b){ return b.s-a.s; });
+    var top=scored.slice(0,3), rest=scored.slice(3,8);
+    var feed=document.getElementById('feed');
+    function card(x,i){
+      var l=x.l, m=x.m, u=x.u;
+      var ph=l.img_url?('<div class="ph" style="background-image:url(\''+esc(l.img_url)+'\');width:44px;height:44px;border-radius:11px;flex-shrink:0"></div>'):('<div class="ph ph-e" style="width:44px;height:44px;border-radius:11px;flex-shrink:0">'+esc(initials(l.contact_name))+'</div>');
+      var primary=l.phone?('<a class="btn go" href="tel:'+esc(l.phone)+'" onclick="event.stopPropagation()">'+esc(m.act)+'</a>'):('<a class="btn go" href="/objekt.html?id='+l.id+'">Ava</a>');
+      return '<div class="fcard'+(i===0?' hot':'')+'" onclick="location.href=\'/objekt.html?id='+l.id+'\'"><div class="fglow"></div>'
+        +'<div class="frow"><div class="num">'+(i+1)+'</div>'+ph+'<div style="flex:1"><div class="why">'+m.head+'</div><div class="who">'+esc(l.contact_name||l.property_address||'(nimeta)')+(l.property_address?(' · '+esc(l.property_address)):'')+'</div></div>'+(u.txt?'<div class="when '+u.cls+'">'+esc(u.txt)+'</div>':'')+'</div>'
+        +(m.reason?'<div class="reason">'+m.reason+'</div>':'')
+        +'<div class="acts">'+primary+'<a class="btn gh" href="/objekt.html?id='+l.id+'" onclick="event.stopPropagation()">Ava töölaud</a></div></div>';
+    }
+    if(!top.length){ feed.innerHTML='<div class="empty">Täna pole kiireloomulist. Vaata müügitoru või lisa järelkõne kuupäev.</div>'; }
+    else { feed.innerHTML=top.map(card).join('') + (rest.length?('<div class="lbl" style="margin:20px 0 10px">Veel radaril</div>'+rest.map(function(x,i){return card(x,i+3);}).join('')):''); }
+    var nWord=top.length>=3?'kolm asja':(top.length?top.length+' asja':'fookust');
+    document.getElementById('fkTitle').innerHTML='Täna vajab sind <span class="g">'+nWord+'</span>. Ülejäänut hoian mina silmas peal.';
+    document.getElementById('sToday').textContent=scored.filter(function(x){return x.u.rank<=1||x.fr;}).length;
+  }
+
+  function renderKanban(){
+    var board=document.getElementById('board');
+    var html='';
+    COLS.forEach(function(c){
+      var ls=LEADS.filter(function(l){ return l.status===c[0]; });
+      if(!ls.length) return;
+      var sum=ls.reduce(function(a,l){ return a+(Number(l.price)||0); },0);
+      html+='<div class="col"><div class="colh"><span class="d" style="background:'+c[2]+'"></span><span class="colnm">'+esc(c[1])+'</span><span class="c">'+ls.length+'</span></div><div class="colsum">'+eur(sum)+' €</div>';
+      ls.forEach(function(l){
+        var u=urg(l);
+        var ph=l.img_url?('<div class="ph" style="background-image:url(\''+esc(l.img_url)+'\')"><span class="sdot" style="background:'+c[2]+'"></span></div>'):('<div class="ph ph-e"><span class="sdot" style="background:'+c[2]+'"></span>'+esc(initials(l.contact_name))+'</div>');
+        html+='<div class="card" onclick="location.href=\'/objekt.html?id='+l.id+'\'"><div class="glow" style="background:'+c[2]+'"></div>'+ph
+          +'<div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||l.asum||'')+'</div>'
+          +(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')
+          +(u.txt?('<div class="next '+u.cls+'">'+esc(u.txt)+'</div>'):'')+'</div></div>';
+      });
+      html+='</div>';
+    });
+    board.innerHTML=html||'<div class="empty">Objekte veel pole. Vajuta „+ Objekt".</div>';
+  }
+
+  async function init(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ document.getElementById('authWarn').style.display='block'; document.getElementById('feed').innerHTML=''; document.getElementById('board').innerHTML=''; return; }
+    document.getElementById('hello').textContent='Tere'+(session.user.email?(', '+session.user.email.split('@')[0]):'')+' · '+new Date().toLocaleDateString('et-EE',{weekday:'long',day:'numeric',month:'long'});
+    var { data, error } = await sb.from('leads').select('id,contact_name,property_address,property_type,price,area,status,next_action_at,created_at,phone,asum,district,img_url').is('archived_at',null).order('created_at',{ascending:false}).limit(500);
+    if(error){ document.getElementById('feed').innerHTML='<div class="empty">Viga.</div>'; return; }
+    LEADS=data||[];
+    document.getElementById('sVal').textContent=eur(LEADS.reduce(function(a,l){return a+(Number(l.price)||0);},0))+' €';
+    document.getElementById('sCnt').textContent=LEADS.length;
+    renderFookus(); renderKanban();
+  }
+  document.querySelectorAll('.tab').forEach(function(t){ t.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')}); t.classList.add('on');
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    document.getElementById('v-'+t.dataset.v).classList.add('on');
+  }); });
+  init();
+</script>
+</body>
+</html>
