@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mell</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0d1310;--bg2:#0a0f0c;--sf:#151f19;--cd:#1b2721;--cd2:#233129;--inp:#0b120e;
+    --ink:#e9efe9;--ink2:#93a89b;--ink3:#5f7166;--line:rgba(255,255,255,.06);--line2:rgba(255,255,255,.12);
+    --gr:#48c281;--gr2:#2b8f5a;--grsoft:rgba(72,194,129,.15);--gold:#d2b06c;--te:#dd8d61;--red:#e0715f;--amber:#d8a24e;--violet:#a78bfa;--blue:#5aa2e0;
+    --sh:0 20px 44px -30px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;background:var(--bg);height:100vh;overflow:hidden}
+  .serif{font-family:"Georgia","Times New Roman",serif}
+  .app{display:flex;height:100vh}
+  a{color:inherit}
+  /* sidebar */
+  .side{width:212px;flex-shrink:0;background:linear-gradient(180deg,var(--cd),var(--bg2));border-right:1px solid var(--line);display:flex;flex-direction:column;padding:14px 12px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:-.02em;padding:6px 8px 16px}
+  .mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(150deg,var(--gr),var(--gr2));color:#06140d;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 0 18px rgba(72,194,129,.4)}
+  .nav{display:flex;flex-direction:column;gap:3px}
+  .nav a{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:11px;color:var(--ink2);font-size:13.5px;font-weight:600;cursor:pointer;transition:.14s;text-decoration:none}
+  .nav a:hover{background:var(--sf);color:var(--ink)} .nav a.on{background:var(--grsoft);color:var(--gr)}
+  .nav a .i{width:17px;text-align:center;font-size:14px} .nav a .b{margin-left:auto;font-size:10px;font-weight:700;background:rgba(224,113,95,.18);color:var(--red);border-radius:20px;padding:1px 7px}
+  .side .sp{flex:1}
+  .newbtn{display:flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(180deg,var(--gr),var(--gr2));color:#06140d;border:none;border-radius:11px;padding:11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;margin:8px 0 12px;text-decoration:none}
+  .me{display:flex;align-items:center;gap:9px;padding:8px;border-top:1px solid var(--line)} .me i{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gr2),var(--gold));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-style:normal;color:#06140d} .me .n{font-size:12.5px;font-weight:600} .me .r{font-size:10.5px;color:var(--ink2)}
+  /* main */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;background:radial-gradient(1000px 560px at 88% -10%,rgba(72,194,129,.08),transparent 60%),var(--bg)}
+  .bar{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--line);flex-shrink:0}
+  .search{flex:1;max-width:360px;display:flex;align-items:center;gap:8px;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:var(--ink);font-size:12.5px}
+  .search input{flex:1;background:none;border:none;outline:none;color:var(--ink);font:inherit;font-size:12.5px}
+  .bar .sp{flex:1}
+  .sync{display:flex;align-items:center;gap:8px;background:var(--sf);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--ink2)}
+  .ldot{width:7px;height:7px;border-radius:50%;background:var(--gr);box-shadow:0 0 0 0 rgba(72,194,129,.5);animation:pulse 2.6s infinite} @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(72,194,129,.5)}70%{box-shadow:0 0 0 7px rgba(72,194,129,0)}100%{box-shadow:0 0 0 0 rgba(72,194,129,0)}}
+  .content{flex:1;overflow-y:auto;padding:22px 24px 50px}
+  .view{display:none} .view.on{display:block;animation:fade .3s ease} @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  #authWarn{display:none;margin:20px;background:rgba(224,113,95,.12);border:1px solid rgba(224,113,95,.3);color:var(--red);border-radius:12px;padding:14px;font-size:13px} #authWarn a{color:var(--gr)}
+  .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);margin:0 0 12px}
+  .h1{font-size:27px;font-weight:600;letter-spacing:-.02em;line-height:1.15} .h1 .g{color:var(--gr)} .hello{font-size:12.5px;color:var(--ink2)}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:11px;padding:10px 15px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;transition:.15s}
+  .btn.go{background:linear-gradient(180deg,var(--gr),var(--gr2));color:#06140d;box-shadow:0 10px 22px -12px rgba(72,194,129,.55)} .btn.go:hover{filter:brightness(1.07)} .btn.go:disabled{opacity:.5}
+  .btn.gh{background:var(--cd);color:var(--ink2);border:1px solid var(--line2)} .btn.gh:hover{color:var(--ink);border-color:var(--ink3)}
+  .btn.mell{background:linear-gradient(150deg,var(--grsoft),var(--cd));color:var(--gr);border:1px solid rgba(72,194,129,.3)}
+  .empty{font-size:13px;color:var(--ink2);padding:24px 0;text-align:center}
+  /* fookus */
+  .fgrid{display:grid;grid-template-columns:1.55fr .9fr;gap:18px;align-items:start;margin-top:22px} @media(max-width:1000px){.fgrid{grid-template-columns:1fr}}
+  .feed{display:flex;flex-direction:column;gap:13px}
+  .fcard{position:relative;background:linear-gradient(180deg,var(--cd),var(--sf));border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--sh);overflow:hidden;cursor:pointer;transition:transform .16s,border-color .16s} .fcard:hover{transform:translateY(-2px);border-color:var(--line2)} .fcard.hot{border-color:rgba(72,194,129,.34)}
+  .fcard .fglow{position:absolute;top:-40px;right:-30px;width:150px;height:120px;border-radius:50%;background:var(--gr);filter:blur(40px);opacity:.13;pointer-events:none} .fcard.hot .fglow{animation:breathe 4.6s ease-in-out infinite} @keyframes breathe{0%,100%{opacity:.11}50%{opacity:.25}}
+  .frow{display:flex;align-items:flex-start;gap:12px} .num{width:26px;height:26px;border-radius:9px;background:var(--grsoft);color:var(--gr);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+  .thumb{width:44px;height:44px;border-radius:11px;background-size:cover;background-position:center;flex-shrink:0}.thumb.e{background:var(--cd2);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink3)}
+  .why{font-size:15.5px;font-weight:600;line-height:1.3} .why b{color:var(--te)} .who{font-size:12px;color:var(--ink2);margin-top:2px}
+  .when{margin-left:auto;font-size:11.5px;font-weight:700;white-space:nowrap} .when.r{color:var(--te)} .when.g{color:var(--gr)} .when.a{color:var(--amber)}
+  .reason{margin:11px 0 12px;font-size:12.5px;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:12px;padding:10px 12px;line-height:1.5}
+  .acts{display:flex;gap:8px;flex-wrap:wrap}
+  .rail .panel{background:var(--sf);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--sh);margin-bottom:14px}
+  .stat{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)} .stat:last-child{border:none} .stat .k{font-size:12px;color:var(--ink2)} .stat .v{font-size:14.5px;font-weight:700} .stat .v.up{color:var(--gr)}
+  /* kanban */
+  .board{display:flex;gap:12px;margin-top:20px;overflow-x:auto;padding-bottom:10px;align-items:flex-start}
+  .col{flex:0 0 230px;display:flex;flex-direction:column;gap:9px} .colh{display:flex;align-items:center;gap:8px;padding:2px 4px;font-size:12px;font-weight:700} .colh .d{width:8px;height:8px;border-radius:50%} .colh .c{margin-left:auto;font-size:11px;color:var(--ink3)} .colsum{font-size:11px;color:var(--ink2);padding:0 4px;margin-top:-3px}
+  .card{position:relative;background:linear-gradient(180deg,var(--cd),var(--sf));border:1px solid var(--line);border-radius:15px;overflow:hidden;cursor:pointer;box-shadow:var(--sh);transition:transform .16s,border-color .16s} .card:hover{transform:translateY(-2px);border-color:var(--line2)}
+  .card .glow{position:absolute;top:-24px;right:-24px;width:84px;height:84px;border-radius:50%;filter:blur(22px);opacity:.45;transition:.2s} .card:hover .glow{opacity:.8}
+  .ph{height:90px;background:linear-gradient(135deg,#2b3a30,#1c2620);background-size:cover;background-position:center;position:relative} .ph.e{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink3)}
+  .sdot{position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 3px rgba(0,0,0,.25)}
+  .cb{padding:10px 12px 12px} .nm{font-size:13.5px;font-weight:600} .addr{font-size:11px;color:var(--ink2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .price{font-size:13px;font-weight:700;color:var(--gr);margin-top:6px}
+  .next{display:inline-block;font-size:10.5px;font-weight:600;margin-top:8px;padding:3px 8px;border-radius:7px} .next.r{background:rgba(224,113,95,.14);color:var(--red)} .next.g{background:var(--grsoft);color:var(--gr)} .next.a{background:rgba(216,162,78,.14);color:var(--amber)}
+  /* object workspace */
+  .oback{font-size:12.5px;color:var(--ink2);cursor:pointer;margin-bottom:10px;display:inline-flex;gap:6px} .oback:hover{color:var(--gr)}
+  .ohead{display:flex;align-items:flex-start;gap:16px} .otitle{font-size:22px;font-weight:600;letter-spacing:-.015em} .osub{font-size:12.5px;color:var(--ink2);margin-top:2px}
+  .oprice{margin-left:auto;text-align:right} .oprice .p{font-size:21px;font-weight:700;color:var(--gr)} .oprice .m{font-size:11.5px;color:var(--ink2)}
+  .srcbar{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 16px} .src{font-size:11px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--grsoft);color:var(--gr)}
+  .otabs{display:flex;gap:5px;margin-bottom:18px;border-bottom:1px solid var(--line);flex-wrap:wrap} .otab{padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--ink2);cursor:pointer;border-bottom:2px solid transparent} .otab:hover{color:var(--ink)} .otab.on{color:var(--gr);border-bottom-color:var(--gr)}
+  .oview{display:none} .oview.on{display:block;animation:fade .25s}
+  .section{background:var(--sf);border:1px solid var(--line);border-radius:15px;padding:16px 18px;margin-bottom:13px;box-shadow:var(--sh)} .section h3{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:13px;font-weight:700}
+  .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px} @media(max-width:560px){.facts{grid-template-columns:1fr 1fr}} .fact .v{font-size:14px;font-weight:700} .fact .k{font-size:11px;color:var(--ink2)}
+  .inp,.sel,.ta{width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--inp);border:1px solid var(--line2);border-radius:9px;padding:9px 11px;transition:.15s} .inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--gr);box-shadow:0 0 0 3px var(--grsoft)} .sel{cursor:pointer} .ta{resize:vertical;line-height:1.55}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 14px} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px} @media(max-width:560px){.grid2,.grid3{grid-template-columns:1fr}}
+  .flabel{font-size:11px;color:var(--ink2);margin-bottom:4px}
+  .split{display:flex;height:24px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin:12px 0} .split .l{background:linear-gradient(90deg,var(--gr2),var(--gr));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#06140d} .split .b{background:var(--cd2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--ink2)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(max-width:560px){.two{grid-template-columns:1fr}} .box{border:1px solid var(--line);border-radius:11px;padding:11px 13px;background:rgba(0,0,0,.16)} .box.g{border-color:rgba(72,194,129,.3);background:var(--grsoft)} .box .bv{font-size:16px;font-weight:700} .box .bv.g{color:var(--gr)} .box .bk{font-size:10.5px;color:var(--ink2);margin-top:2px}
+  .statusln{margin-top:12px;font-size:12px;font-weight:600;border-radius:9px;padding:9px 11px}
+  .li{font-size:12.5px;line-height:1.5;margin-bottom:6px} .li .t{color:var(--gr);font-weight:800;margin-right:5px} .li .mm{color:var(--amber);font-weight:800;margin-right:5px}
+  .pm{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media(max-width:560px){.pm{grid-template-columns:1fr}}
+  .mell{background:linear-gradient(150deg,var(--grsoft),var(--sf) 62%);border:1px solid rgba(72,194,129,.2)} .mh{display:flex;align-items:center;gap:10px;margin-bottom:10px} .orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#bfe6cf,var(--gr));box-shadow:0 0 16px rgba(72,194,129,.5)} .mline{font-size:13px;line-height:1.6} .mline b{color:var(--te)}
+  .out{background:var(--inp);border:1px solid var(--line);border-radius:11px;padding:4px;margin-top:4px} .outlbl{font-size:10.5px;color:var(--gr);font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:8px 8px 4px} .out .ta{border:none;background:transparent}
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:8px} #msg,.msg{font-size:12px;font-weight:600}
+  .fee{display:flex;align-items:baseline;gap:8px;background:var(--grsoft);border:1px solid rgba(72,194,129,.25);border-radius:11px;padding:11px 13px} .fee .amt{font-size:17px;font-weight:700;color:var(--gr)} .fee .l{font-size:11px;color:var(--ink2)}
+  .chk{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:4px 0;cursor:pointer;color:var(--ink)} .cbx{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line2);flex-shrink:0} .chk.on .cbx{background:var(--gr);border-color:var(--gr)}
+  /* light premium doc for PDF */
+  #docEl{background:#fffdf9;color:#26231e;border-radius:8px;padding:32px 36px;font-size:12.5px;line-height:1.6;max-width:720px}
+  #docEl .dh{display:flex;justify-content:space-between;border-bottom:2px solid #1f7a4d;padding-bottom:12px;margin-bottom:14px} #docEl .logo2{font-size:14px;font-weight:800;color:#1f7a4d;letter-spacing:.04em} #docEl .logo2 .s{font-size:10px;color:#8a857c;font-weight:600;letter-spacing:0} #docEl .date{font-size:10.5px;color:#8a857c}
+  #docEl h1{font-size:19px;font-weight:700;font-family:Georgia,serif;margin-bottom:2px} #docEl .sub{font-size:12px;color:#6b665e;margin-bottom:14px} #docEl .cover{white-space:pre-wrap;margin-bottom:14px}
+  #docEl .sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1f7a4d;border-bottom:1px solid #e3e8e3;padding-bottom:4px;margin:14px 0 8px}
+  #docEl .kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0efe9;font-size:12px} #docEl .kv:last-child{border:none} #docEl .kv .k{color:#6b665e} #docEl .kv .v{font-weight:600}
+  #docEl .works{columns:2;font-size:12px;color:#3a352d} #docEl .works div{padding:2px 0;break-inside:avoid} #docEl .works .t{color:#1f7a4d;font-weight:800;margin-right:5px}
+  #docEl .listing{white-space:pre-wrap;font-size:12px;color:#3a352d;background:#faf7f0;border:1px solid #ecece3;border-radius:6px;padding:12px}
+  #docEl .foot{border-top:2px solid #1f7a4d;margin-top:16px;padding-top:10px;display:flex;justify-content:space-between;font-size:11px;color:#3a352d} #docEl .foot .org{font-weight:800;color:#1f7a4d}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="side">
+    <div class="logo"><span class="mark">UM</span>Mell</div>
+    <div class="nav">
+      <a data-v="fookus" class="on"><span class="i">◎</span>Fookus</a>
+      <a data-v="toru"><span class="i">▥</span>Müügitoru</a>
+    </div>
+    <a class="newbtn" href="/uus.html">＋ Uus objekt</a>
+    <div class="sp"></div>
+    <a class="nav" href="/crm.html" style="text-decoration:none"><span style="display:flex;align-items:center;gap:11px;padding:10px 11px;color:var(--ink3);font-size:12px">↩ Vana Töövoog</span></a>
+    <div class="me"><i>MK</i><div><div class="n">Meelis</div><div class="r">Müügispetsialist</div></div></div>
+  </div>
+  <div class="main">
+    <div class="bar">
+      <div class="search">🔍 <input id="search" placeholder="Otsi objekti — nimi, aadress..." autocomplete="off"></div>
+      <div class="sp"></div>
+      <div class="sync"><span class="ldot"></span> Andmed sünkroonis · Supabase</div>
+    </div>
+    <div class="content">
+      <div id="authWarn">Sa pole sisse logitud. <a href="/crm.html">Logi sisse Töövoos</a>, siis tule tagasi.</div>
+
+      <div class="view on" id="v-fookus">
+        <div class="hello" id="hello"></div>
+        <div class="h1 serif" id="fkTitle" style="margin-top:5px">Täna vajab sind <span class="g">fookust</span>.</div>
+        <div class="fgrid">
+          <div><div class="lbl" style="margin-bottom:0">Täna — tähtsuse järjekorras</div><div class="feed" id="feed" style="margin-top:12px"><div class="empty">Laen...</div></div></div>
+          <div class="rail">
+            <div class="panel"><div class="lbl" style="margin-bottom:6px">Sinu müügitoru</div>
+              <div class="stat"><span class="k">Aktiivne väärtus</span><span class="v" id="sVal">—</span></div>
+              <div class="stat"><span class="k">Objekte kokku</span><span class="v" id="sCnt">—</span></div>
+              <div class="stat"><span class="k">Vajab täna tähelepanu</span><span class="v up" id="sToday">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="view" id="v-toru"><div class="board" id="board"><div class="empty">Laen...</div></div></div>
+
+      <div class="view" id="v-obj">
+        <div class="oback" onclick="go(_backTo||'toru')">← Tagasi</div>
+        <div class="ohead"><div><div class="src" id="oKick" style="margin-bottom:6px"></div><div class="otitle serif" id="oTitle"></div><div class="osub" id="oSub"></div></div><div class="oprice"><div class="p" id="oPrice"></div><div class="m" id="oM2"></div></div></div>
+        <div class="srcbar"><span class="src">Maa-amet</span><span class="src">EHR</span><span class="src">Kinnistusraamat</span><span class="src">Kataster</span></div>
+        <div class="otabs"><div class="otab on" data-o="kok">Kokkuvõte</div><div class="otab" data-o="kuul">Kuulutus</div><div class="otab" data-o="pakk">Koostööpakkumine</div></div>
+
+        <div class="oview on" id="o-kok">
+          <div class="section"><h3>Faktid</h3><div class="facts" id="oFacts"></div></div>
+          <div class="section"><h3>Hind & reaalsus</h3>
+            <div class="grid3">
+              <div><div class="flabel">Elamumaa €/m² · hinnang</div><input class="inp" id="landm2" value="200"></div>
+              <div><div class="flabel">Hoone panus €/m² · hinnang</div><input class="inp" id="buildm2" value="1000"></div>
+              <div><div class="flabel">Kinnistu pind (m²)</div><input class="inp" id="plot"></div>
+            </div>
+            <div class="split"><div class="l" id="sL" style="width:50%">Kinnistu</div><div class="b" id="sB" style="width:50%">Hoone</div></div>
+            <div class="two"><div class="box g"><div class="bv g" id="vLand">—</div><div class="bk">kinnistu (maa) väärtus</div></div><div class="box"><div class="bv" id="vBld">—</div><div class="bk">hoone + potentsiaal</div></div></div>
+            <div class="statusln" id="statusln"></div>
+          </div>
+          <div class="section"><h3>Plussid & tähelepanu</h3><div class="pm" id="oPm"></div></div>
+          <div class="section mell"><div class="mh"><span class="orb"></span><div><div style="font-weight:700;font-size:14px">Mell</div><div style="font-size:11px;color:var(--ink2)">sinu häälega · aus</div></div></div><div class="mline" id="oMell"></div></div>
+        </div>
+
+        <div class="oview" id="o-kuul">
+          <div class="section"><h3>Portaali tekst <span style="float:right;color:var(--gr);font-weight:600;font-size:10px;text-transform:none">✦ Mell · ainult faktid</span></h3>
+            <button class="btn mell" style="width:100%;justify-content:center;margin-bottom:10px" onclick="genKuul('portal')">✦ Mell kirjutab kuulutuse</button>
+            <div class="out"><div class="outlbl">kv.ee · city24 · kinnisvara24</div><textarea class="ta" id="portTa" style="min-height:170px"></textarea></div>
+            <div class="row"><button class="btn go" onclick="saveListing()">Salvesta</button><button class="btn gh" onclick="copyTa('portTa')">Kopeeri</button><span class="msg" id="kMsg"></span></div>
+          </div>
+          <div class="section"><h3>Sotsiaalmeedia</h3>
+            <button class="btn mell" style="width:100%;justify-content:center;margin-bottom:10px" onclick="genKuul('social')">✦ Lühiversioon</button>
+            <div class="out"><div class="outlbl">FB · Insta</div><textarea class="ta" id="socTa" style="min-height:80px"></textarea></div>
+            <div class="row"><button class="btn gh" onclick="copyTa('socTa')">Kopeeri postitus</button></div>
+          </div>
+        </div>
+
+        <div class="oview" id="o-pakk">
+          <div class="section"><h3>Tingimused</h3>
+            <div class="grid2">
+              <div><div class="flabel">Vahendustasu · tüübi järgi</div><div class="fee"><span class="amt" id="feeAmt">—</span><span class="l" id="feeNote"></span></div></div>
+              <div><div class="flabel">Lepingu tüüp</div><select class="sel" id="contract" onchange="renderDoc()"><option>Ainuõiguslik vahendusleping</option><option>Tavavahendusleping</option></select></div>
+              <div><div class="flabel">Kestus</div><select class="sel" id="duration" onchange="renderDoc()"><option>3 kuud</option><option>6 kuud</option><option>Tähtajatu</option></select></div>
+              <div><div class="flabel">Lisa dokumenti</div><label class="chk on" id="inclListing" onclick="this.classList.toggle('on');renderDoc()"><span class="cbx"></span>Kuulutuse eelnäidis</label></div>
+            </div>
+          </div>
+          <div class="section"><h3>Kaaskiri</h3>
+            <button class="btn mell" style="width:100%;justify-content:center;margin-bottom:10px" onclick="genCover()">✦ Mell kirjutab kaaskirja</button>
+            <textarea class="ta" id="coverTa" style="min-height:100px" oninput="renderDoc()" placeholder="Mell kirjutab pehme kaaskirja — või kirjuta ise."></textarea>
+          </div>
+          <div class="section" style="padding:12px"><div id="docEl"></div></div>
+          <div class="row"><button class="btn go" onclick="exportDoc('pdf')">⬇ PDF</button><button class="btn gh" onclick="exportDoc('png')">⬇ PNG</button><span class="msg" id="pMsg"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SB_URL='https://iawvsfylguajkoikbdaf.supabase.co';
+  const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
+  const sb=supabase.createClient(SB_URL,SB_KEY);
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  function eur(n){return Math.round(n).toLocaleString('et-EE');}
+  function initials(n){n=(n||'?').trim();var p=n.split(/\s+/);return((p[0]||'')[0]||'?').toUpperCase()+((p[1]||'')[0]||'').toUpperCase();}
+  var LEADS=[], O=null, _backTo='toru';
+  var COLS=[['uus','Kontakt','#e0715f'],['vestlus toimus','Ühendust võetud','#d8a24e'],['vajab järelkõnet','Järelkontakt','#e08a4e'],['prospect','Potentsiaalne','#a78bfa'],['k_kontakt','Kontakt (minu)','#5aa2e0'],['leping','Leping','#4a80f0'],['ettevalmistus','Ettevalmistus','#8b5cf6'],['ostja','Ostja','#ec6ea0'],['t_ettevalmistus','Tehingu ettevalmistus','#d8a24e'],['k_tehing','Tehing','#48c281'],['ei soovi abi','Ei soovi','#6b7280']];
+  var AI_STIIL='\n\nSTIIL: eesti kirjakeel, lihtsad selged laused. Väldi ilukõnet, klišeesid, müügijuttu. Rahulik, professionaalne, otsekohene. Ilma hüüumärkide ja emojideta, ilma vorminduse märkideta. Ära luba kindlat tulemust ega hinda; ära nimeta tasu kui pole antud; ära esita hindu/protsente faktina kui pole sisendis; ära anna juriidilist/maksu nõu; ilma surveta.';
+  var LISTING_SYS='Oled Uus Maa kuulutuse koostaja. Koosta valmis müügikuulutus eesti keeles AINULT antud faktide põhjal. ÄRA LEIUTA omadusi ega numbreid. Struktuur: haarav aus avalause; faktid sujuvas tekstis; asukoht kui antud; lõpp üleskutsega vaatamiseks. Puuduvat ära maini. Vasta AINULT kuulutustekstiga. ~60-200 sõna.'+AI_STIIL;
+  var SOCIAL_SYS='Oled Uus Maa sotsiaalmeedia postituse koostaja. Lühike (2-4 lauset) FB/Insta postitus AINULT faktide põhjal, ära leiuta. Lõpus kontakt: Meelis Koroljov, Uus Maa, +372 53 441 365.'+AI_STIIL;
+  var COVER_SYS='Oled Uus Maa müügispetsialist Meelis Koroljov. Kirjuta lühike (3-5 lauset) kaaskiri koostööpakkumise juurde. Toon PEHME, soe, kliendisõbralik, ilma surveta. AINULT faktide põhjal. Maini, et lisatud on tingimused, tööde nimekiri ja kuulutuse eelnäidis. Rõhuta rahulikult, et koostöö on paindlik: lepingu saab lõpetada kahenädalase etteteatamisega sanktsioonideta. Allkirja EI lisa.'+AI_STIIL;
+
+  async function freshToken(f){try{if(f)await sb.auth.refreshSession();var s=await sb.auth.getSession();return(s.data&&s.data.session)?s.data.session.access_token:'';}catch(e){return'';}}
+  async function aiFetch(p){try{var t=await freshToken();var r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify(p),signal:AbortSignal.timeout(30000)});if(r.status===401){t=await freshToken(true);r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify(p),signal:AbortSignal.timeout(30000)});if(r.status===401)return'Viga: sessioon aegus';}var j=await r.json();if(!r.ok)return'Viga: '+(j.error||r.status);return j.text||'';}catch(e){return'Viga: '+e.message;}}
+
+  /* nav */
+  function go(v){document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on');});var el=document.getElementById('v-'+v);if(el)el.classList.add('on');document.querySelector('.content').scrollTop=0;}
+  document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.addEventListener('click',function(){go(a.dataset.v);});});
+  document.querySelectorAll('.otab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.otab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.oview').forEach(function(x){x.classList.remove('on');});document.getElementById('o-'+t.dataset.o).classList.add('on');if(t.dataset.o==='pakk')renderDoc();});});
+
+  /* urgency + fookus */
+  function urg(l){if(!l.next_action_at)return{rank:5,txt:'',cls:'',over:0};var d=new Date(l.next_action_at);d.setHours(0,0,0,0);var n=new Date();n.setHours(0,0,0,0);var diff=Math.round((d-n)/86400000);if(diff<0)return{rank:0,txt:'hilinenud '+d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}),cls:'r',over:-diff};if(diff===0)return{rank:1,txt:'täna',cls:'a',over:0};if(diff===1)return{rank:2,txt:'homme',cls:'g',over:0};return{rank:3,txt:d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}),cls:'g',over:0};}
+  function fresh(l){if(l.next_action_at||!l.created_at)return false;var days=(Date.now()-new Date(l.created_at).getTime())/86400000;return days>=0&&days<=3;}
+  function score(l,u,fr){var s=0;if(u.rank===0)s+=42+Math.min(u.over,20)*3;else if(u.rank===1)s+=32;else if(u.rank===2)s+=15;if(fr)s+=24;if(l.phone)s+=3;return s;}
+  function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €/m²'):'';if(u.rank===0)return{head:'Lubasid tagasi helistada — <b>'+u.over+' päeva üle</b>',reason:'Järelkontakt on üle tähtaja. Iga päev sööb usaldust ja tõenäosust.',act:'Helista'};if(u.rank===1)return{head:'Tänane järelkontakt',reason:'Planeeritud tänaseks. Tee ära, enne kui päev täitub.'+m2,act:'Helista'};if(fr)return{head:'Värske objekt — helista enne kui jahtub',reason:'Uus lead, esmakontakti pole. Hea esmamulje viib sammu edasi.'+m2,act:'Helista'};if(u.rank===2)return{head:'Homme järelkontakt',reason:'Planeeritud homseks — hoia meeles.',act:'Ava'};return{head:'Vajab tähelepanu',reason:''+m2,act:'Ava'};}
+  function thumb(l,sz){return l.img_url?('<div class="thumb" style="background-image:url(\''+esc(l.img_url)+'\')"></div>'):('<div class="thumb e">'+esc(initials(l.contact_name))+'</div>');}
+  function renderFookus(){
+    var sc=LEADS.map(function(l){var u=urg(l),fr=fresh(l);return{l:l,u:u,fr:fr,s:score(l,u,fr),m:miks(l,u,fr)};}).filter(function(x){return x.s>0;}).sort(function(a,b){return b.s-a.s;});
+    var top=sc.slice(0,3),rest=sc.slice(3,8),feed=document.getElementById('feed');
+    function c(x,i){var l=x.l,m=x.m,u=x.u;var pr=l.phone?('<a class="btn go" href="tel:'+esc(l.phone)+'" onclick="event.stopPropagation()">'+esc(m.act)+'</a>'):('<button class="btn go" onclick="event.stopPropagation();openObj(\''+l.id+'\')">Ava</button>');
+      return '<div class="fcard'+(i===0?' hot':'')+'" onclick="openObj(\''+l.id+'\')"><div class="fglow"></div><div class="frow"><div class="num">'+(i+1)+'</div>'+thumb(l)+'<div style="flex:1"><div class="why">'+m.head+'</div><div class="who">'+esc(l.contact_name||l.property_address||'(nimeta)')+(l.property_address?(' · '+esc(l.property_address)):'')+'</div></div>'+(u.txt?'<div class="when '+u.cls+'">'+esc(u.txt)+'</div>':'')+'</div>'+(m.reason?'<div class="reason">'+m.reason+'</div>':'')+'<div class="acts">'+pr+'<button class="btn gh" onclick="event.stopPropagation();openObj(\''+l.id+'\')">Ava töölaud</button></div></div>';}
+    feed.innerHTML=top.length?(top.map(c).join('')+(rest.length?('<div class="lbl" style="margin:20px 0 10px">Veel radaril</div>'+rest.map(function(x,i){return c(x,i+3);}).join('')):'')):'<div class="empty">Täna pole kiireloomulist.</div>';
+    var w=top.length>=3?'kolm asja':(top.length?top.length+' asja':'fookust');document.getElementById('fkTitle').innerHTML='Täna vajab sind <span class="g">'+w+'</span>. Ülejäänut hoian mina silmas peal.';
+    document.getElementById('sToday').textContent=sc.filter(function(x){return x.u.rank<=1||x.fr;}).length;
+  }
+  function renderKanban(){var b=document.getElementById('board'),h='';COLS.forEach(function(c){var ls=LEADS.filter(function(l){return l.status===c[0];});if(!ls.length)return;var sum=ls.reduce(function(a,l){return a+(Number(l.price)||0);},0);h+='<div class="col"><div class="colh"><span class="d" style="background:'+c[2]+'"></span>'+esc(c[1])+'<span class="c">'+ls.length+'</span></div><div class="colsum">'+eur(sum)+' €</div>';ls.forEach(function(l){var u=urg(l);var ph=l.img_url?('<div class="ph" style="background-image:url(\''+esc(l.img_url)+'\')"><span class="sdot" style="background:'+c[2]+'"></span></div>'):('<div class="ph e"><span class="sdot" style="background:'+c[2]+'"></span>'+esc(initials(l.contact_name))+'</div>');h+='<div class="card" onclick="openObj(\''+l.id+'\')"><div class="glow" style="background:'+c[2]+'"></div>'+ph+'<div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||l.asum||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+(u.txt?('<div class="next '+u.cls+'">'+esc(u.txt)+'</div>'):'')+'</div></div>';});h+='</div>';});b.innerHTML=h||'<div class="empty">Objekte veel pole.</div>';}
+
+  /* object workspace */
+  function openObj(id){O=LEADS.find(function(l){return l.id===id;});if(!O)return;_backTo=document.querySelector('.side .nav a.on')?document.querySelector('.side .nav a.on').dataset.v:'toru';go('obj');
+    var loc=[O.asum,O.district,O.county].filter(Boolean).join(', ');
+    document.getElementById('oKick').textContent=(O.status||'Objekt')+' · '+(O.contact_name||'');
+    document.getElementById('oTitle').textContent=(O.property_type||'Objekt')+(loc?(' — '+loc):'');
+    document.getElementById('oSub').textContent=O.property_address||'';
+    document.getElementById('oPrice').textContent=O.price!=null?eur(O.price)+' €':'—';
+    document.getElementById('oM2').textContent=(O.price&&O.area)?eur(O.price/O.area)+' €/m²':'';
+    document.getElementById('plot').value=O.plot_area!=null?O.plot_area:'';
+    document.getElementById('portTa').value=O.listing_text||'';document.getElementById('socTa').value='';document.getElementById('coverTa').value='';
+    document.querySelectorAll('.otab')[0].click();
+    facts();analysis();calcReality();feeUpd();
+  }
+  function facts(){var el=document.getElementById('oFacts'),f=[];function add(k,v){if(v!=null&&v!=='')f.push('<div class="fact"><div class="v">'+esc(v)+'</div><div class="k">'+k+'</div></div>');}add('üldpind',O.area!=null?O.area+' m²':'');add('kinnistu',O.plot_area!=null?O.plot_area+' m²':'');add('tube',O.rooms);add('korrus',O.floor);add('ehitusaasta',O.build_year);add('kasutusotstarve',O.use_purpose);add('seisukord',O.condition);add('küte',O.heating);el.innerHTML=f.join('')||'<div class="k" style="color:var(--ink2)">Andmeid napib.</div>';}
+  function calcReality(){var price=Number(O.price)||0,area=Number(O.area)||0,plot=Number(document.getElementById('plot').value)||0,lm2=Number(document.getElementById('landm2').value)||0,bm2=Number(document.getElementById('buildm2').value)||0;var land=plot*lm2,fair=land+area*bm2,lp=price>0?Math.max(0,Math.min(100,Math.round(land/price*100))):0,bp=100-lp;document.getElementById('sL').style.width=lp+'%';document.getElementById('sB').style.width=bp+'%';document.getElementById('sL').textContent='Kinnistu '+lp+'%';document.getElementById('sB').textContent='Hoone '+bp+'%';document.getElementById('vLand').textContent=land?eur(land)+' €':'—';document.getElementById('vBld').textContent=eur(Math.max(0,price-land))+' €';var s=document.getElementById('statusln');if(!price||!plot){s.style.background='var(--cd)';s.style.color='var(--ink2)';s.textContent='Lisa hind ja kinnistu pind, et näha reaalsust.';return;}if(price<land){s.style.background='var(--amber)';s.style.color='#06140d';s.textContent='⚠ Alahindamine — hind alla kinnistu väärtuse ('+eur(land)+' €). Tõsta hinda.';}else if(price>fair*1.10){s.style.background='var(--te)';s.style.color='#06140d';s.textContent='⚠ Ülehindamine — ületab põhjendatud taseme (~'+eur(fair)+' €).';}else{s.style.background='var(--gr)';s.style.color='#06140d';s.textContent='✓ Põhjendatud — vahemikus põrand '+eur(land)+' € … lagi ~'+eur(fair)+' €.';}}
+  ['landm2','buildm2','plot'].forEach(function(id){document.getElementById(id).addEventListener('input',calcReality);});
+  function analysis(){var plus=[],minus=[];if(O.img_url)plus.push('Kvaliteetne foto olemas');else minus.push('Fotod puuduvad — nähtavus kannatab');if(O.listing_text)plus.push('Kuulutuse tekst valmis');if(O.plot_area)plus.push('Oma kinnistu ('+O.plot_area+' m²) — väärtus maas ja asukohas');var c=(O.condition||'');if(/uus|renoveeritud|heas korras|san.*tehtud/i.test(c))plus.push('Seisukord: '+c);else if(/vajab/i.test(c))minus.push('Vajab tööd ('+c+') — läbirääkimisruum ja võimalus kujundada oma järgi');else if(c)minus.push('Seisukord: '+c+' — kontrolli kohapeal');if(O.mell_notes)plus.push('Lisainfo olemas (Mellile)');document.getElementById('oPm').innerHTML='<div>'+(plus.map(function(p){return'<div class="li"><span class="t">✓</span>'+esc(p)+'</div>';}).join('')||'—')+'</div><div>'+(minus.map(function(m){return'<div class="li"><span class="mm">•</span>'+esc(m)+'</div>';}).join('')||'—')+'</div>';var loc=[O.asum,O.district].filter(Boolean).join(', ');document.getElementById('oMell').innerHTML=O.plot_area?('Müü kinnistut, mitte hoonet: <b>'+O.plot_area+' m²</b>'+(loc?(' '+esc(loc)):'')+' kannab hinna. Hoone on valmis alus — renoveeri või ehita oma nägemuse järgi. Väärtus on maas ja asukohas.'):'Lisa kinnistu pind ja seisukord, siis annan täpsema hinnaargumendi. Ainult päris andmed.';}
+
+  /* kuulutus */
+  function buildLines(){var loc=[O.county,O.district,O.asum].filter(Boolean).join(', ');return[O.property_address&&('Aadress: '+O.property_address),loc&&('Asukoht: '+loc),O.property_type&&('Tüüp: '+O.property_type+(O.use_purpose?(' / '+O.use_purpose):'')),O.deal_type&&('Tehing: '+(O.deal_type==='uur'?'üür':'müük')),O.condition&&('Seisukord: '+O.condition),(O.price!=null)&&('Hind: '+O.price+' €'),(O.area!=null)&&('Pindala: '+O.area+' m²'),(O.plot_area!=null)&&('Kinnistu pind: '+O.plot_area+' m²'),(O.rooms!=null)&&('Tube: '+O.rooms),O.floor&&('Korrus: '+O.floor),(O.build_year!=null)&&('Ehitusaasta: '+O.build_year),O.registry_parts&&('Registriosad: '+O.registry_parts),(O.rent_current!=null)&&('Praegune üür: '+O.rent_current+' €/kuu'),O.description&&('Kirjeldus (võib ümber sõnastada, MITTE lisada uut): '+O.description),O.mell_notes&&('Lisainfo müügispetsialistilt (ainult kui asjakohane): '+O.mell_notes)].filter(Boolean).join('\n');}
+  async function genKuul(which){var ta=document.getElementById(which==='portal'?'portTa':'socTa'),sys=which==='portal'?LISTING_SYS:SOCIAL_SYS,m=document.getElementById('kMsg');ta.value='Mell kirjutab…';m.textContent='';var out=await aiFetch({system:sys,max_tokens:which==='portal'?600:250,model:'claude-sonnet-4-6',messages:[{role:'user',content:'Objekti faktid:\n'+buildLines()}]});if(out&&out.indexOf('Viga')!==0){ta.value=out;m.style.color='#48c281';m.textContent='Valmis.';}else{ta.value='';m.style.color='#e0715f';m.textContent=out;}}
+  async function saveListing(){var txt=document.getElementById('portTa').value.trim(),m=document.getElementById('kMsg');m.style.color='#93a89b';m.textContent='Salvestan...';var{error}=await sb.from('leads').update({listing_text:txt||null}).eq('id',O.id);if(error){m.style.color='#e0715f';m.textContent='Viga';}else{O.listing_text=txt;m.style.color='#48c281';m.textContent='✓ Salvestatud.';}}
+  function copyTa(id){var t=document.getElementById(id);t.select();try{document.execCommand('copy');}catch(e){}}
+
+  /* pakkumine */
+  function feeFor(){var price=O&&O.price!=null?Number(O.price):0;if(O&&O.property_type==='Äripind'){var a=price?Math.round(price*0.015):null;return{amt:'1,5%',note:'äripind',line:'1,5% tehinguväärtusest'+(a!=null?(' ≈ '+eur(a)+' € (+ km)'):''),logic:'Äripindade puhul kokkuleppeline 1,5% tehinguväärtusest — vastab valdkonna tavale.'};}var pct=price?Math.round(6200/price*1000)/10:null;var logic=(pct!=null&&pct<=4.2)?'Te maksate tehtud töö eest, mitte protsenti oma vara väärtusest. Turul tavaline maakleritasu 2–4% — fikseeritud tasu on läbipaistev ja sellel objektil enamasti soodsam.':'Fikseeritud tasu katab kogu professionaalse teenuse sõltumata objekti hinnast — te ei maksa rohkem lihtsalt seetõttu, et vara on väärtuslikum.';return{amt:'5 000 € + km',note:'eluruum · 6 200 €',line:'5 000 € + käibemaks (24%) = 6 200 €'+(pct!=null?(' ≈ '+String(pct).replace('.',',')+'% müügihinnast'):''),logic:logic};}
+  function feeUpd(){var f=feeFor();document.getElementById('feeAmt').textContent=f.amt;document.getElementById('feeNote').textContent=f.note;}
+  async function genCover(){var f=feeFor();var lines=[O.property_address&&('Aadress: '+O.property_address),O.property_type&&('Tüüp: '+O.property_type),(O.price!=null)&&('Hind: '+O.price+' €'),'Vahendustasu: '+f.line,O.contact_name&&('Omanik: '+O.contact_name)].filter(Boolean).join('\n');var ta=document.getElementById('coverTa');ta.value='Mell kirjutab…';var out=await aiFetch({system:COVER_SYS,max_tokens:300,model:'claude-sonnet-4-6',messages:[{role:'user',content:'Andmed:\n'+lines}]});ta.value=(out&&out.indexOf('Viga')!==0)?out:'';renderDoc();}
+  function renderDoc(){if(!O){return;}var f=feeFor(),loc=[O.asum,O.district,O.county].filter(Boolean).join(', ');var facts=[O.area!=null&&['Üldpind',O.area+' m²'],O.plot_area!=null&&['Kinnistu',O.plot_area+' m²'],O.build_year!=null&&['Ehitusaasta',O.build_year],O.condition&&['Seisukord',O.condition],O.price!=null&&['Hind',eur(O.price)+' €']].filter(Boolean);var cover=document.getElementById('coverTa').value.trim();var inclL=document.getElementById('inclListing').classList.contains('on');var wk=['Professionaalsed fotod, video + droon','Turuanalüüs ja hinnastamine','Kuulutus kõigis portaalides + sotsiaalmeedia','Vaatamiste korraldamine','Läbirääkimised ja pakkumiste haldus','Notaritehingu ettevalmistus'];
+    document.getElementById('docEl').innerHTML='<div class="dh"><div class="logo2">UUS MAA<div class="s">Koostööpakkumine</div></div><div class="date">'+new Date().toLocaleDateString('et-EE')+'</div></div>'
+      +'<h1>'+esc((O.property_type||'Objekt')+(loc?(' — '+loc):''))+'</h1><div class="sub">'+esc(O.property_address||'')+(O.contact_name?(' · omanik: '+esc(O.contact_name)):'')+'</div>'
+      +(cover?('<div class="cover">'+esc(cover)+'</div>'):'')
+      +(O.img_url?('<img crossorigin="anonymous" src="'+esc(O.img_url)+'" style="width:100%;max-height:220px;object-fit:cover;border-radius:6px;margin-bottom:10px" onerror="this.style.display=\'none\'">'):'')
+      +'<div class="sec">Objekt</div>'+facts.map(function(x){return'<div class="kv"><span class="k">'+esc(x[0])+'</span><span class="v">'+esc(x[1])+'</span></div>';}).join('')
+      +'<div class="sec">Koostöö tingimused</div>'
+      +'<div class="kv"><span class="k">Vahendustasu</span><span class="v">'+esc(f.line)+'</span></div>'
+      +'<div class="kv"><span class="k">Lepingu tüüp</span><span class="v">'+esc(document.getElementById('contract').value)+'</span></div>'
+      +'<div class="kv"><span class="k">Kestus</span><span class="v">'+esc(document.getElementById('duration').value)+'</span></div>'
+      +'<div class="kv"><span class="k">Tasu maksmise alus</span><span class="v">Eduka võõrandamistehingu korral</span></div>'
+      +'<div class="kv"><span class="k">Ennetähtaegne lõpetamine</span><span class="v">2-nädalase etteteatamisega, sanktsioonideta</span></div>'
+      +'<div class="sec">Vahendustasu — mida see tähendab</div><div style="font-size:12px;color:#3a352d;line-height:1.6">'+esc(f.logic)+'</div>'
+      +'<div class="sec">Mis tasu sisaldab</div><div class="works">'+wk.map(function(w){return'<div><span class="t">✓</span>'+esc(w)+'</div>';}).join('')+'</div>'
+      +((inclL&&O.listing_text)?('<div class="sec">Kuulutuse eelnäidis</div><div class="listing">'+esc(O.listing_text)+'</div>'):'')
+      +'<div class="foot"><div>Meelis Koroljov<br>kinnisvara müügispetsialist<br>+372 53 441 365 · meelis.koroljov@uusmaa.ee</div><div class="org">UUS MAA<br>Arena, Tallinn</div></div>';}
+  async function exportDoc(kind){var m=document.getElementById('pMsg');m.style.color='#93a89b';m.textContent='Valmistan '+kind.toUpperCase()+'...';try{renderDoc();var el=document.getElementById('docEl');var canvas=await html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true});var name=(O.property_address||'koostoopakkumine').replace(/[^a-z0-9]+/gi,'_').slice(0,40);if(kind==='png'){var a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=name+'.png';a.click();}else{var img=canvas.toDataURL('image/jpeg',0.92);var pdf=new jspdf.jsPDF('p','mm','a4');var w=210,h=canvas.height*w/canvas.width;pdf.addImage(img,'JPEG',0,0,w,h);pdf.save(name+'.pdf');}m.style.color='#48c281';m.textContent='✓ '+kind.toUpperCase()+' valmis.';}catch(e){m.style.color='#e0715f';m.textContent='Eksport ebaõnnestus (foto CORS?).';}}
+
+  /* search */
+  document.getElementById('search').addEventListener('input',function(){var q=this.value.toLowerCase();if(!q){go('toru');renderKanban();return;}var rows=LEADS.filter(function(l){return[l.contact_name,l.property_address,l.property_type,l.asum].filter(Boolean).join(' ').toLowerCase().indexOf(q)>=0;});go('toru');var b=document.getElementById('board');b.innerHTML='<div class="col" style="flex:0 0 320px"><div class="colh">Otsing: '+rows.length+'</div>'+rows.map(function(l){var u=urg(l);return'<div class="card" onclick="openObj(\''+l.id+'\')"><div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+'</div></div>';}).join('')+'</div>';});
+
+  function countUp(id,target,suf){var el=document.getElementById(id);if(!el)return;var t0=null;function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/900,1),e=1-Math.pow(1-p,3);el.textContent=Math.round(target*e).toLocaleString('et-EE')+(suf||'');if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
+  async function init(){const{data:{session}}=await sb.auth.getSession();if(!session){document.getElementById('authWarn').style.display='block';return;}document.getElementById('hello').textContent='Tere'+(session.user.email?(', '+session.user.email.split('@')[0]):'')+' · '+new Date().toLocaleDateString('et-EE',{weekday:'long',day:'numeric',month:'long'});var{data,error}=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false}).limit(500);if(error){document.getElementById('feed').innerHTML='<div class="empty">Viga.</div>';return;}LEADS=data||[];countUp('sVal',LEADS.reduce(function(a,l){return a+(Number(l.price)||0);},0),' €');countUp('sCnt',LEADS.length,'');renderFookus();renderKanban();var pre=new URLSearchParams(location.search).get('id');if(pre&&LEADS.find(function(l){return l.id===pre;}))openObj(pre);}
+  init();
+</script>
+</body>
+</html>
