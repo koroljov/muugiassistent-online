@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mell — sinu tööriistad</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --bg:#0d1310; --sf:#151f19; --cd:#1b2721; --cd2:#233129; --inp:#0b120e;
+    --ink:#e9efe9; --ink2:#93a89b; --ink3:#5f7166;
+    --line:rgba(255,255,255,.06); --line2:rgba(255,255,255,.12);
+    --gr:#48c281; --gr2:#2b8f5a; --grsoft:rgba(72,194,129,.15);
+    --gold:#d2b06c; --te:#dd8d61; --red:#e0715f; --amber:#d8a24e; --violet:#a78bfa; --blue:#5aa2e0;
+    --sh:0 20px 44px -30px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(1100px 600px at 86% -10%,rgba(72,194,129,.10),transparent 60%),radial-gradient(800px 460px at 6% 0%,rgba(43,143,90,.07),transparent 55%),var(--bg);min-height:100vh}
+  .serif{font-family:"Georgia","Times New Roman",serif}
+  .wrap{max-width:960px;margin:0 auto;padding:24px 20px 70px}
+  .topline{display:flex;align-items:center;gap:11px;margin-bottom:20px}
+  .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(150deg,var(--gr),var(--gr2));color:#06140d;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 0 18px rgba(72,194,129,.4)}
+  .brand{font-weight:700;font-size:16px;letter-spacing:-.02em}
+  .topline .sp{flex:1}
+  .back{font-size:12.5px;color:var(--ink2);text-decoration:none} .back:hover{color:var(--gr)}
+  .hello{font-size:13px;color:var(--ink2)}
+  .h1{font-size:30px;font-weight:600;letter-spacing:-.02em;margin:6px 0 22px;line-height:1.14}
+  .h1 .g{color:var(--gr)}
+  #authWarn{display:none;background:rgba(224,113,95,.12);border:1px solid rgba(224,113,95,.3);color:var(--red);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px}
+  #authWarn a{color:var(--gr)}
+
+  .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);margin:0 0 12px}
+  .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:26px}
+  @media(max-width:760px){.actions{grid-template-columns:1fr 1fr}}
+  .act{display:block;text-decoration:none;background:linear-gradient(180deg,var(--cd),var(--sf));border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--sh);transition:transform .16s,border-color .16s}
+  .act:hover{transform:translateY(-3px);border-color:rgba(72,194,129,.35)}
+  .act .ic{width:38px;height:38px;border-radius:11px;background:var(--grsoft);color:var(--gr);display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:12px}
+  .act .t{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+  .act .s{font-size:11.5px;color:var(--ink2);margin-top:3px}
+
+  .olist{display:flex;flex-direction:column;gap:9px}
+  .orow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:var(--sf);border:1px solid var(--line);border-radius:13px;padding:12px 15px;box-shadow:var(--sh);transition:border-color .15s}
+  .orow:hover{border-color:var(--line2)}
+  .onm{font-size:14px;font-weight:600} .osub{font-size:11.5px;color:var(--ink2);margin-top:2px}
+  .oprice{color:var(--gr);font-weight:700}
+  .orow .go{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+  .mini{font-size:11.5px;font-weight:600;text-decoration:none;color:var(--gr);background:var(--grsoft);border:1px solid rgba(72,194,129,.28);border-radius:8px;padding:6px 10px;white-space:nowrap}
+  .mini:hover{filter:brightness(1.1)}
+  .mini.gh{color:var(--ink2);background:var(--cd);border-color:var(--line2)}
+  .empty{font-size:13px;color:var(--ink2);padding:24px 0;text-align:center}
+  .foot{text-align:center;font-size:11px;color:var(--ink3);padding-top:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topline"><span class="mark">UM</span><span class="brand">Mell</span><span class="sp"></span><a class="back" href="/crm.html">Töövoog →</a></div>
+  <div class="hello" id="hello">Tere tulemast</div>
+  <div class="h1 serif">Mell — sinu <span class="g">tööriistad</span> ühes kohas.</div>
+  <div id="authWarn">Sa pole sisse logitud. <a href="/crm.html">Logi sisse Töövoos</a>, siis tule tagasi.</div>
+
+  <div class="lbl">Tee kohe</div>
+  <div class="actions">
+    <a class="act" href="/uus.html"><div class="ic">＋</div><div class="t">Loo objekt</div><div class="s">Kõik tüübid, kõik väljad</div></a>
+    <a class="act" href="/kuulutus.html"><div class="ic">✎</div><div class="t">Kirjuta kuulutus</div><div class="s">Mell su toonis</div></a>
+    <a class="act" href="/pakkumine.html"><div class="ic">◈</div><div class="t">Koostööpakkumine</div><div class="s">Hele premium PDF</div></a>
+    <a class="act" href="/crm.html"><div class="ic">▥</div><div class="t">Töövoog</div><div class="s">Müügitoru, Fookus</div></a>
+  </div>
+
+  <div class="lbl">Sinu objektid</div>
+  <div class="olist" id="olist"><div class="empty">Laen objekte...</div></div>
+
+  <div class="foot">Mell — üks sissepääs. Kõik lehed sama andmebaasiga. Klõpsa objekti juures „Kuulutus" või „Pakkumine" — avaneb juba valituna.</div>
+</div>
+
+<script>
+  const SB_URL='https://iawvsfylguajkoikbdaf.supabase.co';
+  const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
+  const sb=supabase.createClient(SB_URL,SB_KEY);
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function eur(n){ return Number(n).toLocaleString('et-EE'); }
+  var STCOL={ uus:'#e0715f', kontakt:'#e0715f', jarelkontakt:'#d8a24e', edasta:'#48c281', prospect:'#a78bfa', ettevalmistus:'#5aa2e0' };
+
+  async function init(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ document.getElementById('authWarn').style.display='block'; document.getElementById('olist').innerHTML='<div class="empty">Logi sisse Töövoos.</div>'; return; }
+    try{ document.getElementById('hello').textContent = (session.user.email? 'Tere, '+session.user.email.split('@')[0] : 'Tere'); }catch(e){}
+    var { data, error } = await sb.from('leads').select('id,contact_name,property_address,property_type,price,area,status,asum,district').is('archived_at',null).order('created_at',{ascending:false}).limit(60);
+    var box=document.getElementById('olist');
+    if(error){ box.innerHTML='<div class="empty">Viga laadimisel.</div>'; return; }
+    if(!data || !data.length){ box.innerHTML='<div class="empty">Objekte veel pole. Vajuta „Loo objekt".</div>'; return; }
+    box.innerHTML=data.map(function(o){
+      var loc=[o.asum,o.district].filter(Boolean).join(', ');
+      var sub=[o.property_type, loc, (o.area!=null?o.area+' m²':'')].filter(Boolean).join(' · ');
+      var dot=STCOL[o.status]||'#93a89b';
+      return '<div class="orow"><div><div class="onm">'
+        +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+dot+';margin-right:7px"></span>'
+        +esc(o.contact_name||o.property_address||'(nimeta)')+(o.price!=null?(' <span class="oprice">· '+eur(o.price)+' €</span>'):'')+'</div>'
+        +'<div class="osub">'+esc(o.property_address||'')+(sub?(' · '+esc(sub)):'')+'</div></div>'
+        +'<div class="go"><a class="mini" href="/kuulutus.html?id='+o.id+'">Kuulutus</a><a class="mini" href="/pakkumine.html?id='+o.id+'">Pakkumine</a></div></div>';
+    }).join('');
+  }
+  init();
+</script>
+</body>
+</html>

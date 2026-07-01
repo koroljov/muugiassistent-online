@@ -156,6 +156,8 @@
     OBJ={}; var opts=['<option value="">— vali objekt —</option>'];
     (data||[]).forEach(function(o){ OBJ[o.id]=o; opts.push('<option value="'+o.id+'">'+esc(objLabel(o))+'</option>'); });
     sel.innerHTML=opts.join('');
+    var pre=new URLSearchParams(location.search).get('id');
+    if(pre && OBJ[pre]){ sel.value=pre; sel.dispatchEvent(new Event('change')); }
   }
 
   document.getElementById('objSel').addEventListener('change',function(){
