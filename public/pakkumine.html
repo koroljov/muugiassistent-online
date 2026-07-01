@@ -80,6 +80,7 @@
     <div>
       <div class="card">
         <h3>Objekt</h3>
+        <input class="sel" id="objSearch" placeholder="🔍 Otsi objekti — nimi, aadress, tüüp..." autocomplete="off" style="margin-bottom:8px">
         <select class="sel" id="objSel"><option>Laen objekte...</option></select>
       </div>
       <div class="card">
@@ -121,7 +122,8 @@
   const SB_URL='https://iawvsfylguajkoikbdaf.supabase.co';
   const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
   const sb=supabase.createClient(SB_URL,SB_KEY);
-  var OBJ={}, ACTIVE=null;
+  var OBJ={}, ACTIVE=null, ALL=[];
+  function renderOpts(q){ q=(q||'').toLowerCase(); var sel=document.getElementById('objSel'); var opts=['<option value="">— vali objekt —</option>']; ALL.forEach(function(o){ var lbl=objLabel(o); if(!q||lbl.toLowerCase().indexOf(q)>=0) opts.push('<option value="'+o.id+'">'+esc(lbl)+'</option>'); }); sel.innerHTML=opts.join(''); }
   var AI_STIIL='\n\nSTIIL: Kirjuta eesti kirjakeeles, lihtsate selgete lausetega. Väldi ilukõnet, müügijuttu, klišeesid. Toon: rahulik, professionaalne, otsekohene, kindel aga mitte pealetükkiv. Ära kasuta hüüumärke, emojisid ega vorminduse märke. Kliendikirjas räägi kui nõustaja, mitte müüja; näita võimalusi, ära suru otsust. Ära luba kindlat tulemust ega hinda; ära anna juriidilist/maksu nõu; ära kasuta survet.';
   var COVER_SYS='Oled Uus Maa müügispetsialist Meelis Koroljov. Kirjuta lühike (3–5 lauset) professionaalne kaaskiri kliendile koostööpakkumise juurde tema objekti müügiks. Aus, rahulik, väärtuse kaudu, ilma survet. AINULT antud faktide põhjal — ära leiuta. Maini, et pakkumisele on lisatud koostöö tingimused, tehtavate tööde nimekiri ja kuulutuse eelnäidis. Lõpeta üleskutsega kohtuda ja arutada. Allkirja EI lisa (see on dokumendis olemas).'+AI_STIIL;
 
@@ -181,9 +183,9 @@
     var { data, error } = await sb.from('leads').select('id,contact_name,property_address,property_type,price,area,plot_area,rooms,build_year,condition,county,district,asum,img_url,listing_text').is('archived_at',null).order('created_at',{ascending:false}).limit(300);
     var sel=document.getElementById('objSel');
     if(error){ sel.innerHTML='<option>Viga</option>'; return; }
-    OBJ={}; var opts=['<option value="">— vali objekt —</option>'];
-    (data||[]).forEach(function(o){ OBJ[o.id]=o; opts.push('<option value="'+o.id+'">'+esc(objLabel(o))+'</option>'); });
-    sel.innerHTML=opts.join('');
+    OBJ={}; ALL=(data||[]); ALL.forEach(function(o){ OBJ[o.id]=o; });
+    renderOpts('');
+    document.getElementById('objSearch').addEventListener('input',function(){ renderOpts(this.value); });
     var pre=new URLSearchParams(location.search).get('id');
     if(pre && OBJ[pre]){ sel.value=pre; sel.dispatchEvent(new Event('change')); }
   }

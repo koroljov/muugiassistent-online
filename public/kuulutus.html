@@ -62,6 +62,7 @@
 
   <div class="section">
     <h3><span class="d"></span>Objekt</h3>
+    <input class="sel" id="objSearch" placeholder="🔍 Otsi objekti — nimi, aadress, tüüp..." autocomplete="off" style="margin-bottom:8px">
     <select class="sel" id="objSel"><option value="">Laen objekte...</option></select>
     <div class="facts" id="facts"></div>
     <div class="mnotes" id="mnotes"></div>
@@ -88,7 +89,8 @@
   const SB_URL='https://iawvsfylguajkoikbdaf.supabase.co';
   const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
   const sb=supabase.createClient(SB_URL,SB_KEY);
-  var OBJ={}, ACTIVE=null;
+  var OBJ={}, ACTIVE=null, ALL=[];
+  function renderOpts(q){ q=(q||'').toLowerCase(); var sel=document.getElementById('objSel'); var opts=['<option value="">— vali objekt —</option>']; ALL.forEach(function(o){ var lbl=objLabel(o); if(!q||lbl.toLowerCase().indexOf(q)>=0) opts.push('<option value="'+o.id+'">'+esc(lbl)+'</option>'); }); sel.innerHTML=opts.join(''); }
 
   var AI_STIIL='\n\nSTIIL: Kirjuta eesti kirjakeeles, lihtsate selgete lausetega. Väldi ilukõnet, müügijuttu, emotsionaalsust, klišeesid ja korporatiivset keelt. Keskendu faktidele, loogikale ja reaalsele olukorrale. Ära kirjuta pikemalt kui vaja. Toon: rahulik, professionaalne, usaldusväärne, otsekohene, kindel aga mitte pealetükkiv. Ära kasuta hüüumärke ega emojisid. Ära kasuta vorminduse märke (*, #, loendid) — puhas tekst. Kinnisvaratekstis keskendu sellele, mis mõjutab ostja otsust; väldi sõnu unikaalne, suurepärane, ideaalne, fantastiline, eksklusiivne, luksuslik, kui puudub objektiivne põhjus. JURIIDIKA: ära luba kindlat tulemust ega hinda; ära nimeta vahendustasu, kui pole antud; ära esita hindu/protsente/statistikat faktina, kui pole sisendis; ära anna juriidilist/maksu/notariaalset nõu; ära kasuta survestavat keelt.';
   var LISTING_SYS='Oled Uus Maa kinnisvarabüroo kuulutuse koostaja. Koosta valmis, kohe avaldatav müügikuulutuse tekst eesti keeles AINULT antud faktide põhjal. RANGE REEGEL — ÄRA LEIUTA: ära lisa ühtegi omadust, ruumi, materjali, vaadet, seisukorda ega eelist, mida andmetes pole. Kui olemasolev kirjeldus on antud, võid selle professionaalselt ümber sõnastada, kuid MITTE lisada uusi väiteid. Ära leiuta numbreid — hind, pindala, tube, korrus, ehitusaasta kasuta täpselt antud kujul. STRUKTUUR: (1) haarav, aus avalause; (2) objekti faktid sujuvas tekstis; (3) asukoht, kui antud, neutraalselt; (4) lõpetus üleskutsega võtta ühendust vaatamise kokkuleppimiseks. Kui väli puudub, jäta välja — ära maini puudumist. OLULINE: ÜHEKORDNE genereerimine — vasta AINULT valmis kuulutustekstiga, ära küsi lisaandmeid. Professionaalne, kuiv-konkreetne eesti kirjakeel, ilma emojideta, ~60-200 sõna.'+AI_STIIL;
@@ -153,9 +155,9 @@
       .is('archived_at',null).order('created_at',{ascending:false}).limit(300);
     var sel=document.getElementById('objSel');
     if(error){ sel.innerHTML='<option>Viga: '+error.message+'</option>'; return; }
-    OBJ={}; var opts=['<option value="">— vali objekt —</option>'];
-    (data||[]).forEach(function(o){ OBJ[o.id]=o; opts.push('<option value="'+o.id+'">'+esc(objLabel(o))+'</option>'); });
-    sel.innerHTML=opts.join('');
+    OBJ={}; ALL=(data||[]); ALL.forEach(function(o){ OBJ[o.id]=o; });
+    renderOpts('');
+    document.getElementById('objSearch').addEventListener('input',function(){ renderOpts(this.value); });
     var pre=new URLSearchParams(location.search).get('id');
     if(pre && OBJ[pre]){ sel.value=pre; sel.dispatchEvent(new Event('change')); }
   }

@@ -166,7 +166,7 @@
     const { data:{ session } } = await sb.auth.getSession();
     if(!session){ document.getElementById('authWarn').style.display='block'; return; }
     var id=new URLSearchParams(location.search).get('id');
-    if(!id){ document.getElementById('noObj').style.display='block'; return; }
+    if(!id){ location.replace('/mell.html'); return; }
     var { data:o, error } = await sb.from('leads').select('*').eq('id',id).maybeSingle();
     if(error||!o){ document.getElementById('noObj').style.display='block'; return; }
     O=o;

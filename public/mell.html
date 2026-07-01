@@ -68,6 +68,7 @@
   </div>
 
   <div class="lbl">Sinu objektid</div>
+  <input id="objSearch" placeholder="🔍 Otsi objekti — nimi, aadress, tüüp..." autocomplete="off" style="display:none;width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--inp);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;margin-bottom:12px">
   <div class="olist" id="olist"><div class="empty">Laen objekte...</div></div>
 
   <div class="foot">Mell — üks sissepääs. Kõik lehed sama andmebaasiga. Klõpsa objekti juures „Kuulutus" või „Pakkumine" — avaneb juba valituna.</div>
@@ -85,11 +86,21 @@
     const { data:{ session } } = await sb.auth.getSession();
     if(!session){ document.getElementById('authWarn').style.display='block'; document.getElementById('olist').innerHTML='<div class="empty">Logi sisse Töövoos.</div>'; return; }
     try{ document.getElementById('hello').textContent = (session.user.email? 'Tere, '+session.user.email.split('@')[0] : 'Tere'); }catch(e){}
-    var { data, error } = await sb.from('leads').select('id,contact_name,property_address,property_type,price,area,status,asum,district').is('archived_at',null).order('created_at',{ascending:false}).limit(60);
+    var { data, error } = await sb.from('leads').select('id,contact_name,property_address,property_type,price,area,status,asum,district').is('archived_at',null).order('created_at',{ascending:false}).limit(400);
     var box=document.getElementById('olist');
     if(error){ box.innerHTML='<div class="empty">Viga laadimisel.</div>'; return; }
     if(!data || !data.length){ box.innerHTML='<div class="empty">Objekte veel pole. Vajuta „Loo objekt".</div>'; return; }
-    box.innerHTML=data.map(function(o){
+    window._ALLO=data;
+    var srch=document.getElementById('objSearch'); srch.style.display='block';
+    srch.addEventListener('input',function(){ renderList(this.value); });
+    renderList('');
+  }
+  function renderList(q){
+    q=(q||'').toLowerCase();
+    var box=document.getElementById('olist');
+    var rows=(window._ALLO||[]).filter(function(o){ return !q || [o.contact_name,o.property_address,o.property_type,o.asum,o.district].filter(Boolean).join(' ').toLowerCase().indexOf(q)>=0; });
+    if(!rows.length){ box.innerHTML='<div class="empty">Ei leidnud vastet.</div>'; return; }
+    box.innerHTML=rows.map(function(o){
       var loc=[o.asum,o.district].filter(Boolean).join(', ');
       var sub=[o.property_type, loc, (o.area!=null?o.area+' m²':'')].filter(Boolean).join(' · ');
       var dot=STCOL[o.status]||'#93a89b';
