@@ -135,8 +135,13 @@
   function objLabel(o){ return [o.contact_name,o.property_address,o.property_type,(o.price!=null?eur(o.price)+' €':'')].filter(Boolean).join(' · '); }
 
   function feeFor(o){
-    if(o && o.property_type==='Äripind'){ var a=o.price!=null?Math.round(o.price*0.015):null; return { amt:'1,5%', note:'äripind'+(a!=null?(' ≈ '+eur(a)+' € + km'):''), line:'1,5% tehinguväärtusest'+(a!=null?(' (≈ '+eur(a)+' € + km)'):'') }; }
-    return { amt:'5 000 € + km', note:'eluruum · kokku 6 200 €', line:'5 000 € + käibemaks (24%) = 6 200 €' };
+    var price=o&&o.price!=null?Number(o.price):0;
+    if(o && o.property_type==='Äripind'){ var a=price?Math.round(price*0.015):null; return { amt:'1,5%', note:'äripind'+(a!=null?(' ≈ '+eur(a)+' €'):''), line:'1,5% tehinguväärtusest'+(a!=null?(' ≈ '+eur(a)+' € (+ km)'):''), logic:'Äripindade puhul kokkuleppeline 1,5% tehinguväärtusest — vastab valdkonna tavale ja katab kogu müügiprotsessi.' }; }
+    var pct=price?Math.round(6200/price*1000)/10:null;
+    var logic=(pct!=null&&pct<=4.2)
+      ? 'Te maksate tehtud töö eest, mitte protsenti oma vara väärtusest. Turul on tavaline maakleritasu 2–4% müügihinnast — fikseeritud tasu on läbipaistev ja sellel objektil enamasti soodsam.'
+      : 'Fikseeritud tasu katab kogu professionaalse teenuse sõltumata objekti hinnast — te ei maksa rohkem lihtsalt seetõttu, et vara on väärtuslikum. Läbipaistev ja etteennustatav.';
+    return { amt:'5 000 € + km', note:'eluruum · kokku 6 200 €', line:'5 000 € + käibemaks (24%) = 6 200 €'+(pct!=null?(' ≈ '+String(pct).replace('.',',')+'% müügihinnast'):''), logic:logic };
   }
   function works(){ var w=[]; document.querySelectorAll('.card .chk.on').forEach(function(c){ if(c.id!=='inclListing') w.push(c.textContent.trim()); }); return w; }
 
@@ -170,6 +175,7 @@
      +'<div class="kv"><span class="k">Kestus</span><span class="v">'+esc(document.getElementById('duration').value)+'</span></div>'
      +'<div class="kv"><span class="k">Tasu maksmise alus</span><span class="v">Eduka võõrandamistehingu korral</span></div>'
      +'<div class="kv"><span class="k">Ennetähtaegne lõpetamine</span><span class="v">2-nädalase etteteatamisega, sanktsioonideta</span></div>'
+     +'<div class="sec">Vahendustasu — mida see tähendab</div><div style="font-size:12px;color:#3a352d;line-height:1.6">'+esc(f.logic||'')+'</div>'
      +'<div class="sec">Mis tasu sisaldab</div><div class="works">'+wk.map(function(w){ return '<div><span class="t">✓</span>'+esc(w)+'</div>'; }).join('')+'</div>'
      +((inclL&&o.listing_text)?('<div class="sec">Kuulutuse eelnäidis</div><div class="listing">'+esc(o.listing_text)+'</div>'):'')
      +'<div class="foot"><div>Meelis Koroljov<br>kinnisvara müügispetsialist<br>+372 53 441 365 · meelis.koroljov@uusmaa.ee</div><div class="org">UUS MAA<br>Arena, Tallinn</div></div>';
