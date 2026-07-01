@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uus objekt — Mell</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --bg:#0d1310; --sf:#151f19; --cd:#1b2721; --cd2:#233129; --inp:#0b120e;
+    --ink:#e9efe9; --ink2:#93a89b; --ink3:#5f7166;
+    --line:rgba(255,255,255,.06); --line2:rgba(255,255,255,.12);
+    --gr:#48c281; --gr2:#2b8f5a; --grsoft:rgba(72,194,129,.15);
+    --gold:#d2b06c; --te:#dd8d61; --red:#e0715f;
+    --sh:0 20px 44px -30px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(1100px 600px at 86% -10%,rgba(72,194,129,.09),transparent 60%),var(--bg);min-height:100vh}
+  .serif{font-family:"Georgia","Times New Roman",serif}
+  .wrap{max-width:880px;margin:0 auto;padding:20px 20px 80px}
+  .topline{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(150deg,var(--gr),var(--gr2));color:#06140d;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+  .brand{font-weight:700;font-size:15px;letter-spacing:-.02em}
+  .topline .sp{flex:1}
+  .back{font-size:12.5px;color:var(--ink2);text-decoration:none} .back:hover{color:var(--gr)}
+  .h1{font-size:23px;font-weight:600;letter-spacing:-.02em;margin-bottom:2px}
+  .lead{font-size:12px;color:var(--ink2);margin-bottom:16px}
+  #authWarn{display:none;background:rgba(224,113,95,.12);border:1px solid rgba(224,113,95,.3);color:var(--red);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px}
+  #authWarn a{color:var(--gr)}
+
+  .typebar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .type{padding:9px 15px;border-radius:11px;font-size:13px;font-weight:600;color:var(--ink2);background:var(--sf);border:1px solid var(--line2);cursor:pointer;transition:.15s}
+  .type:hover{color:var(--ink)} .type.on{background:var(--grsoft);color:var(--gr);border-color:rgba(72,194,129,.4)}
+
+  .section{background:var(--sf);border:1px solid var(--line);border-radius:15px;padding:16px 18px;margin-bottom:13px;box-shadow:var(--sh)}
+  .section h3{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .section h3 .d{width:7px;height:7px;border-radius:50%;background:var(--gr)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px} .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 16px}
+  @media(max-width:640px){.grid2,.grid3{grid-template-columns:1fr}}
+  .field label{display:block;font-size:11.5px;color:var(--ink2);margin-bottom:5px}
+  .field label .src{color:var(--gr);font-size:10px;margin-left:5px}
+  .inp,.sel,.ta{width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--inp);border:1px solid var(--line2);border-radius:10px;padding:10px 11px;transition:.15s}
+  .inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--gr);box-shadow:0 0 0 3px var(--grsoft)}
+  .sel{cursor:pointer}
+  .seg{display:inline-flex;background:var(--inp);border:1px solid var(--line2);border-radius:10px;padding:3px}
+  .seg button{border:none;background:none;color:var(--ink2);font:inherit;font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer}
+  .seg button.on{background:var(--gr);color:#06140d}
+  .only{display:none} .only.show{display:block}
+
+  .mell{background:linear-gradient(150deg,var(--grsoft),var(--sf) 62%);border:1px solid rgba(72,194,129,.22)}
+  .mh{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#bfe6cf,var(--gr));box-shadow:0 0 16px rgba(72,194,129,.5);flex-shrink:0}
+  .mt{font-weight:700;font-size:14px} .ms{font-size:11px;color:var(--ink2)}
+
+  .btn{border:none;border-radius:11px;padding:12px 18px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn.go{background:linear-gradient(180deg,var(--gr),var(--gr2));color:#06140d;box-shadow:0 10px 22px -12px rgba(72,194,129,.55)}
+  .btn.go:hover{filter:brightness(1.07);transform:translateY(-1px)}
+  .btn.go:disabled{opacity:.5;cursor:default;filter:none;transform:none}
+  .btn.gh{background:var(--cd);color:var(--ink);border:1px solid var(--line2)} .btn.gh:hover{border-color:var(--gr);color:var(--gr)}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px;position:sticky;bottom:0;background:linear-gradient(0deg,var(--bg) 40%,transparent);padding:14px 0 4px}
+  .feepill{margin-left:auto;font-size:12px;color:var(--ink2)} .feepill b{color:var(--gr)}
+  #msg{font-size:13px;font-weight:600;margin-left:6px}
+  .foot{text-align:center;font-size:11px;color:var(--ink3);padding-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topline">
+    <span class="mark">UM</span><span class="brand">Mell · uus objekt</span>
+    <span class="sp"></span>
+    <a class="back" href="/crm.html">← Töövoog</a>
+  </div>
+  <div class="h1 serif">Uus objekt</div>
+  <div class="lead">Vali tüüp → väljad kohanduvad. Kõik muudetav. All Mellile vabas vormis, mis struktuuri ei mahu. Salvestub otse su CRM-i.</div>
+  <div id="authWarn">Sa pole sisse logitud. <a href="/crm.html">Logi sisse Töövoos</a>, siis tule tagasi — objekti salvestamiseks on vaja sessiooni.</div>
+
+  <div class="typebar" id="typebar">
+    <div class="type on" data-t="korter" data-pt="Korter">Korter</div>
+    <div class="type" data-t="maja" data-pt="Maja">Maja / suvila</div>
+    <div class="type" data-t="majaosa" data-pt="Majaosa">Majaosa</div>
+    <div class="type" data-t="maa" data-pt="Maa-krunt">Maa / krunt</div>
+    <div class="type" data-t="ari" data-pt="Äripind">Äripind</div>
+    <div class="type" data-t="garaaz" data-pt="Garaaž">Garaaž</div>
+  </div>
+
+  <div class="section">
+    <h3><span class="d"></span>Põhi</h3>
+    <div class="grid3">
+      <div class="field"><label>Tehingu tüüp</label><div class="seg" id="dealSeg" style="width:100%"><button class="on" data-v="muuk">Müük</button><button data-v="uur">Üür</button></div></div>
+      <div class="field"><label>Omandivorm</label><select class="sel" id="ownership"><option value="">Vali...</option><option>Korteriomand</option><option>Kinnisasi</option><option>Hoonestusõigus</option><option>Kaasomand</option></select></div>
+      <div class="field"><label>Kontaktiviis</label><select class="sel" id="contactMethod"><option value="">Vali...</option><option>Telefon</option><option>E-post</option><option>Portaal</option></select></div>
+    </div>
+    <div class="grid3">
+      <div class="field"><label>Omaniku nimi</label><input class="inp" id="contactName" placeholder="Nimi"></div>
+      <div class="field"><label>Telefon</label><input class="inp" id="phone" placeholder="+372 ..."></div>
+      <div class="field"><label>E-post</label><input class="inp" id="email" placeholder="nimi@email.ee"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3><span class="d"></span>Asukoht</h3>
+    <div class="grid2">
+      <div class="field"><label>Aadress (tänav, nr)</label><input class="inp" id="address" placeholder="nt Sõpruse pst 257"></div>
+      <div class="field"><label>Linnaosa / asum</label><input class="inp" id="asum" placeholder="nt Mustamäe"></div>
+      <div class="field"><label>Linn / vald</label><input class="inp" id="municipality" value="Tallinn"></div>
+      <div class="field"><label>Katastritunnus</label><input class="inp" id="cadastral" placeholder="nt 78405:501:0350"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3><span class="d"></span>Objekti andmed</h3>
+    <div class="grid3">
+      <div class="field"><label>Üldpind (m²)</label><input class="inp" id="area" placeholder="m²"></div>
+      <div class="field only show t-korter t-maja t-majaosa"><label>Tube</label><input class="inp" id="rooms" placeholder="nt 3"></div>
+      <div class="field only show t-korter t-maja t-majaosa t-ari"><label>Korrus / korruseid</label><input class="inp" id="floor" placeholder="nt 3/5"></div>
+      <div class="field"><label>Ehitusaasta</label><input class="inp" id="buildYear" placeholder="nt 1998"></div>
+      <div class="field"><label>Seisukord</label><select class="sel" id="condition"><option value="">Vali...</option><option>Uusarendus</option><option>Uus</option><option>Renoveeritud</option><option>Heas korras</option><option>San. remont tehtud</option><option>Keskmine</option><option>Vajab san. remonti</option><option>Vajab renoveerimist</option><option>Vajab kontrollimist</option></select></div>
+      <div class="field only show t-korter t-maja t-majaosa t-ari"><label>Küte</label><select class="sel" id="heating"><option value="">Vali...</option><option>Kaugküte</option><option>Gaas</option><option>Elekter</option><option>Õhksoojuspump</option><option>Ahi / kamin</option></select></div>
+      <div class="field only show t-maja t-majaosa"><label>Materjal</label><select class="sel" id="material"><option value="">Vali...</option><option>Kivi</option><option>Puit</option><option>Paneel</option><option>Karkass</option></select></div>
+      <div class="field only show t-maja t-maa t-ari"><label>Krundi / kinnistu pind (m²)</label><input class="inp" id="plotArea" placeholder="m²"></div>
+      <div class="field"><label>Energiamärgis</label><select class="sel" id="energy"><option value="">Puudub</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select></div>
+    </div>
+
+    <div class="only t-ari" style="margin-top:4px;border-top:1px solid var(--line);padding-top:14px">
+      <div class="grid3">
+        <div class="field"><label>Sobib kasutuseks</label><input class="inp" id="usePurposeAri" placeholder="büroo, kaubandus, ladu..."></div>
+        <div class="field"><label>Registriosad</label><input class="inp" id="registryParts" placeholder="nt 134,6 + 121,0 m²"></div>
+        <div class="field"><label>Käibemaks lisandub?</label><div class="seg" id="vatSeg" style="width:100%"><button data-v="jah">Jah</button><button class="on" data-v="ei">Ei</button></div></div>
+        <div class="field"><label>Praegune üür (€/kuu)</label><input class="inp" id="rentCurrent" placeholder="nt 1200"></div>
+        <div class="field"><label>Eripära</label><input class="inp" id="ariNote" placeholder="vitriinaknad, eraldi sissepääs, parkimine"></div>
+      </div>
+    </div>
+
+    <div class="only t-maa" style="margin-top:4px;border-top:1px solid var(--line);padding-top:14px">
+      <div class="grid3">
+        <div class="field"><label>Sihtotstarve</label><select class="sel" id="usePurposeMaa"><option value="">Vali...</option><option>Elamumaa</option><option>Ärimaa</option><option>Tootmismaa</option><option>Maatulundusmaa</option><option>Metsamaa</option><option>Aiamaa</option></select></div>
+        <div class="field"><label>Detailplaneering / ehitusõigus</label><select class="sel" id="landPlanning"><option value="">Vali...</option><option>Kehtiv DP</option><option>Ehitusluba</option><option>Puudub</option></select></div>
+        <div class="field"><label>Kommunikatsioonid</label><input class="inp" id="utilities" placeholder="vesi, kanal, elekter, gaas"></div>
+      </div>
+    </div>
+
+    <div class="only t-garaaz" style="margin-top:4px;border-top:1px solid var(--line);padding-top:14px">
+      <div class="grid3">
+        <div class="field"><label>Boksi mõõt (m)</label><input class="inp" id="garSize" placeholder="nt 3 x 6"></div>
+        <div class="field"><label>Kõrgus / ligipääs</label><input class="inp" id="garAccess" placeholder="ukse kõrgus, sissesõit"></div>
+        <div class="field"><label>Elekter</label><select class="sel" id="garElec"><option value="">Vali...</option><option>Elekter olemas</option><option>Puudub</option></select></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3><span class="d"></span>Hind & kulud</h3>
+    <div class="grid3">
+      <div class="field"><label>Hind (€)</label><input class="inp" id="price" placeholder="nt 152000"></div>
+      <div class="field"><label>Kommunaalkulud (suvi / talv)</label><input class="inp" id="utilityCosts" placeholder="nt 92 / 187 €"></div>
+      <div class="field"><label>Portaali link (kui olemas)</label><input class="inp" id="propertyLink" placeholder="kv.ee/..."></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3><span class="d"></span>Meedia (lingid)</h3>
+    <div class="grid3">
+      <div class="field"><label>Foto (link)</label><input class="inp" id="imgUrl" placeholder="pildi URL"></div>
+      <div class="field"><label>Video (link)</label><input class="inp" id="videoUrl" placeholder="YouTube / Vimeo"></div>
+      <div class="field"><label>Droonivideo (link)</label><input class="inp" id="droneUrl" placeholder="link"></div>
+    </div>
+  </div>
+
+  <div class="section mell">
+    <div class="mh"><span class="orb"></span><div><div class="mt">Vabas vormis Mellile</div><div class="ms">lisa kõik, mis struktuuri ei mahu — Mell arvestab seda kuulutuses, hinnangus ja esitluses</div></div></div>
+    <textarea class="ta" id="mellNotes" style="min-height:110px" placeholder="Nt: naabruses uus kool valmimas; omanik kiirustab kolimisega; katus vahetatud 2021; müügipõhjus pärand; ostja tahaks kiiret tehingut..."></textarea>
+  </div>
+
+  <div class="bar">
+    <button class="btn go" id="saveBtn">Salvesta objekt</button>
+    <button class="btn gh" id="resetBtn">Tühjenda</button>
+    <span id="msg"></span>
+    <span class="feepill">Vahendustasu: <b id="fee">5000 € + km</b></span>
+  </div>
+  <div class="foot">Salvestub otse su Töövoogu (Supabase). Ilmub müügitorusse „Kontakt" etappi.</div>
+</div>
+
+<script>
+  const SB_URL='https://iawvsfylguajkoikbdaf.supabase.co';
+  const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
+  const sb=supabase.createClient(SB_URL,SB_KEY);
+  let SESSION=null;
+
+  // type
+  let TYPE='korter', PT='Korter';
+  function setType(t,pt){
+    TYPE=t; PT=pt;
+    document.querySelectorAll('.type').forEach(function(x){ x.classList.toggle('on', x.dataset.t===t); });
+    document.querySelectorAll('.only').forEach(function(el){
+      let m=false; el.classList.forEach(function(c){ if(c==='t-'+t) m=true; }); el.classList.toggle('show', m);
+    });
+    var fee=document.getElementById('fee');
+    fee.textContent = t==='ari' ? '1,5%' : (t==='garaaz' ? 'kokkuleppel' : '5000 € + km');
+  }
+  document.querySelectorAll('.type').forEach(function(x){ x.addEventListener('click',function(){ setType(x.dataset.t, x.dataset.pt); }); });
+  // segmented
+  document.querySelectorAll('.seg').forEach(function(s){ s.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ s.querySelectorAll('button').forEach(function(y){y.classList.remove('on')}); b.classList.add('on'); }); }); });
+  function segVal(id){ var b=document.querySelector('#'+id+' button.on'); return b?b.dataset.v:''; }
+
+  function v(id){ var el=document.getElementById(id); return el&&el.value?el.value.trim():''; }
+  function num(id){ var s=v(id).replace(/\s/g,'').replace(',','.'); if(!s) return null; var n=parseFloat(s); return isNaN(n)?null:n; }
+  function intg(id){ var s=v(id).replace(/\D/g,''); if(!s) return null; var n=parseInt(s,10); return isNaN(n)?null:n; }
+
+  async function init(){
+    try{
+      const { data:{ session } } = await sb.auth.getSession();
+      SESSION = session;
+      if(!session){ document.getElementById('authWarn').style.display='block'; document.getElementById('saveBtn').disabled=true; }
+    }catch(e){ document.getElementById('authWarn').style.display='block'; document.getElementById('saveBtn').disabled=true; }
+  }
+
+  function buildPatch(uid){
+    var p = { created_by:uid, assigned_to:uid, status:'uus', deal_type:segVal('dealSeg')||'muuk', property_type:PT };
+    var map = {
+      contact_name:v('contactName'), phone:v('phone'), email:v('email'), contact_method:v('contactMethod'),
+      ownership_form:v('ownership'), property_address:v('address'), asum:v('asum'), municipality:v('municipality'),
+      cadastral_number:v('cadastral'), condition:v('condition'), floor:v('floor'), heating:v('heating'),
+      building_material:v('material'), energy_label:v('energy'), registry_parts:v('registryParts'),
+      land_planning:v('landPlanning'), utilities:v('utilities'), utility_costs:v('utilityCosts'),
+      property_link:v('propertyLink'), img_url:v('imgUrl'), video_url:v('videoUrl'), drone_url:v('droneUrl'),
+      mell_notes:v('mellNotes')
+    };
+    // use_purpose: äri või maa
+    var up = TYPE==='ari' ? v('usePurposeAri') : (TYPE==='maa' ? v('usePurposeMaa') : '');
+    if(up) map.use_purpose = up;
+    // description: äri eripära / garaaž
+    var desc = TYPE==='ari' ? v('ariNote') : (TYPE==='garaaz' ? [v('garSize'),v('garAccess'),v('garElec')].filter(Boolean).join(' · ') : '');
+    if(desc) map.description = desc;
+    // numbrid
+    var price=num('price'), area=num('area'), plot=num('plotArea'), rent=num('rentCurrent'), rooms=intg('rooms'), by=intg('buildYear');
+    if(price!=null) p.price=price; if(area!=null) p.area=area; if(plot!=null) p.plot_area=plot;
+    if(rent!=null) p.rent_current=rent; if(rooms!=null) p.rooms=rooms; if(by!=null) p.build_year=by;
+    // KM (ainult äripinnal)
+    if(TYPE==='ari'){ var vt=segVal('vatSeg'); if(vt) p.vat_applies=(vt==='jah'); }
+    // lisa mittetühjad
+    Object.keys(map).forEach(function(k){ if(map[k]) p[k]=map[k]; });
+    return p;
+  }
+
+  async function save(){
+    var msg=document.getElementById('msg'), btn=document.getElementById('saveBtn');
+    msg.textContent=''; msg.style.color='';
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ msg.style.color='#e0715f'; msg.textContent='Pole sisse logitud — logi Töövoos.'; return; }
+    if(!v('address') && !v('contactName')){ msg.style.color='#e0715f'; msg.textContent='Lisa vähemalt aadress või omaniku nimi.'; return; }
+    btn.disabled=true; msg.style.color='#93a89b'; msg.textContent='Salvestan...';
+    try{
+      var patch=buildPatch(session.user.id);
+      const { data, error } = await sb.from('leads').insert(patch).select().single();
+      if(error){ msg.style.color='#e0715f'; msg.textContent='Viga: '+error.message; btn.disabled=false; return; }
+      msg.style.color='#48c281'; msg.innerHTML='✓ Salvestatud! <a href="/crm.html" style="color:#48c281">Ava Töövoog</a> · või lisa järgmine.';
+      btn.disabled=false;
+      resetForm();
+    }catch(e){ msg.style.color='#e0715f'; msg.textContent='Viga: '+(e.message||e); btn.disabled=false; }
+  }
+  function resetForm(){
+    document.querySelectorAll('.inp,.ta').forEach(function(el){ if(el.id!=='municipality') el.value=''; });
+    document.querySelectorAll('.sel').forEach(function(el){ el.selectedIndex=0; });
+  }
+  document.getElementById('saveBtn').addEventListener('click',save);
+  document.getElementById('resetBtn').addEventListener('click',function(){ resetForm(); document.getElementById('msg').textContent=''; });
+
+  setType('korter','Korter');
+  init();
+</script>
+</body>
+</html>
