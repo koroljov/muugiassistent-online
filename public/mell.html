@@ -97,7 +97,7 @@
         +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+dot+';margin-right:7px"></span>'
         +esc(o.contact_name||o.property_address||'(nimeta)')+(o.price!=null?(' <span class="oprice">· '+eur(o.price)+' €</span>'):'')+'</div>'
         +'<div class="osub">'+esc(o.property_address||'')+(sub?(' · '+esc(sub)):'')+'</div></div>'
-        +'<div class="go"><a class="mini" href="/kuulutus.html?id='+o.id+'">Kuulutus</a><a class="mini" href="/pakkumine.html?id='+o.id+'">Pakkumine</a></div></div>';
+        +'<div class="go"><a class="mini gh" href="/objekt.html?id='+o.id+'">Ava</a><a class="mini" href="/kuulutus.html?id='+o.id+'">Kuulutus</a><a class="mini" href="/pakkumine.html?id='+o.id+'">Pakkumine</a></div></div>';
     }).join('');
   }
   init();
