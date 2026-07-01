@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kuulutuse loomine — Mell</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --bg:#0d1310; --sf:#151f19; --cd:#1b2721; --cd2:#233129; --inp:#0b120e;
+    --ink:#e9efe9; --ink2:#93a89b; --ink3:#5f7166;
+    --line:rgba(255,255,255,.06); --line2:rgba(255,255,255,.12);
+    --gr:#48c281; --gr2:#2b8f5a; --grsoft:rgba(72,194,129,.15);
+    --gold:#d2b06c; --te:#dd8d61; --red:#e0715f;
+    --sh:0 20px 44px -30px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(1100px 600px at 86% -10%,rgba(72,194,129,.09),transparent 60%),var(--bg);min-height:100vh}
+  .serif{font-family:"Georgia","Times New Roman",serif}
+  .wrap{max-width:860px;margin:0 auto;padding:20px 20px 80px}
+  .topline{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(150deg,var(--gr),var(--gr2));color:#06140d;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+  .brand{font-weight:700;font-size:15px;letter-spacing:-.02em}
+  .topline .sp{flex:1}
+  .back{font-size:12.5px;color:var(--ink2);text-decoration:none} .back:hover{color:var(--gr)}
+  .h1{font-size:23px;font-weight:600;letter-spacing:-.02em;margin-bottom:2px}
+  .lead{font-size:12px;color:var(--ink2);margin-bottom:16px}
+  #authWarn{display:none;background:rgba(224,113,95,.12);border:1px solid rgba(224,113,95,.3);color:var(--red);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px}
+  #authWarn a{color:var(--gr)}
+
+  .section{background:var(--sf);border:1px solid var(--line);border-radius:15px;padding:16px 18px;margin-bottom:13px;box-shadow:var(--sh)}
+  .section h3{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .section h3 .d{width:7px;height:7px;border-radius:50%;background:var(--gr)}
+  .sel,.ta{width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--inp);border:1px solid var(--line2);border-radius:10px;padding:10px 11px;transition:.15s}
+  .sel:focus,.ta:focus{outline:none;border-color:var(--gr);box-shadow:0 0 0 3px var(--grsoft)}
+  .sel{cursor:pointer}
+  .facts{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .chip{font-size:11.5px;color:var(--ink);background:var(--cd);border:1px solid var(--line);border-radius:999px;padding:5px 10px}
+  .chip b{color:var(--gr)}
+  .mnotes{margin-top:10px;font-size:12px;color:var(--ink2);background:var(--grsoft);border:1px solid rgba(72,194,129,.2);border-radius:10px;padding:9px 11px;display:none}
+  .mnotes.show{display:block}
+  .btn{border:none;border-radius:11px;padding:11px 16px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn.go{background:linear-gradient(180deg,var(--gr),var(--gr2));color:#06140d;box-shadow:0 10px 22px -12px rgba(72,194,129,.55)}
+  .btn.go:hover{filter:brightness(1.07);transform:translateY(-1px)} .btn.go:disabled{opacity:.5;cursor:default;filter:none;transform:none}
+  .btn.gh{background:var(--cd);color:var(--ink);border:1px solid var(--line2)} .btn.gh:hover{border-color:var(--gr);color:var(--gr)}
+  .btn.mell{background:linear-gradient(150deg,var(--grsoft),var(--cd));color:var(--gr);border:1px solid rgba(72,194,129,.3)}
+  .out{background:var(--inp);border:1px solid var(--line);border-radius:11px;padding:4px;margin-top:4px}
+  .outlbl{font-size:10.5px;color:var(--gr);font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:8px 8px 4px}
+  .ta{resize:vertical;border:none;background:transparent}
+  .row{display:flex;gap:9px;flex-wrap:wrap;margin-top:8px;align-items:center}
+  #msg{font-size:12.5px;font-weight:600}
+  .foot{text-align:center;font-size:11px;color:var(--ink3);padding-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topline"><span class="mark">UM</span><span class="brand">Mell · kuulutuse loomine</span><span class="sp"></span><a class="back" href="/crm.html">← Töövoog</a> <a class="back" href="/uus.html" style="margin-left:12px">+ Uus objekt</a></div>
+  <div class="h1 serif">Kuulutuse loomine</div>
+  <div class="lead">Vali objekt → Mell kirjutab kuulutuse su toonis, ainult päris andmetest. Portaali tekst + sotsiaalmeedia. Salvestub objekti külge.</div>
+  <div id="authWarn">Sa pole sisse logitud. <a href="/crm.html">Logi sisse Töövoos</a>, siis tule tagasi.</div>
+
+  <div class="section">
+    <h3><span class="d"></span>Objekt</h3>
+    <select class="sel" id="objSel"><option value="">Laen objekte...</option></select>
+    <div class="facts" id="facts"></div>
+    <div class="mnotes" id="mnotes"></div>
+  </div>
+
+  <div class="section">
+    <h3><span class="d"></span>Portaali tekst <span style="margin-left:auto;font-weight:500;color:var(--gr);font-size:10px;text-transform:none;letter-spacing:0">✦ Mell · sinu toon, ainult faktid</span></h3>
+    <button class="btn mell" id="genPortal" style="width:100%;justify-content:center;margin-bottom:10px">✦ Mell kirjutab kuulutuse</button>
+    <div class="out"><div class="outlbl">kv.ee · city24 · kinnisvara24</div><textarea class="ta" id="portTa" style="min-height:180px" placeholder="Vali objekt ja vajuta „Mell kirjutab kuulutuse"."></textarea></div>
+    <div class="row"><button class="btn go" id="saveBtn">Salvesta objekti külge</button><button class="btn gh" id="copyPort">Kopeeri</button><span id="msg"></span></div>
+  </div>
+
+  <div class="section">
+    <h3><span class="d"></span>Sotsiaalmeedia lühiversioon</h3>
+    <button class="btn mell" id="genSoc" style="width:100%;justify-content:center;margin-bottom:10px">✦ Mell teeb lühiversiooni</button>
+    <div class="out"><div class="outlbl">FB · Insta</div><textarea class="ta" id="socTa" style="min-height:90px" placeholder="Vajuta „Mell teeb lühiversiooni"."></textarea></div>
+    <div class="row"><button class="btn gh" id="copySoc">Kopeeri postitus</button></div>
+  </div>
+
+  <div class="foot">Sama AI-mootor ja anti-hallu reeglid mis Töövoos. Ainult päris andmed; puuduvat ei leiuta.</div>
+</div>
+
+<script>
+  const SB_URL='https://iawvsfylguajkoikbdaf.supabase.co';
+  const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
+  const sb=supabase.createClient(SB_URL,SB_KEY);
+  var OBJ={}, ACTIVE=null;
+
+  var AI_STIIL='\n\nSTIIL: Kirjuta eesti kirjakeeles, lihtsate selgete lausetega. Väldi ilukõnet, müügijuttu, emotsionaalsust, klišeesid ja korporatiivset keelt. Keskendu faktidele, loogikale ja reaalsele olukorrale. Ära kirjuta pikemalt kui vaja. Toon: rahulik, professionaalne, usaldusväärne, otsekohene, kindel aga mitte pealetükkiv. Ära kasuta hüüumärke ega emojisid. Ära kasuta vorminduse märke (*, #, loendid) — puhas tekst. Kinnisvaratekstis keskendu sellele, mis mõjutab ostja otsust; väldi sõnu unikaalne, suurepärane, ideaalne, fantastiline, eksklusiivne, luksuslik, kui puudub objektiivne põhjus. JURIIDIKA: ära luba kindlat tulemust ega hinda; ära nimeta vahendustasu, kui pole antud; ära esita hindu/protsente/statistikat faktina, kui pole sisendis; ära anna juriidilist/maksu/notariaalset nõu; ära kasuta survestavat keelt.';
+  var LISTING_SYS='Oled Uus Maa kinnisvarabüroo kuulutuse koostaja. Koosta valmis, kohe avaldatav müügikuulutuse tekst eesti keeles AINULT antud faktide põhjal. RANGE REEGEL — ÄRA LEIUTA: ära lisa ühtegi omadust, ruumi, materjali, vaadet, seisukorda ega eelist, mida andmetes pole. Kui olemasolev kirjeldus on antud, võid selle professionaalselt ümber sõnastada, kuid MITTE lisada uusi väiteid. Ära leiuta numbreid — hind, pindala, tube, korrus, ehitusaasta kasuta täpselt antud kujul. STRUKTUUR: (1) haarav, aus avalause; (2) objekti faktid sujuvas tekstis; (3) asukoht, kui antud, neutraalselt; (4) lõpetus üleskutsega võtta ühendust vaatamise kokkuleppimiseks. Kui väli puudub, jäta välja — ära maini puudumist. OLULINE: ÜHEKORDNE genereerimine — vasta AINULT valmis kuulutustekstiga, ära küsi lisaandmeid. Professionaalne, kuiv-konkreetne eesti kirjakeel, ilma emojideta, ~60-200 sõna.'+AI_STIIL;
+  var SOCIAL_SYS='Oled Uus Maa sotsiaalmeedia postituse koostaja. Koosta lühike (2–4 lauset) postitus (Facebook/Instagram) AINULT antud faktide põhjal. Sama range reegel: ära leiuta omadusi ega numbreid. Aus, konkreetne, ilma emojideta ja hüüumärkideta. Lõpus lühike üleskutse ja kontakt: Meelis Koroljov, Uus Maa, +372 53 441 365.'+AI_STIIL;
+
+  async function freshToken(force){
+    try{ if(force) await sb.auth.refreshSession(); var s=await sb.auth.getSession(); return (s.data&&s.data.session)?s.data.session.access_token:''; }catch(e){ return ''; }
+  }
+  async function aiFetch(payload){
+    try{
+      var token=await freshToken();
+      var r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+token},body:JSON.stringify(payload),signal:AbortSignal.timeout(30000)});
+      if(r.status===401){ token=await freshToken(true); r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+token},body:JSON.stringify(payload),signal:AbortSignal.timeout(30000)}); if(r.status===401) return 'Viga: sessioon aegus'; }
+      var j=await r.json(); if(!r.ok) return 'Viga: '+(j.error||r.status); return j.text||'';
+    }catch(e){ return 'Viga: '+e.message; }
+  }
+
+  function esc(s){ return String(s==null?'':s); }
+  function objLabel(o){ return [o.contact_name, o.property_address, o.property_type, (o.price!=null?Number(o.price).toLocaleString('et-EE')+' €':'')].filter(Boolean).join(' · '); }
+
+  function buildLines(o){
+    var loc=[o.county,o.district,o.asum].filter(Boolean).join(', ');
+    return [
+      o.property_address&&('Aadress: '+o.property_address),
+      loc&&('Asukoht: '+loc),
+      o.property_type&&('Tüüp: '+o.property_type+(o.use_purpose?(' / '+o.use_purpose):'')),
+      o.deal_type&&('Tehing: '+(o.deal_type==='uur'?'üür':'müük')),
+      o.condition&&('Seisukord: '+o.condition),
+      (o.price!=null)&&('Hind: '+o.price+' €'),
+      (o.area!=null)&&('Pindala: '+o.area+' m²'),
+      (o.plot_area!=null)&&('Kinnistu pind: '+o.plot_area+' m²'),
+      (o.rooms!=null)&&('Tube: '+o.rooms),
+      o.floor&&('Korrus: '+o.floor),
+      (o.build_year!=null)&&('Ehitusaasta: '+o.build_year),
+      o.registry_parts&&('Registriosad: '+o.registry_parts),
+      (o.rent_current!=null)&&('Praegune üür: '+o.rent_current+' €/kuu'),
+      o.description&&('Olemasolev kirjeldus (võib ümber sõnastada, MITTE lisada uut): '+o.description),
+      o.mell_notes&&('Lisainfo müügispetsialistilt (kasuta ainult kui asjakohane, ära leiuta): '+o.mell_notes)
+    ].filter(Boolean).join('\n');
+  }
+
+  function showFacts(o){
+    var el=document.getElementById('facts'); var c=[];
+    if(o.property_type) c.push('<span class="chip">'+esc(o.property_type)+'</span>');
+    if(o.area!=null) c.push('<span class="chip">'+esc(o.area)+' m²</span>');
+    if(o.plot_area!=null) c.push('<span class="chip">kinnistu '+esc(o.plot_area)+' m²</span>');
+    if(o.rooms!=null) c.push('<span class="chip">'+esc(o.rooms)+' tuba</span>');
+    if(o.build_year!=null) c.push('<span class="chip">'+esc(o.build_year)+'</span>');
+    if(o.condition) c.push('<span class="chip">'+esc(o.condition)+'</span>');
+    if(o.price!=null) c.push('<span class="chip"><b>'+Number(o.price).toLocaleString('et-EE')+' €</b></span>');
+    el.innerHTML=c.join('');
+    var mn=document.getElementById('mnotes');
+    if(o.mell_notes){ mn.textContent='Mellile: '+o.mell_notes; mn.classList.add('show'); } else mn.classList.remove('show');
+    if(o.listing_text){ document.getElementById('portTa').value=o.listing_text; }
+  }
+
+  async function loadObjects(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ document.getElementById('authWarn').style.display='block'; document.getElementById('objSel').innerHTML='<option>Logi sisse</option>'; return; }
+    var { data, error } = await sb.from('leads')
+      .select('id,contact_name,property_address,property_type,use_purpose,deal_type,condition,price,area,rooms,floor,build_year,county,district,asum,description,mell_notes,plot_area,registry_parts,rent_current,listing_text')
+      .is('archived_at',null).order('created_at',{ascending:false}).limit(300);
+    var sel=document.getElementById('objSel');
+    if(error){ sel.innerHTML='<option>Viga: '+error.message+'</option>'; return; }
+    OBJ={}; var opts=['<option value="">— vali objekt —</option>'];
+    (data||[]).forEach(function(o){ OBJ[o.id]=o; opts.push('<option value="'+o.id+'">'+esc(objLabel(o))+'</option>'); });
+    sel.innerHTML=opts.join('');
+  }
+
+  document.getElementById('objSel').addEventListener('change',function(){
+    ACTIVE=OBJ[this.value]||null;
+    document.getElementById('facts').innerHTML=''; document.getElementById('mnotes').classList.remove('show');
+    document.getElementById('portTa').value=''; document.getElementById('socTa').value='';
+    if(ACTIVE) showFacts(ACTIVE);
+  });
+
+  async function gen(which){
+    if(!ACTIVE){ msg('Vali enne objekt.','#e0715f'); return; }
+    var lines=buildLines(ACTIVE);
+    if(!lines){ msg('Objektil pole piisavalt andmeid.','#e0715f'); return; }
+    var btn=document.getElementById(which==='portal'?'genPortal':'genSoc');
+    var ta=document.getElementById(which==='portal'?'portTa':'socTa');
+    var sys=which==='portal'?LISTING_SYS:SOCIAL_SYS;
+    btn.disabled=true; var prev=ta.value; ta.value='Mell kirjutab…';
+    var out=await aiFetch({ system:sys, max_tokens: which==='portal'?600:250, model:'claude-sonnet-4-6', messages:[{role:'user',content:'Objekti faktid:\n'+lines}] });
+    btn.disabled=false;
+    if(out && out.indexOf('Viga')!==0){ ta.value=out; msg('Valmis — kontrolli ja timmi.','#48c281'); }
+    else { ta.value=prev; msg(out||'Ei õnnestunud, proovi uuesti.','#e0715f'); }
+  }
+  document.getElementById('genPortal').addEventListener('click',function(){ gen('portal'); });
+  document.getElementById('genSoc').addEventListener('click',function(){ gen('social'); });
+
+  function msg(t,c){ var m=document.getElementById('msg'); m.textContent=t; m.style.color=c||''; }
+  document.getElementById('saveBtn').addEventListener('click',async function(){
+    if(!ACTIVE){ msg('Vali objekt.','#e0715f'); return; }
+    var txt=document.getElementById('portTa').value.trim();
+    var btn=this; btn.disabled=true; msg('Salvestan...','#93a89b');
+    var { error } = await sb.from('leads').update({ listing_text: txt||null }).eq('id',ACTIVE.id);
+    btn.disabled=false;
+    if(error) msg('Viga: '+error.message,'#e0715f'); else { ACTIVE.listing_text=txt; msg('✓ Salvestatud objekti külge.','#48c281'); }
+  });
+  function copy(id){ var t=document.getElementById(id); t.select(); try{ document.execCommand('copy'); msg('Kopeeritud.','#48c281'); }catch(e){} }
+  document.getElementById('copyPort').addEventListener('click',function(){ copy('portTa'); });
+  document.getElementById('copySoc').addEventListener('click',function(){ copy('socTa'); });
+
+  loadObjects();
+</script>
+</body>
+</html>
