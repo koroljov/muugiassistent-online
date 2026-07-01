@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koostööpakkumine — Mell</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0d1310; --sf:#151f19; --cd:#1b2721; --inp:#0b120e;
+    --ink:#e9efe9; --ink2:#93a89b; --ink3:#5f7166;
+    --line:rgba(255,255,255,.06); --line2:rgba(255,255,255,.12);
+    --gr:#48c281; --gr2:#2b8f5a; --grsoft:rgba(72,194,129,.15); --red:#e0715f;
+    --sh:0 20px 44px -30px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(1100px 600px at 86% -10%,rgba(72,194,129,.09),transparent 60%),var(--bg);min-height:100vh}
+  .serif{font-family:"Georgia","Times New Roman",serif}
+  .wrap{max-width:1120px;margin:0 auto;padding:20px 20px 70px}
+  .topline{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(150deg,var(--gr),var(--gr2));color:#06140d;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+  .brand{font-weight:700;font-size:15px} .topline .sp{flex:1}
+  .back{font-size:12.5px;color:var(--ink2);text-decoration:none;margin-left:12px} .back:hover{color:var(--gr)}
+  .h1{font-size:22px;font-weight:600;letter-spacing:-.02em;margin-bottom:2px}
+  .lead{font-size:12px;color:var(--ink2);margin-bottom:14px}
+  #authWarn{display:none;background:rgba(224,113,95,.12);border:1px solid rgba(224,113,95,.3);color:var(--red);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px}
+  #authWarn a{color:var(--gr)}
+  .cols{display:grid;grid-template-columns:.85fr 1.15fr;gap:16px;align-items:start}
+  @media(max-width:900px){.cols{grid-template-columns:1fr}}
+
+  .card{background:var(--sf);border:1px solid var(--line);border-radius:15px;padding:16px 18px;margin-bottom:13px;box-shadow:var(--sh)}
+  .card h3{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:13px;font-weight:700}
+  .field{margin-bottom:12px} .field label{display:block;font-size:11.5px;color:var(--ink2);margin-bottom:5px}
+  .sel,.inp,.ta{width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--inp);border:1px solid var(--line2);border-radius:10px;padding:9px 11px;transition:.15s}
+  .sel:focus,.inp:focus,.ta:focus{outline:none;border-color:var(--gr);box-shadow:0 0 0 3px var(--grsoft)}
+  .sel{cursor:pointer}
+  .fee{display:flex;align-items:baseline;gap:8px;background:var(--grsoft);border:1px solid rgba(72,194,129,.25);border-radius:11px;padding:11px 13px}
+  .fee .amt{font-size:18px;font-weight:700;color:var(--gr)} .fee .l{font-size:11px;color:var(--ink2)}
+  .chk{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:4px 0;cursor:pointer;color:var(--ink)}
+  .cbx{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line2);flex-shrink:0}
+  .chk.on .cbx{background:var(--gr);border-color:var(--gr)}
+  .btn{border:none;border-radius:11px;padding:11px 16px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn.go{background:linear-gradient(180deg,var(--gr),var(--gr2));color:#06140d;box-shadow:0 10px 22px -12px rgba(72,194,129,.55)} .btn.go:hover{filter:brightness(1.07);transform:translateY(-1px)} .btn.go:disabled{opacity:.5}
+  .btn.gh{background:var(--cd);color:var(--ink);border:1px solid var(--line2)} .btn.gh:hover{border-color:var(--gr);color:var(--gr)}
+  .btn.mell{background:linear-gradient(150deg,var(--grsoft),var(--cd));color:var(--gr);border:1px solid rgba(72,194,129,.3);width:100%;justify-content:center}
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:6px}
+  #msg{font-size:12px;font-weight:600}
+
+  /* LIGHT PREMIUM DOCUMENT */
+  .docwrap{background:var(--sf);border:1px solid var(--line);border-radius:15px;padding:14px;box-shadow:var(--sh)}
+  #doc{background:#fffdf9;color:#26231e;border-radius:8px;padding:34px 38px;font-size:12.5px;line-height:1.6;max-width:720px;margin:0 auto}
+  #doc .dh{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2px solid #1f7a4d;padding-bottom:12px;margin-bottom:16px}
+  #doc .logo{font-size:14px;font-weight:800;color:#1f7a4d;letter-spacing:.04em} #doc .logo .s{font-size:10px;color:#8a857c;font-weight:600;letter-spacing:0}
+  #doc .date{font-size:10.5px;color:#8a857c;text-align:right}
+  #doc h1{font-size:20px;font-weight:700;letter-spacing:-.01em;margin-bottom:2px;font-family:Georgia,serif}
+  #doc .sub{font-size:12px;color:#6b665e;margin-bottom:14px}
+  #doc .cover{font-size:12.5px;line-height:1.65;white-space:pre-wrap;margin-bottom:16px}
+  #doc .sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1f7a4d;border-bottom:1px solid #e3e8e3;padding-bottom:4px;margin:16px 0 8px}
+  #doc .kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0efe9;font-size:12px}
+  #doc .kv:last-child{border:none} #doc .kv .k{color:#6b665e} #doc .kv .v{font-weight:600}
+  #doc .works{columns:2;font-size:12px;color:#3a352d} #doc .works div{padding:2px 0;break-inside:avoid} #doc .works .t{color:#1f7a4d;font-weight:800;margin-right:5px}
+  #doc .photo{width:100%;max-height:240px;object-fit:cover;border-radius:6px;margin:8px 0}
+  #doc .listing{white-space:pre-wrap;font-size:12px;color:#3a352d;background:#faf7f0;border:1px solid #ecece3;border-radius:6px;padding:12px 14px}
+  #doc .foot{border-top:2px solid #1f7a4d;margin-top:18px;padding-top:10px;display:flex;justify-content:space-between;align-items:flex-end;font-size:11px;color:#3a352d}
+  #doc .foot .org{font-weight:800;color:#1f7a4d}
+  .foot2{text-align:center;font-size:11px;color:var(--ink3);padding-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topline"><span class="mark">UM</span><span class="brand">Mell · koostööpakkumine</span><span class="sp"></span><a class="back" href="/crm.html">← Töövoog</a><a class="back" href="/kuulutus.html">Kuulutus</a></div>
+  <div class="h1 serif">Koostööpakkumine</div>
+  <div class="lead">Vali objekt → seadista tingimused → Mell kirjutab kaaskirja → hele premium dokument (kuulutuse sisu + foto) → PDF/PNG.</div>
+  <div id="authWarn">Sa pole sisse logitud. <a href="/crm.html">Logi sisse Töövoos</a>, siis tule tagasi.</div>
+
+  <div class="cols">
+    <div>
+      <div class="card">
+        <h3>Objekt</h3>
+        <select class="sel" id="objSel"><option>Laen objekte...</option></select>
+      </div>
+      <div class="card">
+        <h3>Tingimused</h3>
+        <div class="field"><label>Vahendustasu <span style="color:var(--gr)">· objekti tüübi järgi</span></label><div class="fee"><span class="amt" id="feeAmt">—</span><span class="l" id="feeNote"></span></div></div>
+        <div class="field"><label>Lepingu tüüp</label><select class="sel" id="contract"><option>Ainuõiguslik vahendusleping</option><option>Tavavahendusleping</option></select></div>
+        <div class="field"><label>Kestus</label><select class="sel" id="duration"><option>3 kuud</option><option>6 kuud</option><option>Tähtajatu</option></select></div>
+      </div>
+      <div class="card">
+        <h3>Mis tasu sisaldab</h3>
+        <label class="chk on"><span class="cbx"></span>Professionaalsed fotod, video + droon</label>
+        <label class="chk on"><span class="cbx"></span>Turuanalüüs ja hinnastamine</label>
+        <label class="chk on"><span class="cbx"></span>Kuulutus kõigis portaalides + sotsiaalmeedia</label>
+        <label class="chk on"><span class="cbx"></span>Vaatamiste korraldamine</label>
+        <label class="chk on"><span class="cbx"></span>Läbirääkimised ja pakkumiste haldus</label>
+        <label class="chk on"><span class="cbx"></span>Notaritehingu ettevalmistus</label>
+      </div>
+      <div class="card">
+        <h3>Kaaskiri</h3>
+        <button class="btn mell" id="genCover">✦ Mell kirjutab kaaskirja</button>
+        <textarea class="ta" id="coverTa" style="min-height:120px;margin-top:10px" placeholder="Mell kirjutab lühikese professionaalse kaaskirja — või kirjuta ise."></textarea>
+        <label class="chk on" id="inclListing" style="margin-top:10px"><span class="cbx"></span>Lisa kuulutuse eelnäidis dokumenti</label>
+      </div>
+      <div class="row">
+        <button class="btn go" id="pdfBtn">⬇ PDF</button>
+        <button class="btn gh" id="pngBtn">⬇ PNG</button>
+        <span id="msg"></span>
+      </div>
+    </div>
+
+    <div class="docwrap">
+      <div id="doc"><div style="text-align:center;color:#8a857c;padding:40px 0">Vali objekt — dokument ilmub siia.</div></div>
+    </div>
+  </div>
+  <div class="foot2">Hele premium dokument, kohe saadetav. Kuulutuse sisu ja foto objektilt. Ainult päris andmed.</div>
+</div>
+
+<script>
+  const SB_URL='https://iawvsfylguajkoikbdaf.supabase.co';
+  const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
+  const sb=supabase.createClient(SB_URL,SB_KEY);
+  var OBJ={}, ACTIVE=null;
+  var AI_STIIL='\n\nSTIIL: Kirjuta eesti kirjakeeles, lihtsate selgete lausetega. Väldi ilukõnet, müügijuttu, klišeesid. Toon: rahulik, professionaalne, otsekohene, kindel aga mitte pealetükkiv. Ära kasuta hüüumärke, emojisid ega vorminduse märke. Kliendikirjas räägi kui nõustaja, mitte müüja; näita võimalusi, ära suru otsust. Ära luba kindlat tulemust ega hinda; ära anna juriidilist/maksu nõu; ära kasuta survet.';
+  var COVER_SYS='Oled Uus Maa müügispetsialist Meelis Koroljov. Kirjuta lühike (3–5 lauset) professionaalne kaaskiri kliendile koostööpakkumise juurde tema objekti müügiks. Aus, rahulik, väärtuse kaudu, ilma survet. AINULT antud faktide põhjal — ära leiuta. Maini, et pakkumisele on lisatud koostöö tingimused, tehtavate tööde nimekiri ja kuulutuse eelnäidis. Lõpeta üleskutsega kohtuda ja arutada. Allkirja EI lisa (see on dokumendis olemas).'+AI_STIIL;
+
+  async function freshToken(f){ try{ if(f) await sb.auth.refreshSession(); var s=await sb.auth.getSession(); return (s.data&&s.data.session)?s.data.session.access_token:''; }catch(e){ return ''; } }
+  async function aiFetch(p){ try{ var t=await freshToken(); var r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify(p),signal:AbortSignal.timeout(30000)}); if(r.status===401){ t=await freshToken(true); r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify(p),signal:AbortSignal.timeout(30000)}); if(r.status===401) return 'Viga: sessioon aegus'; } var j=await r.json(); if(!r.ok) return 'Viga: '+(j.error||r.status); return j.text||''; }catch(e){ return 'Viga: '+e.message; } }
+
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function eur(n){ return Number(n).toLocaleString('et-EE'); }
+  function objLabel(o){ return [o.contact_name,o.property_address,o.property_type,(o.price!=null?eur(o.price)+' €':'')].filter(Boolean).join(' · '); }
+
+  function feeFor(o){
+    if(o && o.property_type==='Äripind'){ var a=o.price!=null?Math.round(o.price*0.015):null; return { amt:'1,5%', note:'äripind'+(a!=null?(' ≈ '+eur(a)+' € + km'):''), line:'1,5% tehinguväärtusest'+(a!=null?(' (≈ '+eur(a)+' € + km)'):'') }; }
+    return { amt:'5 000 € + km', note:'eluruum · kokku 6 200 €', line:'5 000 € + käibemaks (24%) = 6 200 €' };
+  }
+  function works(){ var w=[]; document.querySelectorAll('.card .chk.on').forEach(function(c){ if(c.id!=='inclListing') w.push(c.textContent.trim()); }); return w; }
+
+  function render(){
+    var d=document.getElementById('doc');
+    if(!ACTIVE){ d.innerHTML='<div style="text-align:center;color:#8a857c;padding:40px 0">Vali objekt — dokument ilmub siia.</div>'; return; }
+    var o=ACTIVE, f=feeFor(o);
+    var loc=[o.asum,o.district,o.county].filter(Boolean).join(', ');
+    var facts=[
+      o.area!=null&&['Üldpind', o.area+' m²'],
+      o.plot_area!=null&&['Kinnistu', o.plot_area+' m²'],
+      o.rooms!=null&&['Tube', o.rooms],
+      o.build_year!=null&&['Ehitusaasta', o.build_year],
+      o.condition&&['Seisukord', o.condition],
+      o.price!=null&&['Hind', eur(o.price)+' €']
+    ].filter(Boolean);
+    var cover=document.getElementById('coverTa').value.trim();
+    var inclL=document.getElementById('inclListing').classList.contains('on');
+    var wk=works();
+    var html=''
+     +'<div class="dh"><div class="logo">UUS MAA<div class="s">Koostööpakkumine</div></div><div class="date">'+new Date().toLocaleDateString('et-EE')+'</div></div>'
+     +'<h1>'+esc((o.property_type||'Objekt')+(loc?(' — '+loc):''))+'</h1>'
+     +'<div class="sub">'+esc(o.property_address||'')+(o.contact_name?(' · omanik: '+esc(o.contact_name)):'')+'</div>'
+     +(cover?('<div class="cover">'+esc(cover)+'</div>'):'')
+     +(o.img_url?('<img class="photo" crossorigin="anonymous" src="'+esc(o.img_url)+'" onerror="this.style.display=\'none\'">'):'')
+     +'<div class="sec">Objekt</div>'
+     +facts.map(function(x){ return '<div class="kv"><span class="k">'+esc(x[0])+'</span><span class="v">'+esc(x[1])+'</span></div>'; }).join('')
+     +'<div class="sec">Koostöö tingimused</div>'
+     +'<div class="kv"><span class="k">Vahendustasu</span><span class="v">'+esc(f.line)+'</span></div>'
+     +'<div class="kv"><span class="k">Lepingu tüüp</span><span class="v">'+esc(document.getElementById('contract').value)+'</span></div>'
+     +'<div class="kv"><span class="k">Kestus</span><span class="v">'+esc(document.getElementById('duration').value)+'</span></div>'
+     +'<div class="kv"><span class="k">Tasu maksmise alus</span><span class="v">Eduka võõrandamistehingu korral</span></div>'
+     +'<div class="sec">Mis tasu sisaldab</div><div class="works">'+wk.map(function(w){ return '<div><span class="t">✓</span>'+esc(w)+'</div>'; }).join('')+'</div>'
+     +((inclL&&o.listing_text)?('<div class="sec">Kuulutuse eelnäidis</div><div class="listing">'+esc(o.listing_text)+'</div>'):'')
+     +'<div class="foot"><div>Meelis Koroljov<br>kinnisvara müügispetsialist<br>+372 53 441 365 · meelis.koroljov@uusmaa.ee</div><div class="org">UUS MAA<br>Arena, Tallinn</div></div>';
+    d.innerHTML=html;
+  }
+
+  function feeUpd(){ var f=feeFor(ACTIVE||{}); document.getElementById('feeAmt').textContent=f.amt; document.getElementById('feeNote').textContent=f.note; }
+
+  async function loadObjects(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ document.getElementById('authWarn').style.display='block'; document.getElementById('objSel').innerHTML='<option>Logi sisse</option>'; return; }
+    var { data, error } = await sb.from('leads').select('id,contact_name,property_address,property_type,price,area,plot_area,rooms,build_year,condition,county,district,asum,img_url,listing_text').is('archived_at',null).order('created_at',{ascending:false}).limit(300);
+    var sel=document.getElementById('objSel');
+    if(error){ sel.innerHTML='<option>Viga</option>'; return; }
+    OBJ={}; var opts=['<option value="">— vali objekt —</option>'];
+    (data||[]).forEach(function(o){ OBJ[o.id]=o; opts.push('<option value="'+o.id+'">'+esc(objLabel(o))+'</option>'); });
+    sel.innerHTML=opts.join('');
+  }
+  document.getElementById('objSel').addEventListener('change',function(){ ACTIVE=OBJ[this.value]||null; feeUpd(); render(); });
+  ['contract','duration','coverTa'].forEach(function(id){ document.getElementById(id).addEventListener('input',render); document.getElementById(id).addEventListener('change',render); });
+  document.querySelectorAll('.chk').forEach(function(c){ c.addEventListener('click',function(){ c.classList.toggle('on'); render(); }); });
+
+  function msg(t,c){ var m=document.getElementById('msg'); m.textContent=t; m.style.color=c||''; }
+  document.getElementById('genCover').addEventListener('click',async function(){
+    if(!ACTIVE){ msg('Vali objekt.','#e0715f'); return; }
+    var o=ACTIVE, f=feeFor(o);
+    var lines=[ o.property_address&&('Aadress: '+o.property_address), o.property_type&&('Tüüp: '+o.property_type), (o.price!=null)&&('Hind: '+o.price+' €'), (o.area!=null)&&('Pindala: '+o.area+' m²'), 'Vahendustasu: '+f.line, o.contact_name&&('Omanik: '+o.contact_name) ].filter(Boolean).join('\n');
+    var btn=this; btn.disabled=true; var ta=document.getElementById('coverTa'); var prev=ta.value; ta.value='Mell kirjutab…';
+    var out=await aiFetch({ system:COVER_SYS, max_tokens:300, model:'claude-sonnet-4-6', messages:[{role:'user',content:'Andmed:\n'+lines}] });
+    btn.disabled=false;
+    if(out && out.indexOf('Viga')!==0){ ta.value=out; render(); msg('Kaaskiri valmis.','#48c281'); } else { ta.value=prev; msg(out,'#e0715f'); }
+  });
+
+  async function exportDoc(kind){
+    if(!ACTIVE){ msg('Vali objekt.','#e0715f'); return; }
+    msg('Valmistan '+kind.toUpperCase()+'...','#93a89b');
+    try{
+      var el=document.getElementById('doc');
+      var canvas=await html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true});
+      var name=(ACTIVE.property_address||'koostoopakkumine').replace(/[^a-z0-9]+/gi,'_').slice(0,40);
+      if(kind==='png'){ var a=document.createElement('a'); a.href=canvas.toDataURL('image/png'); a.download=name+'.png'; a.click(); }
+      else{ var img=canvas.toDataURL('image/jpeg',0.92); var pdf=new jspdf.jsPDF('p','mm','a4'); var w=210, h=canvas.height*w/canvas.width; pdf.addImage(img,'JPEG',0,0,w,h); pdf.save(name+'.pdf'); }
+      msg('✓ '+kind.toUpperCase()+' valmis.','#48c281');
+    }catch(e){ msg('Eksport ebaõnnestus (foto CORS?). Proovi ilma fotota.','#e0715f'); }
+  }
+  document.getElementById('pdfBtn').addEventListener('click',function(){ exportDoc('pdf'); });
+  document.getElementById('pngBtn').addEventListener('click',function(){ exportDoc('png'); });
+
+  loadObjects();
+</script>
+</body>
+</html>
