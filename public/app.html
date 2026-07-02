@@ -121,6 +121,7 @@
       <a data-v="fookus" class="on"><span class="i">◎</span>Fookus</a>
       <a data-v="toru"><span class="i">▥</span>Müügitoru</a>
       <a data-v="teadmine"><span class="i">✦</span>Mell teab</a>
+      <a data-v="tools"><span class="i">▦</span>Tööriistad</a>
     </div>
     <a class="newbtn" href="/uus.html">＋ Uus objekt</a>
     <div class="sp"></div>
@@ -176,6 +177,45 @@
           <textarea class="ta" id="juraQ" style="min-height:70px" placeholder="Kirjuta oma küsimus — nt „Kas pärandvara müügiks on vaja kõiki pärijaid?“"></textarea>
           <div class="row" style="margin-top:8px"><button class="btn mell" onclick="askJura()">✦ Küsi Mellilt</button><span class="msg" id="juraMsg"></span></div>
           <div class="section mell" id="juraWrap" style="margin-top:14px;display:none"><div class="mh"><span class="orb"></span><div><div style="font-weight:700;font-size:14px">Mell</div><div style="font-size:11px;color:var(--ink2)">grounditud · allikaviitega</div></div></div><div class="mline" id="juraA" style="white-space:pre-wrap"></div></div>
+        </div>
+      </div>
+
+      <div class="view" id="v-tools">
+        <div class="hello">Tööriistad</div>
+        <div class="h1 serif" style="margin-top:5px">Kalkulaatorid & <span class="g">määrad</span>.</div>
+        <div class="coach">Kiired arvutused kliendivestluseks. Ligikaudsed, ametlike määrade alusel.</div>
+        <div class="fgrid">
+          <div>
+            <div class="section"><h3>Ostja kulud<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Notari tasu (ostu-müük = täistasu ×2) + km 24% + riigilõiv kinnistusraamatu kande eest. Ligikaudne, seaduse alusel.</span></i></h3>
+              <div class="flabel">Tehinguhind (€)</div><input class="inp" id="tBuyPrice" oninput="calcBuyerTool()" placeholder="nt 250000">
+              <div id="tBuyOut" style="margin-top:10px;font-size:12px;color:var(--ink2)">Sisesta hind.</div>
+            </div>
+            <div class="section"><h3>Laenukalkulaator<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Annuiteetmakse: võrdne kuumakse kogu perioodi. Intress on aastane, jagatakse kuudeks. Ligikaudne — pank annab täpse graafiku.</span></i></h3>
+              <div class="grid3">
+                <div><div class="flabel">Laenusumma (€)</div><input class="inp" id="tLoanSum" oninput="calcLoan()" placeholder="200000"></div>
+                <div><div class="flabel">Intress (% /a)</div><input class="inp" id="tLoanRate" oninput="calcLoan()" placeholder="4.5"></div>
+                <div><div class="flabel">Tähtaeg (a)</div><input class="inp" id="tLoanYears" oninput="calcLoan()" placeholder="30"></div>
+              </div>
+              <div id="tLoanOut" style="margin-top:10px;font-size:12px;color:var(--ink2)">Sisesta summa, intress ja tähtaeg.</div>
+            </div>
+            <div class="section"><h3>Üüritootlus<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Bruto = üür ×12 ÷ hind. Neto arvestab maha kulud (haldus, remont, tühjseis). Investori võrdlusalus.</span></i></h3>
+              <div class="grid3">
+                <div><div class="flabel">Hind (€)</div><input class="inp" id="tYPrice" oninput="calcYield()" placeholder="150000"></div>
+                <div><div class="flabel">Üür (€/kuu)</div><input class="inp" id="tYRent" oninput="calcYield()" placeholder="650"></div>
+                <div><div class="flabel">Kulud (€/kuu)</div><input class="inp" id="tYCost" oninput="calcYield()" placeholder="100"></div>
+              </div>
+              <div id="tYieldOut" style="margin-top:10px;font-size:12px;color:var(--ink2)">Sisesta hind ja üür.</div>
+            </div>
+          </div>
+          <div class="rail">
+            <div class="panel"><div class="lbl" style="margin-bottom:6px">Määrad<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Üks koht, kust kõik arvutused loevad. Muutuvad harva — uuenda siit, kui seadus muutub.</span></i></div>
+              <div class="stat"><span class="k">Käibemaks</span><span class="v" id="mKm">—</span></div>
+              <div class="stat"><span class="k">Notari tasu</span><span class="v">notari tasu seadus</span></div>
+              <div class="stat"><span class="k">Riigilõiv</span><span class="v">Riigilõivuseadus</span></div>
+              <div class="stat"><span class="k" style="font-size:10px;color:var(--ink3)" id="mSrc"></span><span class="v"></span></div>
+              <div style="margin-top:10px"><a class="mini" href="https://www.notar.ee/et/teabekeskus/notari-tasu-kalkuleerimine" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--gr)">Ametlik notari kalkulaator ↗</a></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -382,6 +422,10 @@ function stateFull(v){
   /* kuulutus */
   function buildLines(){var loc=[O.county,O.district,O.asum].filter(Boolean).join(', ');return[O.property_address&&('Aadress: '+O.property_address),loc&&('Asukoht: '+loc),O.property_type&&('Tüüp: '+O.property_type+(O.use_purpose?(' / '+O.use_purpose):'')),O.deal_type&&('Tehing: '+(O.deal_type==='uur'?'üür':'müük')),O.condition&&('Seisukord: '+O.condition),(O.price!=null)&&('Hind: '+O.price+' €'),(O.area!=null)&&('Pindala: '+O.area+' m²'),(O.plot_area!=null)&&('Kinnistu pind: '+O.plot_area+' m²'),(O.rooms!=null)&&('Tube: '+O.rooms),O.floor&&('Korrus: '+O.floor),(O.build_year!=null)&&('Ehitusaasta: '+O.build_year),O.registry_parts&&('Registriosad: '+O.registry_parts),(O.rent_current!=null)&&('Praegune üür: '+O.rent_current+' €/kuu'),O.description&&('Kirjeldus (võib ümber sõnastada, MITTE lisada uut): '+O.description),O.mell_notes&&('Lisainfo müügispetsialistilt (ainult kui asjakohane): '+O.mell_notes)].filter(Boolean).join('\n');}
   async function genKuul(which){var ta=document.getElementById(which==='portal'?'portTa':'socTa'),sys=which==='portal'?LISTING_SYS:SOCIAL_SYS,m=document.getElementById('kMsg');ta.value='Mell kirjutab…';m.textContent='';var out=await aiFetch({system:sys,max_tokens:which==='portal'?600:250,model:'claude-sonnet-4-6',messages:[{role:'user',content:'Objekti faktid:\n'+buildLines()}]});if(out&&out.indexOf('Viga')!==0){ta.value=out;m.style.color='#48c281';m.textContent='Valmis.';}else{ta.value='';m.style.color='#e0715f';m.textContent=out;}}
+  /* Tööriistad — kalkulaatorid */
+  function calcBuyerTool(){var H=Number(document.getElementById('tBuyPrice').value)||0,o=document.getElementById('tBuyOut');if(!H){o.innerHTML='Sisesta hind.';return;}var notNet=2*notaryFull(H),km=notNet*MAARAD.km,riigil=stateFull(H),kokku=notNet+km+riigil;var rw=function(l,v,b){return '<div style="display:flex;justify-content:space-between;padding:3px 0'+(b?';border-top:1px solid var(--line);margin-top:4px;font-weight:700;color:var(--gr)':'')+'"><span>'+l+'</span><span>'+eur2(v)+'</span></div>';};o.innerHTML=rw('Notari tasu',notNet)+rw('Käibemaks (24%)',km)+rw('Riigilõiv',riigil)+rw('Kokku (ligikaudne)',kokku,true);}
+  function calcLoan(){var P=Number(document.getElementById('tLoanSum').value)||0,ar=Number(document.getElementById('tLoanRate').value)||0,y=Number(document.getElementById('tLoanYears').value)||0,o=document.getElementById('tLoanOut');if(!(P>0&&y>0)){o.innerHTML='Sisesta summa, intress ja tähtaeg.';return;}var r=ar/100/12,n=y*12,M=r>0?P*r/(1-Math.pow(1+r,-n)):P/n,tot=M*n,intr=tot-P;var rw=function(l,v,c){return '<div style="display:flex;justify-content:space-between;padding:3px 0'+(c||'')+'"><span>'+l+'</span><span>'+eur2(v)+'</span></div>';};o.innerHTML=rw('Kuumakse',M,';font-weight:700;color:var(--gr)')+rw('Kokku tagasi',tot)+rw('sh intress',intr,';color:var(--ink3)');}
+  function calcYield(){var H=Number(document.getElementById('tYPrice').value)||0,rent=Number(document.getElementById('tYRent').value)||0,cost=Number(document.getElementById('tYCost').value)||0,o=document.getElementById('tYieldOut');if(!(H>0&&rent>0)){o.innerHTML='Sisesta hind ja üür.';return;}var bruto=rent*12/H*100,neto=(rent-cost)*12/H*100;var f=function(x){return x.toFixed(1).replace('.',',');};o.innerHTML='<div style="display:flex;justify-content:space-between;padding:3px 0;font-weight:700;color:var(--gr)"><span>Bruto tootlus</span><span>'+f(bruto)+'% /a</span></div><div style="display:flex;justify-content:space-between;padding:3px 0"><span>Neto tootlus</span><span>'+f(neto)+'% /a</span></div>'+(neto>0?('<div style="color:var(--ink3);margin-top:4px">Tasuvusaeg ~'+Math.round(100/neto)+' a (neto).</div>'):'');}
   /* Kiht 3 — kõne tulemuse-ring (järgib crm.html stage_events mustrit) */
   var _statusLabel={'uus':'Kontakt','vestlus toimus':'Ühendust võetud','vajab järelkõnet':'Järelkontakt','prospect':'Edastatud','ei soovi abi':'Ei soovi'};
   async function callOutcome(newKey,days){
@@ -427,7 +471,7 @@ function stateFull(v){
   document.getElementById('search').addEventListener('input',function(){var q=this.value.toLowerCase();if(!q){go('toru');renderKanban();return;}var rows=LEADS.filter(function(l){return[l.contact_name,l.property_address,l.property_type,l.asum].filter(Boolean).join(' ').toLowerCase().indexOf(q)>=0;});go('toru');var b=document.getElementById('board');b.innerHTML='<div class="col" style="flex:0 0 320px"><div class="colh">Otsing: '+rows.length+'</div>'+rows.map(function(l){var u=urg(l);return'<div class="card" onclick="openObj(\''+l.id+'\')"><div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+'</div></div>';}).join('')+'</div>';});
 
   function countUp(id,target,suf){var el=document.getElementById(id);if(!el)return;var fin=Math.round(target).toLocaleString('et-EE')+(suf||'');if(document.hidden){el.textContent=fin;return;}var t0=null;function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/900,1),e=1-Math.pow(1-p,3);el.textContent=(p<1?Math.round(target*e).toLocaleString('et-EE')+(suf||''):fin);if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
-  async function init(){const{data:{session}}=await sb.auth.getSession();if(!session){document.getElementById('authWarn').style.display='block';return;}ME=session.user;var _hh=new Date().getHours(),_gw=_hh<5?'Tere öist':_hh<11?'Tere hommikust':_hh<18?'Tere':'Head õhtut',_nm=(session.user.email?session.user.email.split('@')[0].split('.')[0]:'');_nm=_nm?_nm.charAt(0).toUpperCase()+_nm.slice(1):'';document.getElementById('hello').textContent=_gw+(_nm?', '+_nm:'')+' · '+new Date().toLocaleDateString('et-EE',{weekday:'long',day:'numeric',month:'long'});var{data,error}=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false}).limit(500);if(error){document.getElementById('feed').innerHTML='<div class="empty">Viga.</div>';return;}LEADS=data||[];countUp('sVal',LEADS.reduce(function(a,l){return a+(Number(l.price)||0);},0),' €');countUp('sFcast',forecast(),' €');countUp('sCnt',LEADS.length,'');document.getElementById('tLinn').textContent=eur(TURG.linn)+' €/m²';document.getElementById('tIdx').textContent=TURG.indeks;document.getElementById('tDate').textContent=TURG.allikas+' · '+TURG.paev;renderFookus();renderKanban();var pre=new URLSearchParams(location.search).get('id');if(pre&&LEADS.find(function(l){return l.id===pre;}))openObj(pre);}
+  async function init(){const{data:{session}}=await sb.auth.getSession();if(!session){document.getElementById('authWarn').style.display='block';return;}ME=session.user;var _hh=new Date().getHours(),_gw=_hh<5?'Tere öist':_hh<11?'Tere hommikust':_hh<18?'Tere':'Head õhtut',_nm=(session.user.email?session.user.email.split('@')[0].split('.')[0]:'');_nm=_nm?_nm.charAt(0).toUpperCase()+_nm.slice(1):'';document.getElementById('hello').textContent=_gw+(_nm?', '+_nm:'')+' · '+new Date().toLocaleDateString('et-EE',{weekday:'long',day:'numeric',month:'long'});var{data,error}=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false}).limit(500);if(error){document.getElementById('feed').innerHTML='<div class="empty">Viga.</div>';return;}LEADS=data||[];countUp('sVal',LEADS.reduce(function(a,l){return a+(Number(l.price)||0);},0),' €');countUp('sFcast',forecast(),' €');countUp('sCnt',LEADS.length,'');document.getElementById('tLinn').textContent=eur(TURG.linn)+' €/m²';document.getElementById('tIdx').textContent=TURG.indeks;document.getElementById('tDate').textContent=TURG.allikas+' · '+TURG.paev;document.getElementById('mKm').textContent=(MAARAD.km*100)+'%';document.getElementById('mSrc').textContent=MAARAD.allikas+' · '+MAARAD.paev;renderFookus();renderKanban();var pre=new URLSearchParams(location.search).get('id');if(pre&&LEADS.find(function(l){return l.id===pre;}))openObj(pre);}
   init();
 </script>
 </body>
