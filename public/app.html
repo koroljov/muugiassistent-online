@@ -109,6 +109,8 @@
   .tip:hover .tt,.tip.on .tt,.tipwrap:hover .tt{opacity:1;visibility:visible}
   .coach{font-size:12.5px;color:var(--ink2);margin:2px 0 18px;line-height:1.5}
   .coach b{color:var(--gr);font-weight:600}
+  .callrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .callp{border-color:rgba(72,194,129,.28)!important}
 </style>
 </head>
 <body>
@@ -164,6 +166,21 @@
         <div class="otabs"><div class="otab on" data-o="kok">Kokkuvõte</div><div class="otab" data-o="kuul">Kuulutus</div><div class="otab" data-o="pakk">Koostööpakkumine</div></div>
 
         <div class="oview on" id="o-kok">
+          <div class="section callp"><h3>Pärast kõnet — üks klõps<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Vajuta tulemus. Mell salvestab, seab järgmise sammu ja järjestab Fookuse ümber — nii ta õpib su konversiooni.</span></i></h3>
+            <div class="callrow">
+              <button class="btn go" onclick="callOutcome('vestlus toimus')">Ühendust võetud</button>
+              <button class="btn gh" onclick="document.getElementById('followRow').style.display='flex'">Vajab järelkõnet</button>
+              <button class="btn gh" onclick="callOutcome('prospect')">Edasta →</button>
+              <button class="btn gh" onclick="callOutcome('ei soovi abi')">Ei soovi</button>
+            </div>
+            <div class="callrow" id="followRow" style="display:none;margin-top:8px">
+              <span class="flabel" style="margin:0;align-self:center">Järelkontakt millal:</span>
+              <button class="btn gh" onclick="callOutcome('vajab järelkõnet',2)">+2 päeva</button>
+              <button class="btn gh" onclick="callOutcome('vajab järelkõnet',7)">+1 nädal</button>
+              <button class="btn gh" onclick="callOutcome('vajab järelkõnet',14)">+2 nädalat</button>
+            </div>
+            <span class="msg" id="callMsg"></span>
+          </div>
           <div class="section"><h3>Faktid</h3><div class="facts" id="oFacts"></div></div>
           <div class="section"><h3>Hind & reaalsus<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Kinnistu vs hoone — kui suur osa hinnast tuleb maast (asukoht) ja kui suur hoonest. Maa hoiab väärtust, hoone kulub.</span></i></h3>
             <div class="grid3">
@@ -245,7 +262,7 @@
   function forecast(){return LEADS.reduce(function(a,l){return a+((Number(l.price)||0)*(PROB[l.status]||0.05));},0);}
   function eur(n){return Math.round(n).toLocaleString('et-EE');}
   function initials(n){n=(n||'?').trim();var p=n.split(/\s+/);return((p[0]||'')[0]||'?').toUpperCase()+((p[1]||'')[0]||'').toUpperCase();}
-  var LEADS=[], O=null, _backTo='toru';
+  var LEADS=[], O=null, _backTo='toru', ME=null;
   var COLS=[['uus','Kontakt','#e0715f'],['vestlus toimus','Ühendust võetud','#d8a24e'],['vajab järelkõnet','Järelkontakt','#e08a4e'],['prospect','Potentsiaalne','#a78bfa'],['k_kontakt','Kontakt (minu)','#5aa2e0'],['leping','Leping','#4a80f0'],['ettevalmistus','Ettevalmistus','#8b5cf6'],['ostja','Ostja','#ec6ea0'],['t_ettevalmistus','Tehingu ettevalmistus','#d8a24e'],['k_tehing','Tehing','#48c281'],['ei soovi abi','Ei soovi','#6b7280']];
   var AI_STIIL='\n\nSTIIL: eesti kirjakeel, lihtsad selged laused. Väldi ilukõnet, klišeesid, müügijuttu. Rahulik, professionaalne, otsekohene. Ilma hüüumärkide ja emojideta, ilma vorminduse märkideta. Ära luba kindlat tulemust ega hinda; ära nimeta tasu kui pole antud; ära esita hindu/protsente faktina kui pole sisendis; ära anna juriidilist/maksu nõu; ilma surveta.';
   var LISTING_SYS='Oled Uus Maa kuulutuse koostaja. Koosta valmis müügikuulutus eesti keeles AINULT antud faktide põhjal. ÄRA LEIUTA omadusi ega numbreid. Struktuur: haarav aus avalause; faktid sujuvas tekstis; asukoht kui antud; lõpp üleskutsega vaatamiseks. Puuduvat ära maini. Vasta AINULT kuulutustekstiga. ~60-200 sõna.'+AI_STIIL;
@@ -309,6 +326,22 @@
   /* kuulutus */
   function buildLines(){var loc=[O.county,O.district,O.asum].filter(Boolean).join(', ');return[O.property_address&&('Aadress: '+O.property_address),loc&&('Asukoht: '+loc),O.property_type&&('Tüüp: '+O.property_type+(O.use_purpose?(' / '+O.use_purpose):'')),O.deal_type&&('Tehing: '+(O.deal_type==='uur'?'üür':'müük')),O.condition&&('Seisukord: '+O.condition),(O.price!=null)&&('Hind: '+O.price+' €'),(O.area!=null)&&('Pindala: '+O.area+' m²'),(O.plot_area!=null)&&('Kinnistu pind: '+O.plot_area+' m²'),(O.rooms!=null)&&('Tube: '+O.rooms),O.floor&&('Korrus: '+O.floor),(O.build_year!=null)&&('Ehitusaasta: '+O.build_year),O.registry_parts&&('Registriosad: '+O.registry_parts),(O.rent_current!=null)&&('Praegune üür: '+O.rent_current+' €/kuu'),O.description&&('Kirjeldus (võib ümber sõnastada, MITTE lisada uut): '+O.description),O.mell_notes&&('Lisainfo müügispetsialistilt (ainult kui asjakohane): '+O.mell_notes)].filter(Boolean).join('\n');}
   async function genKuul(which){var ta=document.getElementById(which==='portal'?'portTa':'socTa'),sys=which==='portal'?LISTING_SYS:SOCIAL_SYS,m=document.getElementById('kMsg');ta.value='Mell kirjutab…';m.textContent='';var out=await aiFetch({system:sys,max_tokens:which==='portal'?600:250,model:'claude-sonnet-4-6',messages:[{role:'user',content:'Objekti faktid:\n'+buildLines()}]});if(out&&out.indexOf('Viga')!==0){ta.value=out;m.style.color='#48c281';m.textContent='Valmis.';}else{ta.value='';m.style.color='#e0715f';m.textContent=out;}}
+  /* Kiht 3 — kõne tulemuse-ring (järgib crm.html stage_events mustrit) */
+  var _statusLabel={'uus':'Kontakt','vestlus toimus':'Ühendust võetud','vajab järelkõnet':'Järelkontakt','prospect':'Edastatud','ei soovi abi':'Ei soovi'};
+  async function callOutcome(newKey,days){
+    if(!O)return;var from=O.status||null;var patch={status:newKey,next_action_at:null};
+    if(newKey==='vajab järelkõnet'){var d=new Date();d.setDate(d.getDate()+(days||3));patch.next_action_at=d.toISOString().slice(0,10);}
+    var msg=document.getElementById('callMsg');msg.style.color='#93a89b';msg.textContent='Salvestan…';
+    var up=await sb.from('leads').update(patch).eq('id',O.id);
+    if(up.error){msg.style.color='#e0715f';msg.textContent='Viga: '+up.error.message;return;}
+    try{await sb.from('stage_events').insert({lead_id:O.id,user_id:(ME&&ME.id)||null,from_status:from,to_status:newKey});}catch(e){}
+    Object.assign(O,patch);var i=LEADS.findIndex(function(l){return l.id===O.id;});if(i>=0)Object.assign(LEADS[i],patch);
+    document.getElementById('oKick').textContent=(_statusLabel[newKey]||newKey)+(O.contact_name?' · '+O.contact_name:'');
+    document.getElementById('followRow').style.display='none';
+    var extra=patch.next_action_at?(' · järelkontakt '+new Date(patch.next_action_at).toLocaleDateString('et-EE',{day:'numeric',month:'short'})):'';
+    msg.style.color='#48c281';msg.textContent='✓ '+(_statusLabel[newKey]||newKey)+extra+'. Fookus uuendatud.';
+    countUp('sFcast',forecast(),' €');renderFookus();renderKanban();
+  }
   async function saveListing(){var txt=document.getElementById('portTa').value.trim(),m=document.getElementById('kMsg');m.style.color='#93a89b';m.textContent='Salvestan...';var{error}=await sb.from('leads').update({listing_text:txt||null}).eq('id',O.id);if(error){m.style.color='#e0715f';m.textContent='Viga';}else{O.listing_text=txt;m.style.color='#48c281';m.textContent='✓ Salvestatud.';}}
   function copyTa(id){var t=document.getElementById(id);t.select();try{document.execCommand('copy');}catch(e){}}
 
@@ -338,7 +371,7 @@
   document.getElementById('search').addEventListener('input',function(){var q=this.value.toLowerCase();if(!q){go('toru');renderKanban();return;}var rows=LEADS.filter(function(l){return[l.contact_name,l.property_address,l.property_type,l.asum].filter(Boolean).join(' ').toLowerCase().indexOf(q)>=0;});go('toru');var b=document.getElementById('board');b.innerHTML='<div class="col" style="flex:0 0 320px"><div class="colh">Otsing: '+rows.length+'</div>'+rows.map(function(l){var u=urg(l);return'<div class="card" onclick="openObj(\''+l.id+'\')"><div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+'</div></div>';}).join('')+'</div>';});
 
   function countUp(id,target,suf){var el=document.getElementById(id);if(!el)return;var fin=Math.round(target).toLocaleString('et-EE')+(suf||'');if(document.hidden){el.textContent=fin;return;}var t0=null;function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/900,1),e=1-Math.pow(1-p,3);el.textContent=(p<1?Math.round(target*e).toLocaleString('et-EE')+(suf||''):fin);if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
-  async function init(){const{data:{session}}=await sb.auth.getSession();if(!session){document.getElementById('authWarn').style.display='block';return;}var _hh=new Date().getHours(),_gw=_hh<5?'Tere öist':_hh<11?'Tere hommikust':_hh<18?'Tere':'Head õhtut',_nm=(session.user.email?session.user.email.split('@')[0].split('.')[0]:'');_nm=_nm?_nm.charAt(0).toUpperCase()+_nm.slice(1):'';document.getElementById('hello').textContent=_gw+(_nm?', '+_nm:'')+' · '+new Date().toLocaleDateString('et-EE',{weekday:'long',day:'numeric',month:'long'});var{data,error}=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false}).limit(500);if(error){document.getElementById('feed').innerHTML='<div class="empty">Viga.</div>';return;}LEADS=data||[];countUp('sVal',LEADS.reduce(function(a,l){return a+(Number(l.price)||0);},0),' €');countUp('sFcast',forecast(),' €');countUp('sCnt',LEADS.length,'');document.getElementById('tLinn').textContent=eur(TURG.linn)+' €/m²';document.getElementById('tIdx').textContent=TURG.indeks;document.getElementById('tDate').textContent=TURG.allikas+' · '+TURG.paev;renderFookus();renderKanban();var pre=new URLSearchParams(location.search).get('id');if(pre&&LEADS.find(function(l){return l.id===pre;}))openObj(pre);}
+  async function init(){const{data:{session}}=await sb.auth.getSession();if(!session){document.getElementById('authWarn').style.display='block';return;}ME=session.user;var _hh=new Date().getHours(),_gw=_hh<5?'Tere öist':_hh<11?'Tere hommikust':_hh<18?'Tere':'Head õhtut',_nm=(session.user.email?session.user.email.split('@')[0].split('.')[0]:'');_nm=_nm?_nm.charAt(0).toUpperCase()+_nm.slice(1):'';document.getElementById('hello').textContent=_gw+(_nm?', '+_nm:'')+' · '+new Date().toLocaleDateString('et-EE',{weekday:'long',day:'numeric',month:'long'});var{data,error}=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false}).limit(500);if(error){document.getElementById('feed').innerHTML='<div class="empty">Viga.</div>';return;}LEADS=data||[];countUp('sVal',LEADS.reduce(function(a,l){return a+(Number(l.price)||0);},0),' €');countUp('sFcast',forecast(),' €');countUp('sCnt',LEADS.length,'');document.getElementById('tLinn').textContent=eur(TURG.linn)+' €/m²';document.getElementById('tIdx').textContent=TURG.indeks;document.getElementById('tDate').textContent=TURG.allikas+' · '+TURG.paev;renderFookus();renderKanban();var pre=new URLSearchParams(location.search).get('id');if(pre&&LEADS.find(function(l){return l.id===pre;}))openObj(pre);}
   init();
 </script>
 </body>
