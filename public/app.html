@@ -101,6 +101,14 @@
   #docEl .works{columns:2;font-size:12px;color:#3a352d} #docEl .works div{padding:2px 0;break-inside:avoid} #docEl .works .t{color:#1f7a4d;font-weight:800;margin-right:5px}
   #docEl .listing{white-space:pre-wrap;font-size:12px;color:#3a352d;background:#faf7f0;border:1px solid #ecece3;border-radius:6px;padding:12px}
   #docEl .foot{border-top:2px solid #1f7a4d;margin-top:16px;padding-top:10px;display:flex;justify-content:space-between;font-size:11px;color:#3a352d} #docEl .foot .org{font-weight:800;color:#1f7a4d}
+  /* Kiht 5 — termini-seletused */
+  .tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid var(--line2);color:var(--ink3);font-size:9px;font-style:normal;font-weight:700;cursor:help;margin-left:5px;vertical-align:middle;user-select:none}
+  .tip:hover,.tip.on{color:var(--gr);border-color:var(--gr)}
+  .tipwrap{position:relative;cursor:help}
+  .tt{position:absolute;bottom:150%;left:50%;transform:translateX(-50%);width:220px;max-width:60vw;background:var(--cd2);border:1px solid var(--line2);color:var(--ink);font-size:11px;line-height:1.45;font-weight:400;text-transform:none;letter-spacing:normal;padding:9px 11px;border-radius:9px;box-shadow:var(--sh);opacity:0;visibility:hidden;transition:opacity .15s;z-index:60;pointer-events:none;text-align:left;white-space:normal}
+  .tip:hover .tt,.tip.on .tt,.tipwrap:hover .tt{opacity:1;visibility:visible}
+  .coach{font-size:12.5px;color:var(--ink2);margin:2px 0 18px;line-height:1.5}
+  .coach b{color:var(--gr);font-weight:600}
 </style>
 </head>
 <body>
@@ -128,6 +136,7 @@
       <div class="view on" id="v-fookus">
         <div class="hello" id="hello"></div>
         <div class="h1 serif" id="fkTitle" style="margin-top:5px">Täna vajab sind <span class="g">fookust</span>.</div>
+        <div class="coach" id="fkCoach"></div>
         <div class="fgrid">
           <div><div class="lbl" style="margin-bottom:0">Täna — tähtsuse järjekorras</div><div class="feed" id="feed" style="margin-top:12px"><div class="empty">Laen...</div></div></div>
           <div class="rail">
@@ -145,16 +154,16 @@
       <div class="view" id="v-obj">
         <div class="oback" onclick="go(_backTo||'toru')">← Tagasi</div>
         <div class="ohead"><div><div class="src" id="oKick" style="margin-bottom:6px"></div><div class="otitle serif" id="oTitle"></div><div class="osub" id="oSub"></div></div><div class="oprice"><div class="p" id="oPrice"></div><div class="m" id="oM2"></div></div></div>
-        <div class="srcbar"><span class="src">Maa-amet</span><span class="src">EHR</span><span class="src">Kinnistusraamat</span><span class="src">Kataster</span></div>
+        <div class="srcbar"><span class="src tipwrap">Maa-amet<span class="tt">Maa-amet — riiklik maa- ja tehinguregister. Piirkonna hinnatase (€/m²) ja tehingute statistika.</span></span><span class="src tipwrap">EHR<span class="tt">EHR — ehitisregister. Ehitise ametlikud faktid: pind, ehitusaasta, kasutusotstarve, kasutusluba.</span></span><span class="src tipwrap">Kinnistusraamat<span class="tt">Kinnistusraamat — omandi ja koormatiste (hüpoteek, servituut) ametlik register.</span></span><span class="src tipwrap">Kataster<span class="tt">Kataster — katastriüksuse (kinnistu maa) andmed: pindala, sihtotstarve, piirid.</span></span></div>
         <div class="otabs"><div class="otab on" data-o="kok">Kokkuvõte</div><div class="otab" data-o="kuul">Kuulutus</div><div class="otab" data-o="pakk">Koostööpakkumine</div></div>
 
         <div class="oview on" id="o-kok">
           <div class="section"><h3>Faktid</h3><div class="facts" id="oFacts"></div></div>
-          <div class="section"><h3>Hind & reaalsus</h3>
+          <div class="section"><h3>Hind & reaalsus<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Kinnistu vs hoone — kui suur osa hinnast tuleb maast (asukoht) ja kui suur hoonest. Maa hoiab väärtust, hoone kulub.</span></i></h3>
             <div class="grid3">
-              <div><div class="flabel">Elamumaa €/m² · hinnang</div><input class="inp" id="landm2" value="200"></div>
-              <div><div class="flabel">Hoone panus €/m² · hinnang</div><input class="inp" id="buildm2" value="1000"></div>
-              <div><div class="flabel">Kinnistu pind (m²)</div><input class="inp" id="plot"></div>
+              <div><div class="flabel">Elamumaa €/m² · hinnang<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Hinnang, palju maksab kinnistu maa üks ruutmeeter selles piirkonnas. Korruta kinnistu pinnaga = maa väärtus.</span></i></div><input class="inp" id="landm2" value="200"></div>
+              <div><div class="flabel">Hoone panus €/m² · hinnang<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Hinnang, palju hoone ehitatud pind väärtust lisab. Sõltub seisukorrast ja ehitustasemest.</span></i></div><input class="inp" id="buildm2" value="1000"></div>
+              <div><div class="flabel">Kinnistu pind (m²)<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Krundi (maa) suurus m². Ära aja segi hoone üldpinnaga.</span></i></div><input class="inp" id="plot"></div>
             </div>
             <div class="split"><div class="l" id="sL" style="width:50%">Kinnistu</div><div class="b" id="sB" style="width:50%">Hoone</div></div>
             <div class="two"><div class="box g"><div class="bv g" id="vLand">—</div><div class="bk">kinnistu (maa) väärtus</div></div><div class="box"><div class="bv" id="vBld">—</div><div class="bk">hoone + potentsiaal</div></div></div>
@@ -180,7 +189,7 @@
         <div class="oview" id="o-pakk">
           <div class="section"><h3>Tingimused</h3>
             <div class="grid2">
-              <div><div class="flabel">Vahendustasu · tüübi järgi</div><div class="fee"><span class="amt" id="feeAmt">—</span><span class="l" id="feeNote"></span></div></div>
+              <div><div class="flabel">Vahendustasu · tüübi järgi<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Tasu eduka tehingu korral. Eluruumil kokkuleppeline kindel summa + käibemaks (24%), äripinnal 1,5% tehinguväärtusest.</span></i></div><div class="fee"><span class="amt" id="feeAmt">—</span><span class="l" id="feeNote"></span></div></div>
               <div><div class="flabel">Lepingu tüüp</div><select class="sel" id="contract" onchange="renderDoc()"><option>Ainuõiguslik vahendusleping</option><option>Tavavahendusleping</option></select></div>
               <div><div class="flabel">Kestus</div><select class="sel" id="duration" onchange="renderDoc()"><option>3 kuud</option><option>6 kuud</option><option>Tähtajatu</option></select></div>
               <div><div class="flabel">Lisa dokumenti</div><label class="chk on" id="inclListing" onclick="this.classList.toggle('on');renderDoc()"><span class="cbx"></span>Kuulutuse eelnäidis</label></div>
@@ -203,6 +212,22 @@
   const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c';
   const sb=supabase.createClient(SB_URL,SB_KEY);
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  /* Kiht 5 — glossaar (grounditud, lühike, aus) */
+  var GLOSS={
+    'maa-amet':'Maa-amet — riiklik maa- ja tehinguregister. Siit tuleb piirkonna hinnatase (€/m²) ja tehingute statistika.',
+    'ehr':'EHR — ehitisregister. Ehitise ametlikud faktid: pind, ehitusaasta, kasutusotstarve, kasutusluba.',
+    'kinnistusraamat':'Kinnistusraamat — omandi ja koormatiste (hüpoteek, servituut) ametlik register.',
+    'kataster':'Kataster — katastriüksuse (kinnistu maa) andmed: pindala, sihtotstarve, piirid.',
+    'em2':'€/m² — hind ruutmeetri kohta (hind ÷ pind). Aitab võrrelda erineva suurusega objekte.',
+    'elamumaa':'Elamumaa €/m² — hinnang, palju maksab kinnistu maa üks ruutmeeter selles piirkonnas. Korruta kinnistu pinnaga = maa väärtus.',
+    'hoone-panus':'Hoone panus €/m² — hinnang, palju hoone ehitatud pind väärtust lisab. Sõltub seisukorrast ja ehitustasemest.',
+    'kinnistu-pind':'Kinnistu pind — krundi (maa) suurus m². Ära aja segi hoone üldpinnaga.',
+    'kinnistu-vs-hoone':'Kinnistu vs hoone — kui suur osa hinnast tuleb maast (asukoht) ja kui suur hoonest. Maa hoiab väärtust, hoone kulub.',
+    'vahendustasu':'Vahendustasu — tasu eduka tehingu korral. Eluruumil kokkuleppeline kindel summa, äripinnal % tehinguväärtusest.',
+    'kaibemaks':'Käibemaks (km) — riiklik maks teenuselt, praegu 24%. Lisandub vahendustasule.',
+    'prognoos':'Prognoos — hinnang toru väärtusest etapi tõenäosuse järgi. Mitte lubadus, vaid tõenäosuspõhine ootus.'
+  };
+  function tip(k){var t=GLOSS[k];return t?('<i class="tip" tabindex="0" onclick="event.stopPropagation();this.classList.toggle(\'on\')">i<span class="tt">'+esc(t)+'</span></i>'):'';}
   function eur(n){return Math.round(n).toLocaleString('et-EE');}
   function initials(n){n=(n||'?').trim();var p=n.split(/\s+/);return((p[0]||'')[0]||'?').toUpperCase()+((p[1]||'')[0]||'').toUpperCase();}
   var LEADS=[], O=null, _backTo='toru';
@@ -232,7 +257,18 @@
     function c(x,i){var l=x.l,m=x.m,u=x.u;var pr=l.phone?('<a class="btn go" href="tel:'+esc(l.phone)+'" onclick="event.stopPropagation()">'+esc(m.act)+'</a>'):('<button class="btn go" onclick="event.stopPropagation();openObj(\''+l.id+'\')">Ava</button>');
       return '<div class="fcard'+(i===0?' hot':'')+'" style="animation-delay:'+(i*70)+'ms" onclick="openObj(\''+l.id+'\')"><div class="fglow"></div><div class="frow"><div class="num">'+(i+1)+'</div>'+thumb(l)+'<div style="flex:1"><div class="why">'+m.head+'</div><div class="who">'+esc(l.contact_name||l.property_address||'(nimeta)')+(l.property_address?(' · '+esc(l.property_address)):'')+'</div></div>'+(u.txt?'<div class="when '+u.cls+'">'+esc(u.txt)+'</div>':'')+'</div>'+(m.reason?'<div class="reason">'+m.reason+'</div>':'')+'<div class="acts">'+pr+'<button class="btn gh" onclick="event.stopPropagation();openObj(\''+l.id+'\')">Ava töölaud</button></div></div>';}
     feed.innerHTML=top.length?(top.map(c).join('')+(rest.length?('<div class="lbl" style="margin:20px 0 10px">Veel radaril</div>'+rest.map(function(x,i){return c(x,i+3);}).join('')):'')):'<div class="empty">Täna pole kiireloomulist.</div>';
-    var w=top.length>=3?'kolm asja':(top.length?top.length+' asja':'fookust');document.getElementById('fkTitle').innerHTML='Täna vajab sind <span class="g">'+w+'</span>. Ülejäänut hoian mina silmas peal.';
+    var over=sc.filter(function(x){return x.u.rank===0;}).length,tod=sc.filter(function(x){return x.u.rank===1;}).length,frs=sc.filter(function(x){return x.fr;}).length;
+    var w=top.length>=3?'kolm asja':(top.length?(top.length===1?'ühe asja':top.length+' asja'):'fookust');
+    document.getElementById('fkTitle').innerHTML='Täna vajab sind <span class="g">'+w+'</span>. Ülejäänut hoian mina silmas peal.';
+    var hh=new Date().getHours(),first=esc((top[0]&&(top[0].l.contact_name||top[0].l.property_address))||'ülalt');
+    var parts=[];if(over)parts.push('<b>'+over+'</b> üle tähtaja');if(tod)parts.push('<b>'+tod+'</b> täna');if(frs)parts.push('<b>'+frs+'</b> värsket');
+    var line=parts.length?parts.join(' · '):'midagi kiireloomulist pole';
+    var coach;
+    if(top.length===0){coach='Puhas laud. '+(hh>=17?'Homme uus ring.':'Hea hetk uute objektide otsimiseks.');}
+    else if(hh<11){coach=line+'. Alusta esimesest — '+first+'.';}
+    else if(hh>=17){coach='Päev läbi. '+(over?('Homme algab: '+first+'.'):'Toru on kontrolli all.');}
+    else{coach=line+'. Järgmine: '+first+'.';}
+    document.getElementById('fkCoach').innerHTML=coach;
     document.getElementById('sToday').textContent=sc.filter(function(x){return x.u.rank<=1||x.fr;}).length;
   }
   function renderKanban(){var b=document.getElementById('board'),h='';COLS.forEach(function(c){var ls=LEADS.filter(function(l){return l.status===c[0];});if(!ls.length)return;var sum=ls.reduce(function(a,l){return a+(Number(l.price)||0);},0);h+='<div class="col"><div class="colh"><span class="d" style="background:'+c[2]+'"></span>'+esc(c[1])+'<span class="c">'+ls.length+'</span></div><div class="colsum">'+eur(sum)+' €</div>';ls.forEach(function(l){var u=urg(l);var ph=l.img_url?('<div class="ph" style="background-image:url(\''+esc(l.img_url)+'\')"><span class="sdot" style="background:'+c[2]+'"></span></div>'):('<div class="ph e"><span class="sdot" style="background:'+c[2]+'"></span>'+esc(initials(l.contact_name))+'</div>');h+='<div class="card" onclick="openObj(\''+l.id+'\')"><div class="glow" style="background:'+c[2]+'"></div>'+ph+'<div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||l.asum||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+(u.txt?('<div class="next '+u.cls+'">'+esc(u.txt)+'</div>'):'')+'</div></div>';});h+='</div>';});b.innerHTML=h||'<div class="empty">Objekte veel pole.</div>';}
@@ -287,7 +323,7 @@
   document.getElementById('search').addEventListener('input',function(){var q=this.value.toLowerCase();if(!q){go('toru');renderKanban();return;}var rows=LEADS.filter(function(l){return[l.contact_name,l.property_address,l.property_type,l.asum].filter(Boolean).join(' ').toLowerCase().indexOf(q)>=0;});go('toru');var b=document.getElementById('board');b.innerHTML='<div class="col" style="flex:0 0 320px"><div class="colh">Otsing: '+rows.length+'</div>'+rows.map(function(l){var u=urg(l);return'<div class="card" onclick="openObj(\''+l.id+'\')"><div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+'</div></div>';}).join('')+'</div>';});
 
   function countUp(id,target,suf){var el=document.getElementById(id);if(!el)return;var fin=Math.round(target).toLocaleString('et-EE')+(suf||'');if(document.hidden){el.textContent=fin;return;}var t0=null;function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/900,1),e=1-Math.pow(1-p,3);el.textContent=(p<1?Math.round(target*e).toLocaleString('et-EE')+(suf||''):fin);if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
-  async function init(){const{data:{session}}=await sb.auth.getSession();if(!session){document.getElementById('authWarn').style.display='block';return;}document.getElementById('hello').textContent='Tere'+(session.user.email?(', '+session.user.email.split('@')[0]):'')+' · '+new Date().toLocaleDateString('et-EE',{weekday:'long',day:'numeric',month:'long'});var{data,error}=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false}).limit(500);if(error){document.getElementById('feed').innerHTML='<div class="empty">Viga.</div>';return;}LEADS=data||[];countUp('sVal',LEADS.reduce(function(a,l){return a+(Number(l.price)||0);},0),' €');countUp('sCnt',LEADS.length,'');renderFookus();renderKanban();var pre=new URLSearchParams(location.search).get('id');if(pre&&LEADS.find(function(l){return l.id===pre;}))openObj(pre);}
+  async function init(){const{data:{session}}=await sb.auth.getSession();if(!session){document.getElementById('authWarn').style.display='block';return;}var _hh=new Date().getHours(),_gw=_hh<5?'Tere öist':_hh<11?'Tere hommikust':_hh<18?'Tere':'Head õhtut',_nm=(session.user.email?session.user.email.split('@')[0].split('.')[0]:'');_nm=_nm?_nm.charAt(0).toUpperCase()+_nm.slice(1):'';document.getElementById('hello').textContent=_gw+(_nm?', '+_nm:'')+' · '+new Date().toLocaleDateString('et-EE',{weekday:'long',day:'numeric',month:'long'});var{data,error}=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false}).limit(500);if(error){document.getElementById('feed').innerHTML='<div class="empty">Viga.</div>';return;}LEADS=data||[];countUp('sVal',LEADS.reduce(function(a,l){return a+(Number(l.price)||0);},0),' €');countUp('sCnt',LEADS.length,'');renderFookus();renderKanban();var pre=new URLSearchParams(location.search).get('id');if(pre&&LEADS.find(function(l){return l.id===pre;}))openObj(pre);}
   init();
 </script>
 </body>
