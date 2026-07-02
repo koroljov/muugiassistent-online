@@ -51,7 +51,7 @@
   /* fookus */
   .fgrid{display:grid;grid-template-columns:1.55fr .9fr;gap:18px;align-items:start;margin-top:22px} @media(max-width:1000px){.fgrid{grid-template-columns:1fr}}
   .feed{display:flex;flex-direction:column;gap:13px}
-  .fcard{position:relative;background:linear-gradient(180deg,var(--cd),var(--sf));border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--sh);overflow:hidden;cursor:pointer;transition:transform .16s,border-color .16s} .fcard:hover{transform:translateY(-2px);border-color:var(--line2)} .fcard.hot{border-color:rgba(72,194,129,.34)}
+  .fcard{position:relative;background:linear-gradient(180deg,var(--cd),var(--sf));border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--sh);overflow:hidden;cursor:pointer;transition:transform .16s,border-color .16s;animation:fkIn .55s ease both} @keyframes fkIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}} .fcard:hover{transform:translateY(-2px);border-color:var(--line2)} .fcard.hot{border-color:rgba(72,194,129,.34)}
   .fcard .fglow{position:absolute;top:-40px;right:-30px;width:150px;height:120px;border-radius:50%;background:var(--gr);filter:blur(40px);opacity:.13;pointer-events:none} .fcard.hot .fglow{animation:breathe 4.6s ease-in-out infinite} @keyframes breathe{0%,100%{opacity:.11}50%{opacity:.25}}
   .frow{display:flex;align-items:flex-start;gap:12px} .num{width:26px;height:26px;border-radius:9px;background:var(--grsoft);color:var(--gr);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
   .thumb{width:44px;height:44px;border-radius:11px;background-size:cover;background-position:center;flex-shrink:0}.thumb.e{background:var(--cd2);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink3)}
@@ -87,7 +87,7 @@
   .statusln{margin-top:12px;font-size:12px;font-weight:600;border-radius:9px;padding:9px 11px}
   .li{font-size:12.5px;line-height:1.5;margin-bottom:6px} .li .t{color:var(--gr);font-weight:800;margin-right:5px} .li .mm{color:var(--amber);font-weight:800;margin-right:5px}
   .pm{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media(max-width:560px){.pm{grid-template-columns:1fr}}
-  .mell{background:linear-gradient(150deg,var(--grsoft),var(--sf) 62%);border:1px solid rgba(72,194,129,.2)} .mh{display:flex;align-items:center;gap:10px;margin-bottom:10px} .orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#bfe6cf,var(--gr));box-shadow:0 0 16px rgba(72,194,129,.5)} .mline{font-size:13px;line-height:1.6} .mline b{color:var(--te)}
+  .mell{background:linear-gradient(150deg,var(--grsoft),var(--sf) 62%);border:1px solid rgba(72,194,129,.2)} .mh{display:flex;align-items:center;gap:10px;margin-bottom:10px} .orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#bfe6cf,var(--gr));box-shadow:0 0 16px rgba(72,194,129,.5);animation:orbP 3.6s ease-in-out infinite} @keyframes orbP{0%,100%{box-shadow:0 0 16px rgba(72,194,129,.5)}50%{box-shadow:0 0 26px rgba(72,194,129,.82)}} .mline{font-size:13px;line-height:1.6} .mline b{color:var(--te)}
   .out{background:var(--inp);border:1px solid var(--line);border-radius:11px;padding:4px;margin-top:4px} .outlbl{font-size:10.5px;color:var(--gr);font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:8px 8px 4px} .out .ta{border:none;background:transparent}
   .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:8px} #msg,.msg{font-size:12px;font-weight:600}
   .fee{display:flex;align-items:baseline;gap:8px;background:var(--grsoft);border:1px solid rgba(72,194,129,.25);border-radius:11px;padding:11px 13px} .fee .amt{font-size:17px;font-weight:700;color:var(--gr)} .fee .l{font-size:11px;color:var(--ink2)}
@@ -113,7 +113,7 @@
     </div>
     <a class="newbtn" href="/uus.html">＋ Uus objekt</a>
     <div class="sp"></div>
-    <a class="nav" href="/crm.html" style="text-decoration:none"><span style="display:flex;align-items:center;gap:11px;padding:10px 11px;color:var(--ink3);font-size:12px">↩ Vana Töövoog</span></a>
+    <a href="/crm.html" style="display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:11px;color:var(--ink3);font-size:12px;font-weight:600;text-decoration:none">↩ Vana Töövoog</a>
     <div class="me"><i>MK</i><div><div class="n">Meelis</div><div class="r">Müügispetsialist</div></div></div>
   </div>
   <div class="main">
@@ -230,7 +230,7 @@
     var sc=LEADS.map(function(l){var u=urg(l),fr=fresh(l);return{l:l,u:u,fr:fr,s:score(l,u,fr),m:miks(l,u,fr)};}).filter(function(x){return x.s>0;}).sort(function(a,b){return b.s-a.s;});
     var top=sc.slice(0,3),rest=sc.slice(3,8),feed=document.getElementById('feed');
     function c(x,i){var l=x.l,m=x.m,u=x.u;var pr=l.phone?('<a class="btn go" href="tel:'+esc(l.phone)+'" onclick="event.stopPropagation()">'+esc(m.act)+'</a>'):('<button class="btn go" onclick="event.stopPropagation();openObj(\''+l.id+'\')">Ava</button>');
-      return '<div class="fcard'+(i===0?' hot':'')+'" onclick="openObj(\''+l.id+'\')"><div class="fglow"></div><div class="frow"><div class="num">'+(i+1)+'</div>'+thumb(l)+'<div style="flex:1"><div class="why">'+m.head+'</div><div class="who">'+esc(l.contact_name||l.property_address||'(nimeta)')+(l.property_address?(' · '+esc(l.property_address)):'')+'</div></div>'+(u.txt?'<div class="when '+u.cls+'">'+esc(u.txt)+'</div>':'')+'</div>'+(m.reason?'<div class="reason">'+m.reason+'</div>':'')+'<div class="acts">'+pr+'<button class="btn gh" onclick="event.stopPropagation();openObj(\''+l.id+'\')">Ava töölaud</button></div></div>';}
+      return '<div class="fcard'+(i===0?' hot':'')+'" style="animation-delay:'+(i*70)+'ms" onclick="openObj(\''+l.id+'\')"><div class="fglow"></div><div class="frow"><div class="num">'+(i+1)+'</div>'+thumb(l)+'<div style="flex:1"><div class="why">'+m.head+'</div><div class="who">'+esc(l.contact_name||l.property_address||'(nimeta)')+(l.property_address?(' · '+esc(l.property_address)):'')+'</div></div>'+(u.txt?'<div class="when '+u.cls+'">'+esc(u.txt)+'</div>':'')+'</div>'+(m.reason?'<div class="reason">'+m.reason+'</div>':'')+'<div class="acts">'+pr+'<button class="btn gh" onclick="event.stopPropagation();openObj(\''+l.id+'\')">Ava töölaud</button></div></div>';}
     feed.innerHTML=top.length?(top.map(c).join('')+(rest.length?('<div class="lbl" style="margin:20px 0 10px">Veel radaril</div>'+rest.map(function(x,i){return c(x,i+3);}).join('')):'')):'<div class="empty">Täna pole kiireloomulist.</div>';
     var w=top.length>=3?'kolm asja':(top.length?top.length+' asja':'fookust');document.getElementById('fkTitle').innerHTML='Täna vajab sind <span class="g">'+w+'</span>. Ülejäänut hoian mina silmas peal.';
     document.getElementById('sToday').textContent=sc.filter(function(x){return x.u.rank<=1||x.fr;}).length;
