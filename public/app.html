@@ -130,7 +130,7 @@
   </div>
   <div class="main">
     <div class="bar">
-      <div class="search">🔍 <input id="search" placeholder="Otsi objekti — nimi, aadress..." autocomplete="off"></div>
+      <div class="search">🔍 <input id="search" placeholder="Otsi objekti — nimi, aadress…" autocomplete="off"></div>
       <div class="sp"></div>
       <div class="sync"><span class="ldot"></span> Andmed sünkroonis · Supabase</div>
     </div>
@@ -142,7 +142,7 @@
         <div class="h1 serif" id="fkTitle" style="margin-top:5px">Täna vajab sind <span class="g">fookust</span>.</div>
         <div class="coach" id="fkCoach"></div>
         <div class="fgrid">
-          <div><div class="lbl" style="margin-bottom:0">Täna — tähtsuse järjekorras</div><div class="feed" id="feed" style="margin-top:12px"><div class="empty">Laen...</div></div></div>
+          <div><div class="lbl" style="margin-bottom:0">Täna — tähtsuse järjekorras</div><div class="feed" id="feed" style="margin-top:12px"><div class="empty">Laen…</div></div></div>
           <div class="rail">
             <div class="panel"><div class="lbl" style="margin-bottom:6px">Sinu müügitoru</div>
               <div class="stat"><span class="k">Aktiivne väärtus</span><span class="v" id="sVal">—</span></div>
@@ -162,7 +162,7 @@
         </div>
       </div>
 
-      <div class="view" id="v-toru"><div class="board" id="board"><div class="empty">Laen...</div></div></div>
+      <div class="view" id="v-toru"><div class="board" id="board"><div class="empty">Laen…</div></div></div>
 
       <div class="view" id="v-teadmine">
         <div class="hello">Mell teab</div>
@@ -447,7 +447,7 @@ function stateFull(v){
     msg.style.color='#48c281';msg.textContent='✓ '+(_statusLabel[newKey]||newKey)+extra+'. Fookus uuendatud.';
     countUp('sFcast',forecast(),' €');renderFookus();renderKanban();renderLeak();
   }
-  async function saveListing(){var txt=document.getElementById('portTa').value.trim(),m=document.getElementById('kMsg');m.style.color='#93a89b';m.textContent='Salvestan...';var{error}=await sb.from('leads').update({listing_text:txt||null}).eq('id',O.id);if(error){m.style.color='#e0715f';m.textContent='Viga';}else{O.listing_text=txt;m.style.color='#48c281';m.textContent='✓ Salvestatud.';}}
+  async function saveListing(){var txt=document.getElementById('portTa').value.trim(),m=document.getElementById('kMsg');m.style.color='#93a89b';m.textContent='Salvestan…';var{error}=await sb.from('leads').update({listing_text:txt||null}).eq('id',O.id);if(error){m.style.color='#e0715f';m.textContent='Viga';}else{O.listing_text=txt;m.style.color='#48c281';m.textContent='✓ Salvestatud.';}}
   function copyTa(id){var t=document.getElementById(id);t.select();try{document.execCommand('copy');}catch(e){}}
 
   /* pakkumine */
@@ -471,7 +471,7 @@ function stateFull(v){
       +'<div class="sec">Mis tasu sisaldab</div><div class="works">'+wk.map(function(w){return'<div><span class="t">✓</span>'+esc(w)+'</div>';}).join('')+'</div>'
       +((inclL&&O.listing_text)?('<div class="sec">Kuulutuse eelnäidis</div><div class="listing">'+esc(O.listing_text)+'</div>'):'')
       +'<div class="foot"><div>Meelis Koroljov<br>kinnisvara müügispetsialist<br>+372 53 441 365 · meelis.koroljov@uusmaa.ee</div><div class="org">UUS MAA<br>Arena, Tallinn</div></div>';}
-  async function exportDoc(kind){var m=document.getElementById('pMsg');m.style.color='#93a89b';m.textContent='Valmistan '+kind.toUpperCase()+'...';try{renderDoc();var el=document.getElementById('docEl');var canvas=await html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true});var name=(O.property_address||'koostoopakkumine').replace(/[^a-z0-9]+/gi,'_').slice(0,40);if(kind==='png'){var a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=name+'.png';a.click();}else{var img=canvas.toDataURL('image/jpeg',0.92);var pdf=new jspdf.jsPDF('p','mm','a4');var w=210,h=canvas.height*w/canvas.width;pdf.addImage(img,'JPEG',0,0,w,h);pdf.save(name+'.pdf');}m.style.color='#48c281';m.textContent='✓ '+kind.toUpperCase()+' valmis.';}catch(e){m.style.color='#e0715f';m.textContent='Eksport ebaõnnestus (foto CORS?).';}}
+  async function exportDoc(kind){var m=document.getElementById('pMsg');m.style.color='#93a89b';m.textContent='Valmistan '+kind.toUpperCase()+'…';try{renderDoc();var el=document.getElementById('docEl');var canvas=await html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true});var name=(O.property_address||'koostoopakkumine').replace(/[^a-z0-9]+/gi,'_').slice(0,40);if(kind==='png'){var a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=name+'.png';a.click();}else{var img=canvas.toDataURL('image/jpeg',0.92);var pdf=new jspdf.jsPDF('p','mm','a4');var w=210,h=canvas.height*w/canvas.width;pdf.addImage(img,'JPEG',0,0,w,h);pdf.save(name+'.pdf');}m.style.color='#48c281';m.textContent='✓ '+kind.toUpperCase()+' valmis.';}catch(e){m.style.color='#e0715f';m.textContent='Eksport ebaõnnestus (foto CORS?).';}}
 
   /* search */
   document.getElementById('search').addEventListener('input',function(){var q=this.value.toLowerCase();if(!q){go('toru');renderKanban();return;}var rows=LEADS.filter(function(l){return[l.contact_name,l.property_address,l.property_type,l.asum].filter(Boolean).join(' ').toLowerCase().indexOf(q)>=0;});go('toru');var b=document.getElementById('board');b.innerHTML='<div class="col" style="flex:0 0 320px"><div class="colh">Otsing: '+rows.length+'</div>'+rows.map(function(l){var u=urg(l);return'<div class="card" onclick="openObj(\''+l.id+'\')"><div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+'</div></div>';}).join('')+'</div>';});
