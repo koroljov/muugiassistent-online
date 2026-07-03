@@ -115,6 +115,49 @@
   .chip{font-size:12.5px;padding:8px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--cd);color:var(--ink2);cursor:pointer;user-select:none;transition:all .12s}
   .chip.on{background:var(--grsoft);border-color:var(--gr);color:var(--gr);font-weight:600}
   .ilbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:15px 0 7px}
+  /* KÕNEABI — vanast CRMist üle toodud, Studio-ilme */
+  .kabi-back{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:401;display:none}
+  .kabi-back.open{display:block}
+  .kabi-panel{position:fixed;top:0;right:0;width:440px;max-width:96vw;height:100%;background:var(--sf);border-left:1px solid var(--line2);z-index:402;display:none;flex-direction:column;box-shadow:-8px 0 44px rgba(0,0,0,0.5);resize:both;overflow:hidden;min-width:330px;min-height:340px}
+  .kabi-panel.open{display:flex}
+  .kabi-head{display:flex;align-items:center;gap:9px;padding:13px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+  .kabi-grip{color:var(--ink3);font-size:13px;cursor:grab;font-style:normal;letter-spacing:-2px}
+  .kabi-title{font-size:14px;font-weight:600;line-height:1.2}
+  .kabi-sub{font-size:11px;color:var(--ink2)}
+  .kabi-x{margin-left:auto;background:none;border:none;color:var(--ink2);font-size:22px;cursor:pointer;line-height:1}
+  .kabi-x:hover{color:var(--ink)}
+  .kabi-body{flex:1;min-height:0;overflow-y:auto}
+  .kabi-sec{padding:13px 16px;border-bottom:1px solid var(--line)}
+  .kabi-sec-lbl{font-size:11px;color:var(--ink2);margin-bottom:7px;font-weight:600}
+  .kabi-script{font-size:12.5px;line-height:1.6;color:var(--ink);font-style:italic;background:var(--cd);border-radius:9px;padding:9px 11px}
+  .kabi-mini{font-size:11px;color:var(--ink2);margin:9px 0 4px}
+  .kabi-chips{display:flex;flex-wrap:wrap;gap:5px}
+  .kabi-rz{font-size:11px;padding:5px 10px;border-radius:14px;cursor:pointer;border:1px solid var(--line2);color:var(--ink2);user-select:none}
+  .kabi-rz:hover{border-color:var(--gr);color:var(--gr)}
+  .kabi-rz.sel{background:var(--grsoft);border-color:var(--gr);color:var(--gr)}
+  .kabi-rzout{margin-top:7px;font-size:12px;line-height:1.5;color:var(--ink);background:var(--cd);padding:8px 10px;border-radius:8px}
+  .kabi-info{color:var(--gr);cursor:pointer;font-style:normal}
+  .kabi-guide{font-size:12px;line-height:1.6;color:var(--ink2);background:var(--cd);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+  .kabi-guide b{color:var(--gr);font-weight:600}
+  .kabi-types{display:flex;flex-wrap:wrap;gap:5px}
+  .kabi-ty{font-size:11px;padding:5px 10px;background:transparent;border:1px solid var(--line2);border-radius:14px;color:var(--ink2);cursor:pointer}
+  .kabi-ty.sel{background:var(--grsoft);border-color:var(--gr);color:var(--gr)}
+  .kabi-tip{margin-top:8px;font-size:12px;line-height:1.5;color:var(--ink2)}
+  .kabi-hint{font-size:12px;line-height:1.5;color:var(--gr);background:var(--grsoft);border:1px solid var(--gr);border-radius:8px;padding:7px 10px;margin-bottom:10px}
+  .kabi-grp{margin-bottom:10px}
+  .kabi-grp-lbl{font-size:11px;color:var(--ink);margin-bottom:4px}
+  .kabi-grp-tag{font-size:10px;color:var(--ink3)}
+  .kabi-grp-chips{display:flex;flex-wrap:wrap;gap:5px}
+  .kabi-chip{font-size:11px;padding:5px 10px;border-radius:14px;cursor:pointer;border:1px solid var(--line2);color:var(--ink2);user-select:none}
+  .kabi-chip:hover{border-color:var(--gr)}
+  .kabi-chip.sel{background:var(--grsoft);border-color:var(--gr);color:var(--gr)}
+  .kabi-quote{width:100%;box-sizing:border-box;background:var(--inp);border:1px solid var(--line2);border-radius:8px;color:var(--ink);font-size:12px;padding:8px;resize:vertical;font-family:inherit;line-height:1.4}
+  .kabi-quote:focus{outline:none;border-color:var(--gr)}
+  .kabi-foot{padding:11px 16px;border-top:1px solid var(--line);background:var(--bg)}
+  .kabi-out{margin-top:10px;background:var(--cd);border:1px solid var(--line);border-radius:8px;padding:10px}
+  .kabi-inp{background:var(--inp);border:1px solid var(--line2);border-radius:7px;color:var(--ink);font-size:11px;padding:5px 7px;font-family:inherit}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--cd2);border:1px solid var(--line2);color:var(--ink);font-size:13px;padding:11px 18px;border-radius:11px;box-shadow:var(--sh);z-index:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(-4px)}
 </style>
 </head>
 <body>
@@ -287,7 +330,7 @@
 
         <div class="oview on" id="o-kok">
           <div class="section callp"><h3>Kõne — enne ja pärast<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Enne: Mell koostab kõne-spikri. Pärast: vajuta tulemus, Mell salvestab, seab järgmise sammu ja õpib su konversiooni.</span></i></h3>
-            <div class="callrow" style="margin-bottom:8px"><button class="btn gh" onclick="callScript()">✦ Kõne-spikker (enne kõnet)</button></div>
+            <div class="callrow" style="margin-bottom:8px"><button class="btn gh" onclick="callScript()">✦ Kõne-spikker (enne kõnet)</button><button class="btn go" onclick="openKabi()">📞 Kõneabi (kõne ajal)</button></div>
             <div id="callScriptBox" style="display:none;white-space:pre-wrap;font-size:12px;line-height:1.55;background:var(--cd2);border:1px solid var(--line2);border-radius:9px;padding:11px;margin-bottom:10px"></div>
             <div class="callrow">
               <button class="btn go" onclick="callOutcome('vestlus toimus')">Ühendust võetud</button>
@@ -681,9 +724,163 @@ function stateFull(v){
   /* search */
   document.getElementById('search').addEventListener('input',function(){var q=this.value.toLowerCase();if(!q){go('toru');renderKanban();return;}var rows=LEADS.filter(function(l){return[l.contact_name,l.property_address,l.property_type,l.asum].filter(Boolean).join(' ').toLowerCase().indexOf(q)>=0;});go('toru');var b=document.getElementById('board');b.innerHTML='<div class="col" style="flex:0 0 320px"><div class="colh">Otsing: '+rows.length+'</div>'+rows.map(function(l){var u=urg(l);return'<div class="card" onclick="openObj(\''+l.id+'\')"><div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+'</div></div>';}).join('')+'</div>';});
 
+  /* ========== KÕNEABI — vanast CRMist üle toodud (O=objekt, ME=kasutaja) ========== */
+  var _toastT;
+  function toast(msg){var el=document.getElementById('toast');if(!el)return;el.textContent=msg;el.classList.add('on');clearTimeout(_toastT);_toastT=setTimeout(function(){el.classList.remove('on');},2600);}
+  function kabiEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  var KABI={};
+  var KABI_TIPS={Juht:'Ole lühike ja otsekohene. Anna talle kontroll, räägi tulemustest.',Analüütik:'Too fakte ja numbreid. Ära survesta, anna aega kaaluda.',Sõbralik:'Ehita usaldust, ole soe. Ära pressi otsust.',Energiline:'Kuula, peegelda energiat, suuna pehmelt fookusesse.'};
+  var KABI_GROUPS=[
+    {g:"Veel müügis?",f:"still_listed",mode:"üks",o:["jah","müüdud","maha võetud"]},
+    {g:"Aeg turul",f:"time_on_market",mode:"üks",o:["<2 näd","2–4 näd","1–3 kuud","3–6 kuud",">6 kuud"]},
+    {g:"Huvilisi / vaatamisi",f:"inquiries_count",mode:"üks",o:["0","üksikud","mõned","palju"]},
+    {g:"Pakkumised",f:"offers",mode:"üks",o:["ei","madalad","hinna lähedal","tehing katkes"]},
+    {g:"Hind",f:"price_change",mode:"üks",o:["algne","langetas korra","langetas mitu","plaanib langetada"]},
+    {g:"Miks müüte",f:"talk_reason",mode:"üks",o:["kolimine","teise linna","investeering","pärand","elumuutus","raha vaja","katsetab turgu"]},
+    {g:"Kui kiire",f:"urgency",mode:"üks",o:["väga kiire","mõistliku aja jooksul","ei kiirusta","ainult õige hinnaga"]},
+    {g:"Takistus (omaniku hinnang)",f:"obstacle",mode:"mitu",o:["hind","asukoht","seisukord","pildid","kuulutuse tekst","vähe nõudlust"]},
+    {g:"Ostja tagasiside",f:"buyer_feedback",mode:"mitu",o:["hind kõrge","asukoht","seisukord","pildid","ei midagi"]},
+    {g:"Miks ise müüb",f:"no_broker_reason",mode:"mitu",o:["vahendustasu","saab ise","halb kogemus","kõned tüütavad","ei usalda","soov ise kontrollida"]},
+    {g:"Mis paneks meelt muutma",f:"change_mind_reason",mode:"mitu",o:["parem tulemus","konkreetne ostja","tasuta hinnang","kindel tasu","mitte miski"]},
+    {g:"Suhtumine",f:"attitude",mode:"üks",o:["avatud","neutraalne","kinnine","tõrjuv"]}
+  ];
+  var KABI_GHINTS={"Veel müügis?":"Kui müüdud, lõpeta soojalt, küsi luba hiljem.","Aeg turul":"3+ kuud = avatum. Märka seda.","Huvilisi / vaatamisi":"Vähe huvi = valupunkt. Lase rääkida.","Pakkumised":"Tehing katkes? Küsi, mis juhtus.","Hind":"Langetanud → hind on tema teema. Hea sild hinnavõrdlusele.","Ostja tagasiside":"Korduv põhjus = sinu argument hiljem.","Miks ise müüb":"Ära vaidle. Silt: \"saan aru\". Kogu põhjus.","Mis paneks meelt muutma":"See on kuld. Siit tuleb su järgmine samm."};
+  var KABI_VHINTS={
+    "Veel müügis?":{"jah":"Veel müügis — jätka, kogu infot.","müüdud":"Müüdud. Lõpeta soojalt, küsi luba hiljem helistada.","maha võetud":"Maha võetud — uuri, kas müük katkes või lükkus edasi."},
+    "Aeg turul":{"<2 näd":"Värske kuulutus. Omanik veel optimistlik, ära survesta.","2–4 näd":"Veel värske. Kuula, ära paku veel midagi.","1–3 kuud":"Hakkab venima — esimesed kahtlused tekivad.","3–6 kuud":"Pikalt müügis = avatum. Märka seda.",">6 kuud":"Väga pikalt müügis. Tõenäoliselt valmis kuulama abi."},
+    "Huvilisi / vaatamisi":{"0":"Null huvi = tõsine signaal. Tõenäoliselt hind või nähtavus.","üksikud":"Vähe huvi = valupunkt. Lase rääkida.","mõned":"Mõõdukas huvi. Küsi vaatamiste kohta.","palju":"Palju huvi, aga müümata? Küsi, mis takistab tehingut."},
+    "Pakkumised":{"ei":"Pakkumisi pole. Hind või nõudlus.","madalad":"Madalad pakkumised = hind ostja jaoks kõrge.","hinna lähedal":"Lähedal — ehk vajab väikest tõuget.","tehing katkes":"Katkenud tehing? Küsi, mis juhtus."},
+    "Hind":{"algne":"Algne hind, paindlikkust pole testitud.","langetas korra":"Langetanud → hind on tema teema. Hea sild hinnavõrdlusele.","langetas mitu":"Mitu langetust = surve all, avatum abile.","plaanib langetada":"Plaanib langetada — õige hetk pakkuda nõu."},
+    "Ostja tagasiside":{"hind kõrge":"Korduv 'hind kõrge' → sinu argument hinnavõrdlusele.","asukoht":"Asukohta ei muuda — fookus esitlusele ja hinnale.","seisukord":"Seisukord — väike kosmeetika või hind.","pildid":"Pildid — kiire võit, paku pildi/video abi.","ei midagi":"Tagasisidet pole = vähe vaatamisi, nähtavuse probleem."},
+    "Miks ise müüb":{"vahendustasu":"Tasu pärast. Räägi tulemusest, mitte tasust.","saab ise":"Enesekindel. Austa, näita kus jääb vajaka.","halb kogemus":"Halb kogemus. Eristu, ära käitu nagu tüüpmaakler.","kõned tüütavad":"Tüütatud. Ole lühike, anna kontroll.","ei usalda":"Usaldus puudu. Ehita aeglaselt, ära pressi.","soov ise kontrollida":"Tahab kontrolli. Paku tuge, mitte ülevõtmist."},
+    "Mis paneks meelt muutma":{"parem tulemus":"Tulemusele orienteeritud. Näita, kuidas saad rohkem.","konkreetne ostja":"Ostja-põhine. Maini, kui sul on huvilisi.","tasuta hinnang":"Avatud tasuta väärtusele. Paku hinnavõrdlust.","kindel tasu":"Tasu-tundlik. Räägi paindlikust mudelist.","mitte miski":"Suletud praegu. Istuta seeme, küsi luba hiljem."},
+    "Miks müüte":{"kolimine":"Kolib — tähtaeg on. Uuri, millal.","teise linna":"Lahkub piirkonnast — kiirem otsus tõenäoline.","investeering":"Investor — räägib numbrites, mitte emotsioonis.","pärand":"Pärand — sageli kiire ja paindlik müüja.","elumuutus":"Elumuutus — tundlik teema, ole taktitundeline.","raha vaja":"Rahavajadus — kiirus ja kindlus loevad.","katsetab turgu":"Katsetab — pole tõsine müüja, madal prioriteet."},
+    "Kui kiire":{"väga kiire":"Kiire müüja = kõrge prioriteet. Paku abi kohe.","mõistliku aja jooksul":"Mõistlik tempo — hoia kontaktis.","ei kiirusta":"Ei kiirusta — istuta seeme tulevikuks.","ainult õige hinnaga":"Hinnafookus — räägi turuväärtusest, mitte kiirusest."},
+    "Takistus (omaniku hinnang)":{"hind":"Omanik tunnistab hinda → avatud korrigeerimisele.","asukoht":"Asukohta ei muuda — fookus hinnale ja esitlusele.","seisukord":"Seisukord — kosmeetika või hinna küsimus.","pildid":"Pildid — kiire võit, paku pildi/video abi.","kuulutuse tekst":"Tekst nõrk — paku parema kuulutuse abi.","vähe nõudlust":"Nõudlus madal — nähtavus ja hind on hoovad."},
+    "Suhtumine":{"avatud":"Avatud — liigu pehmelt koostöö poole.","neutraalne":"Neutraalne — anna väärtust, ära pressi.","kinnine":"Kinnine — ära suru, istuta seeme.","tõrjuv":"Tõrjuv — täna, logi, lõpeta. Kaitse mainet."}
+  };
+  var LETTER_NAIDIS='\n\nNÄIDIS (järgi tooni ja pikkust; sisu kohanda, ära kopeeri nime ega fakte):\nTere Kristjan,\ntänan teid kõne ja jagatud info eest.\nTeie maja oli müügis lühikest aega ja huvi jäi tagasihoidlikuks — üksikud huvilised ja paar madalat pakkumist. See viitab tavaliselt sellele, et kas hind, kuulutuse esitlus või nähtavus vajab üle vaatamist.\nMeie müügispetsialist saab anda teile tasuta ja faktipõhise hinnangu — mis teie objekti puhul tegelikult müüki takistab ja mida saaks muuta. See ei kohusta teid millekski.\nKui soovite, leppige sobiv aeg kokku. Tasustamise saab paika panna siis, kui koostöö tegelikult edasi liigub.\nLugupidamisega,\nMeelis Koroljov, Uus Maa';
+  function openKabi(){
+    if(!O){alert('Ava esmalt objekt.');return;}
+    KABI={lead_id:O.id};window._kabiOutputs={};
+    document.getElementById('kabiSub').textContent=O.property_address||O.contact_name||'Objekt';
+    var rz=document.getElementById('kabiRzOut');if(rz){rz.style.display='none';rz.innerHTML='';}
+    var g=document.getElementById('kabiGuide');if(g)g.style.display='none';
+    document.querySelectorAll('.kabi-ty').forEach(function(b){b.classList.remove('sel');});
+    var tip=document.getElementById('kabiTip');if(tip)tip.textContent='';
+    kabiRenderGrid();
+    var kh=document.getElementById('kabiHint');if(kh){kh.style.display='none';kh.textContent='';}
+    var kq=document.getElementById('kabiQuote');if(kq)kq.value='';
+    var ksb=document.getElementById('kabiSaveBtn');if(ksb)ksb.disabled=false;
+    var ks=document.getElementById('kabiScript');if(ks){var nm=(typeof SETTINGS!=='undefined'&&SETTINGS.name)?SETTINGS.name.split(' ')[0]:'Meelis';ks.textContent='"Tere! Olen '+nm+', müügiassistent Uus Maa Arenas. Nägin teie kuulutust ja teen kaardistust omanike seas — kuidas müük turul päriselt liigub ja mis täna takistab. Kas teil on 1–2 minutit?"';}
+    var af=document.getElementById('kabiActForm');if(af)af.style.display='none';
+    document.querySelectorAll('#kabiActTypes .kabi-rz').forEach(function(x){x.classList.remove('sel');});
+    var o=document.getElementById('kabiOut');if(o){o.style.display='none';o.innerHTML='';}
+    document.getElementById('kabiBack').classList.add('open');
+    document.getElementById('kabiPanel').classList.add('open');
+  }
+  function closeKabi(){document.getElementById('kabiBack').classList.remove('open');document.getElementById('kabiPanel').classList.remove('open');}
+  function kabiRz(el){var o=document.getElementById('kabiRzOut');o.style.display='block';if(el.getAttribute('data-cal')){o.innerHTML='<div style="margin-bottom:6px">'+kabiEsc(el.getAttribute('data-r'))+'</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="date" id="kabiRzDate" class="kabi-inp"><input type="time" id="kabiRzTime" class="kabi-inp"><button class="btn go" style="font-size:11px;padding:4px 9px" onclick="kabiRzCal()">Lisa järelkõne</button></div>';}else{o.textContent=el.getAttribute('data-r');}}
+  function kabiType(el,t){document.querySelectorAll('.kabi-ty').forEach(function(b){b.classList.remove('sel');});el.classList.add('sel');KABI.personality_type=t;document.getElementById('kabiTip').textContent=KABI_TIPS[t]||'';}
+  function kabiToggleGuide(){var g=document.getElementById('kabiGuide');g.style.display=g.style.display==='none'?'block':'none';}
+  function kabiRenderGrid(){var el=document.getElementById('kabiGrid');if(!el)return;var h='';KABI_GROUPS.forEach(function(grp,gi){var tag=grp.mode==='üks'?'üks valik':'mitu valikut';h+='<div class="kabi-grp" data-gi="'+gi+'"><div class="kabi-grp-lbl">'+kabiEsc(grp.g)+' <span class="kabi-grp-tag">· '+tag+'</span></div><div class="kabi-grp-chips">';grp.o.forEach(function(opt){h+='<span class="kabi-chip" data-v="'+kabiEsc(opt)+'" onclick="kabiChip(this)">'+kabiEsc(opt)+'</span>';});h+='</div></div>';});el.innerHTML=h;}
+  function kabiChip(el){var grpEl=el.closest('.kabi-grp');var gi=+grpEl.getAttribute('data-gi');var cfg=KABI_GROUPS[gi];if(cfg.mode==='üks'){var was=el.classList.contains('sel');grpEl.querySelectorAll('.kabi-chip').forEach(function(x){x.classList.remove('sel');});if(!was)el.classList.add('sel');}else{el.classList.toggle('sel');}var vals=[];grpEl.querySelectorAll('.kabi-chip.sel').forEach(function(x){vals.push(x.getAttribute('data-v'));});KABI[cfg.f]=vals.length?vals.join(', '):null;var hint=document.getElementById('kabiHint');if(hint){var vh=(KABI_VHINTS[cfg.g]&&KABI_VHINTS[cfg.g][el.getAttribute('data-v')])||KABI_GHINTS[cfg.g]||'';hint.style.display='block';hint.textContent=vh;}}
+  function kabiMarketLine(){if(typeof turgBase!=='function'||!O)return '';var b=turgBase(O);if(!b)return '';var om2=(O.price&&O.area)?Math.round(O.price/O.area):null;var s='\n\nTURUANDMED (FAKT, '+(b.real?'Maa-amet':'suunav baas')+'): '+b.nm+' mediaan '+b.v+' €/m².';if(om2)s+=' Objekt '+om2+' €/m² ('+(om2>=b.v?'+':'')+Math.round((om2/b.v-1)*100)+'%). ';s+='Piirkonna keskmine, ei arvesta seisukorda/korrust.';return s;}
+  function kabiContext(){var l=O||{};var loc=[l.county,l.municipality,l.district,l.asum].filter(Boolean).join(', ');var lines=[l.property_address&&('Aadress: '+l.property_address),loc&&('Asukoht: '+loc),l.property_type&&('Tüüp: '+l.property_type+(l.use_purpose?' / '+l.use_purpose:'')),l.condition&&('Seisukord: '+l.condition),l.floor&&('Korrus: '+l.floor),(l.build_year!=null)&&('Ehitusaasta: '+l.build_year),(l.price!=null)&&('Hind: '+l.price+' €'),(l.area!=null)&&('Pindala: '+l.area+' m²'),(l.rooms!=null)&&('Tube: '+l.rooms),(l.price&&l.area)&&('Objekti €/m²: '+Math.round(l.price/l.area)),l.contact_name&&('Kontakt: '+l.contact_name)];var labels={still_listed:'Veel müügis',time_on_market:'Aeg turul',inquiries_count:'Huvilisi/vaatamisi',offers:'Pakkumised',price_change:'Hind',talk_reason:'Miks müüb',urgency:'Kui kiire',obstacle:'Takistus',buyer_feedback:'Ostja tagasiside',no_broker_reason:'Miks ise müüb',change_mind_reason:'Mis paneks meelt muutma',attitude:'Suhtumine',personality_type:'Inimtüüp'};Object.keys(labels).forEach(function(k){if(KABI[k])lines.push(labels[k]+': '+KABI[k]);});var q=document.getElementById('kabiQuote');if(q&&q.value.trim())lines.push('Tsitaat: '+q.value.trim());return 'Olukord: kinnisvaraomanik müüb ise, ilma maaklerita. Uus Maa pole veel kaasatud — müügiassistent helistas infot koguma ja abi pakkuma. Hinda või muud on muutnud omanik ise, mitte Uus Maa.\n'+lines.filter(Boolean).join('\n');}
+  function kabiShowOut(title,text){var o=document.getElementById('kabiOut');if(!o)return;o.style.display='block';o.innerHTML='<div style="font-size:11px;color:var(--ink2);margin-bottom:4px">'+kabiEsc(title)+'</div><div style="font-size:12px;line-height:1.55;color:var(--ink);white-space:pre-wrap">'+kabiEsc(text)+'</div><button class="btn gh" style="margin-top:6px;font-size:10px" onclick="kabiCopy(this)">Kopeeri</button>';}
+  function kabiCopy(btn){var t=btn.previousElementSibling.textContent;if(navigator.clipboard){navigator.clipboard.writeText(t);toast('Kopeeritud');}}
+  async function kabiGen(kind){var sys,title;if(kind==='summary'){title='Kõne kokkuvõte';sys='Oled Uus Maa müügiassistent. Tee selle kõne lühike struktureeritud kokkuvõte eesti keeles. Kasuta AINULT antud andmeid, ära midagi juurde mõtle. Lõpus üks konkreetne järgmine samm.';}else if(kind==='listing'){title='Kuulutuse tagasiside';sys='Oled Uus Maa müügiassistent. Anna lühike aus professionaalne tagasiside selle kuulutuse kohta — mis võib müüki takistada ja mida saaks parandada. Põhine AINULT antud andmetel. Sul on AINULT struktuurandmed — sul EI ole fotosid ega täiskirjeldust; ÄRA väida, et fotod/kirjeldus puuduvad või on nõrgad. Hinda seda, mida andmed NÄITAVAD (hinnapositsioon, seisukord, vanus). KUI andmetes on Maa-ameti turuhind (FAKT), võid faktipõhiselt viidata — märgi et see on piirkonna keskmine. Kuiv ja konkreetne.';}else if(kind==='letter'){title='Kiri kliendile';sys='Oled Uus Maa müügiassistent. Koosta kliendile lühike viisakas kiri eesti keeles: tänu kõne eest, lühike kokkuvõte, aus tagasiside, sujuv suunamine müügispetsialistile ja paindlikule koostööle. Alusta "Tere [eesnimi]". Teie-vorm. Omanik müüb ise — ära väida, et Uus Maa on midagi teinud. Ära survesta. Max 120 sõna. Ära leiuta numbreid. Kohe saadetav, ilma emojideta.';}else{title='AI soovitus';sys='Oled Uus Maa müügiassistent. Anna selle kõne andmete põhjal üks lühike konkreetne soovitus, mida järgmisena teha. 2-3 lauset, eesti keeles, otsekohe.';}sys+=AI_STIIL;if(kind==='letter')sys+=LETTER_NAIDIS;var model=(kind==='letter'||kind==='listing')?'claude-sonnet-4-6':'claude-sonnet-4-6';kabiShowOut(title,'Genereerin…');var out=await aiFetch({system:sys,max_tokens:700,model:model,messages:[{role:'user',content:'Andmed:\n'+kabiContext()+kabiMarketLine()}]});if(!out||out.indexOf('Viga')===0)kabiShowOut(title,out||'AI ei vastanud.');else{kabiShowOut(title,out);if(window._kabiOutputs)window._kabiOutputs[kind]=out;}}
+  var KABI_ACT_TYPE='';
+  function kabiActType(el,type){KABI_ACT_TYPE=type;document.querySelectorAll('#kabiActTypes .kabi-rz').forEach(function(x){x.classList.remove('sel');});el.classList.add('sel');document.getElementById('kabiActForm').style.display='block';var dwrap=document.getElementById('kabiActDateWrap');if(dwrap)dwrap.style.display=(type==='Kommentaar')?'none':'flex';}
+  async function kabiSubmitAction(){var d=document.getElementById('kabiActDate').value;var t=document.getElementById('kabiActTime').value;var c=document.getElementById('kabiActComment').value.trim();var ok=await kabiAddAction(KABI_ACT_TYPE,d,t,c);if(ok){document.getElementById('kabiActForm').style.display='none';document.getElementById('kabiActComment').value='';document.getElementById('kabiActDate').value='';document.getElementById('kabiActTime').value='';document.querySelectorAll('#kabiActTypes .kabi-rz').forEach(function(x){x.classList.remove('sel');});}}
+  async function kabiRzCal(){var d=document.getElementById('kabiRzDate').value;var t=document.getElementById('kabiRzTime').value;await kabiAddAction('Järelkõne',d,t,'');}
+  async function kabiAddAction(type,dateStr,timeStr,comment){if(!O)return false;if(type==='Kommentaar'){var prev=O.mell_notes||'';var stamp=new Date().toLocaleDateString('et-EE');var note=(prev?prev+'\n':'')+'['+stamp+'] '+(comment||'');var r1=await sb.from('leads').update({mell_notes:note}).eq('id',O.id);if(r1.error){toast('Viga: '+r1.error.message);return false;}O.mell_notes=note;var i0=LEADS.findIndex(function(l){return l.id===O.id;});if(i0>=0)LEADS[i0].mell_notes=note;toast('Märkus lisatud');}else{if(dateStr){await sb.from('leads').update({next_action_at:dateStr}).eq('id',O.id);O.next_action_at=dateStr;var i1=LEADS.findIndex(function(l){return l.id===O.id;});if(i1>=0)LEADS[i1].next_action_at=dateStr;}try{await sb.from('tasks').insert({lead_id:O.id,assigned_to:(ME&&ME.id)||null,type:type,status:'tegemata',comment:comment||null,due_date:dateStr||null,due_time:timeStr||null});}catch(e){}toast(type+' lisatud');}if(typeof renderFookus==='function')renderFookus();if(typeof renderKanban==='function')renderKanban();return true;}
+  async function saveKabiCall(){if(!O)return;var rec=Object.assign({},KABI);rec.lead_id=O.id;rec.caller_id=(ME&&ME.id)||null;var q=document.getElementById('kabiQuote');if(q&&q.value.trim())rec.important_quote=q.value.trim();var OUT=window._kabiOutputs||{};var fbLbl={summary:'KÕNE KOKKUVÕTE',listing:'KUULUTUSE TAGASISIDE',advice:'AI SOOVITUS',letter:'KIRI KLIENDILE'};var fbParts=['summary','listing','advice','letter'].filter(function(k){return OUT[k];}).map(function(k){return fbLbl[k]+':\n'+OUT[k];});if(fbParts.length)rec.ai_feedback=fbParts.join('\n\n———\n\n');var btn=document.getElementById('kabiSaveBtn');if(btn)btn.disabled=true;var res=await sb.from('calls').insert(rec).select().single();if(res.error){toast('Viga: '+res.error.message);if(btn)btn.disabled=false;return;}if(OUT.summary){try{await sb.from('leads').update({ai_summary:OUT.summary}).eq('id',O.id);O.ai_summary=OUT.summary;var _li=LEADS.find(function(x){return x.id===O.id;});if(_li)_li.ai_summary=OUT.summary;}catch(e){}}toast('📞 Kõne salvestatud');closeKabi();if(typeof renderFookus==='function')renderFookus();if(typeof renderReport==='function')renderReport();}
+
   function countUp(id,target,suf){var el=document.getElementById(id);if(!el)return;var fin=Math.round(target).toLocaleString('et-EE')+(suf||'');if(document.hidden){el.textContent=fin;return;}var t0=null;function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/900,1),e=1-Math.pow(1-p,3);el.textContent=(p<1?Math.round(target*e).toLocaleString('et-EE')+(suf||''):fin);if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
   async function init(){const{data:{session}}=await sb.auth.getSession();if(!session){document.getElementById('authWarn').style.display='block';return;}ME=session.user;loadSettings();fillSettings();loadDocCfg();sb.from('profiles').select('org_id').eq('id',ME.id).maybeSingle().then(function(p){var oid=p&&p.data&&p.data.org_id;if(!oid)return;window._MYORG=oid;sb.from('orgs').select('owner_id').eq('id',oid).maybeSingle().then(function(o){if(o&&o.data&&o.data.owner_id===ME.id){var tn=document.getElementById('navTeam');if(tn)tn.style.display='';}});});var _hh=new Date().getHours(),_gw=_hh<5?'Tere öist':_hh<11?'Tere hommikust':_hh<18?'Tere':'Head õhtut',_nm=(session.user.email?session.user.email.split('@')[0].split('.')[0]:'');_nm=_nm?_nm.charAt(0).toUpperCase()+_nm.slice(1):'';document.getElementById('hello').textContent=_gw+(_nm?', '+_nm:'')+' · '+new Date().toLocaleDateString('et-EE',{weekday:'long',day:'numeric',month:'long'});var{data,error}=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false}).limit(500);if(error){document.getElementById('feed').innerHTML='<div class="empty">Viga.</div>';return;}LEADS=data||[];countUp('sVal',LEADS.reduce(function(a,l){return a+(Number(l.price)||0);},0),' €');countUp('sFcast',forecast(),' €');countUp('sCnt',LEADS.length,'');document.getElementById('tLinn').textContent=eur(TURG.linn)+' €/m²';document.getElementById('tIdx').textContent=TURG.indeks;document.getElementById('tDate').textContent=TURG.allikas+' · '+TURG.paev;document.getElementById('mKm').textContent=(MAARAD.km*100)+'%';document.getElementById('mSrc').textContent=MAARAD.allikas+' · '+MAARAD.paev;await loadMktMap();renderFookus();renderKanban();renderLeak();renderReport();var pre=new URLSearchParams(location.search).get('id');if(pre&&LEADS.find(function(l){return l.id===pre;}))openObj(pre);}
   init();
 </script>
+<div id="toast"></div>
+<div class="kabi-back" id="kabiBack" onclick="closeKabi()"></div>
+<div class="kabi-panel" id="kabiPanel">
+  <div class="kabi-head">
+    <i class="kabi-grip" title="Nurgast saad suurust muuta">⋮⋮</i>
+    <div><div class="kabi-title">Kõneabi</div><div class="kabi-sub" id="kabiSub">Objekt</div></div>
+    <button class="kabi-x" onclick="closeKabi()">×</button>
+  </div>
+  <div class="kabi-body" id="kabiBody">
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl">1 · Avalöök</div>
+      <div class="kabi-script" id="kabiScript">"Tere! Olen Meelis, müügiassistent Uus Maa Arenas. Nägin teie kuulutust ja teen kaardistust omanike seas — kuidas müük turul päriselt liigub ja mis täna takistab. Kas teil on 1–2 minutit?"</div>
+      <div class="kabi-mini">Kui paneb vastu:</div>
+      <div class="kabi-chips">
+        <span class="kabi-rz" onclick="kabiRz(this)" data-r="Saan aru, neid kõnesid tuleb iga päev. Ma ei paku midagi, üks küsimus ainult.">ei taha maaklerit</span>
+        <span class="kabi-rz" onclick="kabiRz(this)" data-cal="1" data-r="Selge. Millal sobiks tagasi helistada?">ei saa hetkel rääkida</span>
+        <span class="kabi-rz" onclick="kabiRz(this)" data-r="Selge. Tohib üks lühike küsimus, enne kui lõpetame?">ei ole huvitatud</span>
+        <span class="kabi-rz" onclick="kabiRz(this)" data-cal="1" data-r="Hea meelega. Mis aeg sobiks?">helista hiljem tagasi</span>
+      </div>
+      <div id="kabiRzOut" class="kabi-rzout" style="display:none"></div>
+    </div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl" style="display:flex;align-items:center;gap:6px">2 · Inimtüüp <span style="font-size:10px;color:var(--ink3)">· üks valik</span> <span class="kabi-info" onclick="kabiToggleGuide()" title="Kuidas tüüpi ära tunda">ⓘ</span></div>
+      <div id="kabiGuide" class="kabi-guide" style="display:none">
+        <div><b>Juht:</b> kiire, otsustav, vähe juttu. Otse asjasse.</div>
+        <div><b>Analüütik:</b> küsib detaile, ettevaatlik. Fakte, ära survesta.</div>
+        <div><b>Sõbralik:</b> rahulik, väldib survet. Usaldus, ära pressi.</div>
+        <div><b>Energiline:</b> jutukas, emotsionaalne. Kuula, suuna pehmelt.</div>
+        <div style="margin-top:3px;color:var(--ink3)">Tempo + toon: kiire/asjalik=Juht, rahulik/asjalik=Analüütik, rahulik/soe=Sõbralik, kiire/soe=Energiline.</div>
+      </div>
+      <div class="kabi-types">
+        <button class="kabi-ty" onclick="kabiType(this,'Juht')">Juht</button>
+        <button class="kabi-ty" onclick="kabiType(this,'Analüütik')">Analüütik</button>
+        <button class="kabi-ty" onclick="kabiType(this,'Sõbralik')">Sõbralik</button>
+        <button class="kabi-ty" onclick="kabiType(this,'Energiline')">Energiline</button>
+      </div>
+      <div id="kabiTip" class="kabi-tip"></div>
+    </div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl">3 · Andmekorje — klõpsa, mida klient räägib</div>
+      <div id="kabiHint" class="kabi-hint" style="display:none"></div>
+      <div id="kabiGrid"></div>
+    </div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl">Eriline vastus / tsitaat</div>
+      <textarea id="kabiQuote" class="kabi-quote" rows="2" placeholder="Kui klient ütleb midagi erilist..."></textarea>
+    </div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl">4 · Koostöö-pakkumine (lõpus)</div>
+      <div class="kabi-script">"Selle põhjal, mida rääkisite, näen paari kohta, mida saaks paremaks teha. Kas oleksite valmis seda müügispetsialistiga arutama? Ilma kohustusteta."</div>
+    </div>
+    <div class="kabi-sec">
+      <div class="kabi-sec-lbl">5 · Järeltegevus</div>
+      <div class="kabi-mini">Kõnejärgne tegevus:</div>
+      <div class="kabi-chips" id="kabiActTypes" style="margin-bottom:6px">
+        <span class="kabi-rz" onclick="kabiActType(this,'Järelkõne')">Järelkõne</span>
+        <span class="kabi-rz" onclick="kabiActType(this,'Kohtumine')">Kohtumine</span>
+        <span class="kabi-rz" onclick="kabiActType(this,'Kommentaar')">Kommentaar</span>
+      </div>
+      <div id="kabiActForm" style="display:none;margin-bottom:8px">
+        <div id="kabiActDateWrap" style="display:flex;gap:6px;margin-bottom:6px">
+          <input type="date" id="kabiActDate" class="kabi-inp">
+          <input type="time" id="kabiActTime" class="kabi-inp">
+        </div>
+        <textarea id="kabiActComment" class="kabi-quote" rows="2" placeholder="Kommentaar..."></textarea>
+        <button class="btn go" style="margin-top:6px" onclick="kabiSubmitAction()">Lisa</button>
+      </div>
+      <div class="kabi-mini">AI genereerib (kõne ajal/järel):</div>
+      <div class="kabi-chips">
+        <span class="kabi-rz" onclick="kabiGen('summary')">Kõne kokkuvõte</span>
+        <span class="kabi-rz" onclick="kabiGen('listing')">Kuulutuse tagasiside</span>
+        <span class="kabi-rz" onclick="kabiGen('advice')">AI soovitus</span>
+        <span class="kabi-rz" onclick="kabiGen('letter')">Kiri kliendile</span>
+      </div>
+      <div id="kabiOut" class="kabi-out" style="display:none"></div>
+    </div>
+  </div>
+  <div class="kabi-foot">
+    <button class="btn go" id="kabiSaveBtn" onclick="saveKabiCall()" style="width:100%;justify-content:center">Salvesta kõne</button>
+  </div>
+</div>
 </body>
 </html>
