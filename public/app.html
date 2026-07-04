@@ -202,6 +202,7 @@
       <a data-v="fookus" class="on"><span class="i">◎</span>Fookus</a>
       <a data-v="toru"><span class="i">▥</span>Müügitoru</a>
       <a data-v="buyers"><span class="i">◇</span>Ostjad</a>
+      <a data-v="mail"><span class="i">✉</span>Postkast</a>
       <a data-v="teadmine"><span class="i">✦</span>Mell teab</a>
       <a data-v="tools"><span class="i">▦</span>Tööriistad</a>
       <a data-v="stats"><span class="i">▤</span>Statistika</a>
@@ -358,6 +359,13 @@
           <div class="row" style="margin-top:8px"><button class="btn go" onclick="inviteMember()">Lisa meeskonda</button><span class="msg" id="invMsg"></span></div>
           <div id="invResult" style="margin-top:8px"></div>
         </div>
+      </div>
+
+      <div class="view" id="v-mail">
+        <div class="hello">Postkast</div>
+        <div class="h1 serif" style="margin-top:5px">Su <span class="g">Outlook</span> Mell'is.</div>
+        <div class="coach">Näed viimased kirjad siin. Mell tunneb saatja ära, kui see on su ostjate nimekirjas. Kirjad avanevad Outlookis.</div>
+        <div class="section"><div id="mailBox"><div class="empty">Laen…</div></div></div>
       </div>
 
       <div class="view" id="v-updates">
@@ -632,7 +640,7 @@ function stateFull(v){
   async function aiFetch(p){try{var t=await freshToken();var r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify(p),signal:AbortSignal.timeout(30000)});if(r.status===401){t=await freshToken(true);r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify(p),signal:AbortSignal.timeout(30000)});if(r.status===401)return'Viga: sessioon aegus';}var j=await r.json();if(!r.ok)return'Viga: '+(j.error||r.status);return j.text||'';}catch(e){return'Viga: '+e.message;}}
 
   /* nav */
-  function go(v){document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on');});var el=document.getElementById('v-'+v);if(el)el.classList.add('on');document.querySelector('.content').scrollTop=0;if(v==='team')renderTeam();if(v==='stats')renderStats();if(v==='buyers')renderBuyers();if(v==='updates')renderUpdates();try{localStorage.setItem('mell_view',v);}catch(e){}}
+  function go(v){document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on');});var el=document.getElementById('v-'+v);if(el)el.classList.add('on');document.querySelector('.content').scrollTop=0;if(v==='team')renderTeam();if(v==='stats')renderStats();if(v==='buyers')renderBuyers();if(v==='updates')renderUpdates();if(v==='mail')renderMail();try{localStorage.setItem('mell_view',v);}catch(e){}}
   document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.addEventListener('click',function(){go(a.dataset.v);});});
   document.querySelectorAll('.otab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.otab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.oview').forEach(function(x){x.classList.remove('on');});document.getElementById('o-'+t.dataset.o).classList.add('on');if(t.dataset.o==='pakk')renderDoc();});});
 
@@ -905,6 +913,21 @@ function stateFull(v){
   async function saveBuyer(){var g=function(id){var v=(document.getElementById(id).value||'').trim();return v===''?null:v;};var n=function(id){var v=(document.getElementById(id).value||'').trim().replace(/\s/g,'').replace(',','.');if(v==='')return null;var f=parseFloat(v);return isNaN(f)?null:f;};var name=g('by_name');var m=document.getElementById('byMsg');if(!name){m.style.color='#e0715f';m.textContent='Lisa vähemalt nimi.';return;}m.style.color='#93a89b';m.textContent='Salvestan…';var rec={created_by:(ME&&ME.id)||null,org_id:window._MYORG||null,name:name,phone:g('by_phone'),email:g('by_email'),budget_min:n('by_bmin'),budget_max:n('by_bmax'),area_min:n('by_area'),rooms_min:(n('by_rooms')!=null?Math.round(n('by_rooms')):null),districts:g('by_distr'),property_type:document.getElementById('by_type').value||null,note:g('by_note')};var res=await sb.from('buyers').insert(rec).select().single();if(res.error){m.style.color='#e0715f';m.textContent='Viga: '+res.error.message;return;}BUYERS.unshift(res.data);['by_name','by_phone','by_email','by_bmin','by_bmax','by_area','by_rooms','by_distr','by_note'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('by_type').value='';m.style.color='#48c281';m.textContent='✓ Ostja lisatud';renderBuyers();try{renderFookus();renderKanban();}catch(e){}}
   async function archiveBuyer(id){var b=BUYERS.find(function(x){return x.id===id;});if(!b)return;if(!confirm('Arhiveeri ostja "'+(b.name||'')+'"?'))return;await sb.from('buyers').update({archived_at:new Date().toISOString()}).eq('id',id);BUYERS=BUYERS.filter(function(x){return x.id!==id;});renderBuyers();if(O)renderObjBuyers();}
   function renderObjBuyers(){var el=document.getElementById('oBuyers');if(!el||!O){if(el)el.innerHTML='';return;}var ms=BUYERS.filter(function(b){return buyerMatch(b,O).ok;});if(!ms.length){el.innerHTML='';return;}el.innerHTML='<div style="background:var(--grsoft);border:1px solid var(--gr);border-radius:11px;padding:12px 14px;margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:var(--gr);margin-bottom:6px">◇ '+ms.length+' ostjat sinu nimekirjast sobib sellele objektile</div>'+ms.slice(0,6).map(function(b){var mm=buyerMatch(b,O);return '<div style="font-size:12px;color:var(--ink);line-height:1.5;margin-bottom:3px">• <b>'+esc(b.name||'(nimeta)')+'</b>'+(b.phone?' · '+esc(b.phone):'')+' <span style="color:var(--ink3)">('+esc(mm.reasons.join(', '))+')</span></div>';}).join('')+'</div>';}
+  /* ========== POSTKAST — Outlook (Microsoft Graph) ========== */
+  async function mailFetch(path,opts){var t=await freshToken();opts=opts||{};opts.headers=Object.assign({'authorization':'Bearer '+t},opts.headers||{});var r=await fetch(path,opts);if(r.status===401){t=await freshToken(true);opts.headers.authorization='Bearer '+t;r=await fetch(path,opts);}return r;}
+  function buyerByEmail(em){if(!em||!BUYERS)return null;em=em.toLowerCase();return BUYERS.find(function(b){return b.email&&b.email.toLowerCase()===em;})||null;}
+  async function connectOutlook(){var el=document.getElementById('mailBox');try{var r=await mailFetch('/api/outlook/login');var j=await r.json();if(j&&j.url){window.location.href=j.url;}else{toast(j&&j.error||'Ei saanud ühendust alustada');}}catch(e){toast('Viga ühenduse alustamisel');}}
+  async function disconnectOutlook(){if(!confirm('Eemalda Outlooki ühendus?'))return;try{await mailFetch('/api/outlook/disconnect',{method:'POST'});toast('Outlook ühendus eemaldatud');renderMail();}catch(e){toast('Viga');}}
+  async function renderMail(){var el=document.getElementById('mailBox');if(!el)return;el.innerHTML='<div class="empty">Laen…</div>';var st;try{st=await(await mailFetch('/api/outlook/status')).json();}catch(e){el.innerHTML='<div class="empty">Ei saanud olekut laadida.</div>';return;}
+    if(!st.configured){el.innerHTML='<div style="background:var(--cd);border:1px solid var(--line2);border-radius:12px;padding:16px;font-size:13px;line-height:1.6"><b style="color:var(--amber)">Outlook pole veel seadistatud</b><br>Vaja on Azure rakendust ja Vercel env-muutujaid (MS_CLIENT_ID, MS_CLIENT_SECRET). Kui need on paigas, ilmub siia "Ühenda Outlook" nupp.</div>';return;}
+    if(!st.connected){el.innerHTML='<div style="background:var(--cd);border:1px solid var(--line2);border-radius:12px;padding:18px;text-align:center"><div style="font-size:13px;color:var(--ink2);margin-bottom:12px">Ühenda oma Outlook, et näha kirju siin.</div><button class="btn go" style="justify-content:center" onclick="connectOutlook()">✉ Ühenda Outlook</button></div>';return;}
+    el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:12px;color:var(--ink2)">Ühendatud: <b style="color:var(--gr)">'+esc(st.email||'')+'</b></div><div style="display:flex;gap:6px"><button class="btn gh" style="font-size:11px" onclick="renderMail()">Värskenda</button><button class="btn gh" style="font-size:11px" onclick="disconnectOutlook()">Eemalda</button></div></div><div id="mailList"><div class="empty">Laen kirju…</div></div>';
+    var box=document.getElementById('mailList');
+    try{var mj=await(await mailFetch('/api/outlook/messages?top=25')).json();
+      if(!mj.ok){box.innerHTML='<div class="empty">'+esc(mj.error||'Kirju ei saanud laadida.')+'</div>';return;}
+      var msgs=mj.messages||[];if(!msgs.length){box.innerHTML='<div class="empty">Postkast tühi.</div>';return;}
+      box.innerHTML=msgs.map(function(m){var b=buyerByEmail(m.from);var when=m.received?new Date(m.received).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';var tag=b?'<span style="font-size:10px;color:var(--gr);border:1px solid var(--gr);border-radius:10px;padding:1px 7px;margin-left:6px">↔ ostja: '+esc(b.name||'')+'</span>':'';return '<a href="'+esc(m.webLink)+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px'+(m.unread?';border-left:3px solid var(--gr)':'')+'"><div style="display:flex;justify-content:space-between;gap:8px"><div style="font-weight:'+(m.unread?'700':'500')+';font-size:13px;color:var(--ink)">'+esc(m.fromName||m.from||'(tundmatu)')+tag+'</div><div style="font-size:11px;color:var(--ink3);white-space:nowrap">'+when+'</div></div><div style="font-size:12.5px;color:var(--ink);margin-top:2px">'+esc(m.subject)+'</div><div style="font-size:11.5px;color:var(--ink2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.preview)+'</div></a>';}).join('');
+    }catch(e){box.innerHTML='<div class="empty">Kirjade laadimine ebaõnnestus.</div>';}}
   /* ========== UUENDUSED — muudatuste märkmed ========== */
   var CHANGELOG=[
     {d:'4. juuli 2026',t:'Ostjad ja veebis kokkuvõte',items:['Ostjate sobitamine — uus "Ostjad" vaade: salvesta soovid (eelarve, tüüp, piirkond), Mell näitab sobivad objektid ja objektil rohelise ribana "N ostjat sobib".','Kõnede ajalugu objektil — iga salvestatud kõne on näha ja laiendatav.','Koostööpakkumise HTML-eksport ("⬇ Veeb") — sama sisu ja stiil mis PDF.','Refresh hoiab sind samal vaatel/objektil (enam ei viska Fookusesse).','See "Uuendused" vaade — näed, mis on muutunud.']},
@@ -949,6 +972,7 @@ function stateFull(v){
     if(pre&&LEADS.find(function(l){return l.id===pre;}))openObj(pre);
     else if(savedV==='obj'&&savedO&&LEADS.find(function(l){return l.id===savedO;}))openObj(savedO);
     else if(savedV&&savedV!=='fookus'&&document.getElementById('v-'+savedV))go(savedV);
+    var _mail=new URLSearchParams(location.search).get('mail');if(_mail){if(_mail==='connected'){toast('✉ Outlook ühendatud');go('mail');}else{toast('Outlooki ühendamine ebaõnnestus ('+_mail+')');}try{var _u=new URL(location.href);_u.searchParams.delete('mail');history.replaceState({},'',_u.toString());}catch(e){}}
     maybeShowOnboarding();}
   init();
 </script>
