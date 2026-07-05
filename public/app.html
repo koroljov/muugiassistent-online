@@ -226,7 +226,7 @@
       <div class="search">🔍 <input id="search" placeholder="Otsi objekti — nimi, aadress…" autocomplete="off"></div>
       <div class="sp"></div>
       <div id="bell" onclick="go('fookus')" title="Tänased ja hilinenud järelkõned — vaata Fookuses" style="display:none;cursor:pointer;font-size:13px;color:var(--amber);border:1px solid var(--amber);border-radius:999px;padding:5px 11px;margin-right:12px">🔔 <b id="bellN">0</b> ootab</div>
-      <div class="sync"><span class="ldot"></span> Andmed sünkroonis · Supabase</div>
+      <div class="sync" id="sync" onclick="openHealth()" style="cursor:pointer" title="Andmeallikate seis — klõpsa"><span class="ldot" id="ldot"></span> <span id="syncTxt">Andmed korras</span></div>
     </div>
     <div class="content">
       <div id="authWarn">Sa pole sisse logitud. <a href="/crm.html">Logi sisse Töövoos</a>, siis tule tagasi.</div>
@@ -281,6 +281,17 @@
           <div class="row" style="margin-top:8px"><button class="btn mell" onclick="askJura()">✦ Küsi</button><span class="msg" id="juraMsg"></span></div>
           <div class="section mell" id="juraWrap" style="margin-top:14px;display:none"><div class="mh"><span class="orb"></span><div><div style="font-weight:700;font-size:14px">M</div><div style="font-size:11px;color:var(--ink2)">grounditud · allikaviitega</div></div></div><div class="mline" id="juraA" style="white-space:pre-wrap"></div></div>
         </div>
+       </div>
+      </div>
+
+      <div class="askov" id="healthOverlay">
+       <div class="askcard" style="max-width:540px">
+        <button class="askx" onclick="closeHealth()" aria-label="Sulge">×</button>
+        <div class="hello">Andmeallikate seis</div>
+        <div class="h1 serif" style="margin-top:5px;font-size:22px">Mis <span class="g">töötab</span>, mis vajab pilku.</div>
+        <div class="coach">Roheline = korras. Kollane = allikas vastas veaga (Mell näitab teate, mitte valet numbrit). Hall = seire tulekul.</div>
+        <div id="healthList" style="margin-top:6px"></div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:14px">Süsteem hoiatab sind ise — sa ei pea allikaid käsitsi kontrollima.</div>
        </div>
       </div>
 
@@ -658,8 +669,14 @@ function stateFull(v){
   /* nav */
   function openAsk(){var o=document.getElementById('askOverlay');if(o){o.classList.add('on');var q=document.getElementById('juraQ');if(q)setTimeout(function(){q.focus();},50);}}
   function closeAsk(){var o=document.getElementById('askOverlay');if(o)o.classList.remove('on');}
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAsk();});
-  document.addEventListener('click',function(e){var o=document.getElementById('askOverlay');if(o&&e.target===o)closeAsk();});
+  function openHealth(){var o=document.getElementById('healthOverlay');if(o){o.classList.add('on');renderHealth();}}
+  function closeHealth(){var o=document.getElementById('healthOverlay');if(o)o.classList.remove('on');}
+  var SRC_NAMES={maaamet_htraru:'Maa-amet · turuhind',ehr:'EHR · ehitise faktid',inads:'in-ADS · aadress',portaalid:'Portaalid · kuulutus',nearby:'Naabruskond · POI',mapbox:'Kaart',outlook:'Outlook · postkast'};
+  async function healthRows(){try{var r=await sb.from('source_health').select('source,status,detail,checked_at');return r.data||[];}catch(e){return [];}}
+  async function refreshSyncPill(){var t=document.getElementById('syncTxt'),d=document.getElementById('ldot');if(!t)return;var rows=await healthRows();var bad=rows.filter(function(x){return x.status&&x.status!=='ok';});if(bad.length){t.textContent=bad.length+(bad.length===1?' allikas':' allikat')+' vajab pilku';if(d)d.style.background='var(--amber)';}else{t.textContent='Andmed korras';if(d)d.style.background='var(--gr)';}}
+  async function renderHealth(){var el=document.getElementById('healthList');if(!el)return;el.innerHTML='<div style="color:var(--ink3);font-size:12px">Laen…</div>';var rows=await healthRows(),by={};rows.forEach(function(x){by[x.source]=x;});el.innerHTML=Object.keys(SRC_NAMES).map(function(k){var x=by[k],st=x?x.status:null;var color=st==='ok'?'var(--gr)':st==='degraded'?'var(--amber)':'var(--ink3)';var lbl=st==='ok'?'korras':st==='degraded'?'vajab pilku':'seire tulekul';var when=(x&&x.checked_at)?new Date(x.checked_at).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';var det=(st==='degraded'&&x.detail)?('<div style="font-size:11px;color:var(--amber);margin-top:2px">'+esc(x.detail)+'</div>'):'';return '<div style="display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)"><span style="width:9px;height:9px;border-radius:50%;background:'+color+';flex-shrink:0"></span><div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">'+esc(SRC_NAMES[k])+'</div>'+det+'</div><div style="font-size:11px;color:var(--ink3);text-align:right;white-space:nowrap">'+lbl+(when?('<br>'+when):'')+'</div></div>';}).join('');}
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeAsk();closeHealth();}});
+  document.addEventListener('click',function(e){var a=document.getElementById('askOverlay');if(a&&e.target===a)closeAsk();var h=document.getElementById('healthOverlay');if(h&&e.target===h)closeHealth();});
   function go(v){document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on');});var el=document.getElementById('v-'+v);if(el)el.classList.add('on');document.querySelector('.content').scrollTop=0;if(v==='team')renderTeam();if(v==='stats')renderStats();if(v==='buyers')renderBuyers();if(v==='updates')renderUpdates();if(v==='mail')renderMail();try{localStorage.setItem('mell_view',v);}catch(e){}}
   document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.addEventListener('click',function(){go(a.dataset.v);});});
   document.querySelectorAll('.otab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.otab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.oview').forEach(function(x){x.classList.remove('on');});document.getElementById('o-'+t.dataset.o).classList.add('on');if(t.dataset.o==='pakk')renderDoc();});});
@@ -1022,7 +1039,7 @@ function stateFull(v){
     else if(savedV==='obj'&&savedO&&LEADS.find(function(l){return l.id===savedO;}))openObj(savedO);
     else if(savedV&&savedV!=='fookus'&&document.getElementById('v-'+savedV))go(savedV);
     var _mail=new URLSearchParams(location.search).get('mail');if(_mail){if(_mail==='connected'){toast('✉ Outlook ühendatud');go('mail');}else{toast('Outlooki ühendamine ebaõnnestus ('+_mail+')');}try{var _u=new URL(location.href);_u.searchParams.delete('mail');history.replaceState({},'',_u.toString());}catch(e){}}
-    maybeShowOnboarding();}
+    maybeShowOnboarding();refreshSyncPill();}
   init();
 </script>
 <div id="toast"></div>
