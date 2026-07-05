@@ -408,6 +408,7 @@
         <div class="oback" onclick="go(_backTo||'toru')">← Tagasi</div>
         <div class="ohead"><div><div class="src" id="oKick" style="margin-bottom:6px"></div><div class="otitle serif" id="oTitle"></div><div class="osub" id="oSub"></div></div><div class="oprice"><div class="p" id="oPrice"></div><div class="m" id="oM2"></div></div></div>
         <div class="srcbar"><span class="src tipwrap">Maa-amet<span class="tt">Maa-amet — riiklik maa- ja tehinguregister. Piirkonna hinnatase (€/m²) ja tehingute statistika.</span></span><span class="src tipwrap">EHR<span class="tt">EHR — ehitisregister. Ehitise ametlikud faktid: pind, ehitusaasta, kasutusotstarve, kasutusluba.</span></span><span class="src tipwrap">Kinnistusraamat<span class="tt">Kinnistusraamat — omandi ja koormatiste (hüpoteek, servituut) ametlik register.</span></span><span class="src tipwrap">Kataster<span class="tt">Kataster — katastriüksuse (kinnistu maa) andmed: pindala, sihtotstarve, piirid.</span></span></div>
+        <div class="prepbar" style="display:flex;align-items:center;gap:10px;margin:12px 0 2px;flex-wrap:wrap"><button class="btn mell" id="prepBtn" onclick="prepObj()" style="white-space:nowrap">✦ Valmista ette</button><span class="msg" id="prepMsg" style="font-size:11px;color:var(--ink3)">Üks klõps: hinnang → kuulutus → kaaskiri → pakkumine valmis mustandina.</span></div>
         <div class="otabs"><div class="otab on" data-o="kok">Kokkuvõte</div><div class="otab" data-o="kuul">Kuulutus</div><div class="otab" data-o="pakk">Koostööpakkumine</div><div class="otab" data-o="yle">Ülevaatus</div></div>
 
         <div class="oview on" id="o-kok">
@@ -746,6 +747,33 @@ function stateFull(v){
   function feeFor(){var price=O&&O.price!=null?Number(O.price):0;if(O&&O.property_type==='Äripind'){var a=price?Math.round(price*0.015):null;return{amt:'1,5%',note:'äripind',line:'1,5% tehinguväärtusest'+(a!=null?(' ≈ '+eur(a)+' € (+ km)'):''),logic:'Äripindade puhul kokkuleppeline 1,5% tehinguväärtusest — vastab valdkonna tavale.'};}var net=Number(SETTINGS.feeEluruum)||5000,gross=Math.round(net*1.24);var pct=price?Math.round(gross/price*1000)/10:null;var logic=(pct!=null&&pct<=4.2)?'Te maksate tehtud töö eest, mitte protsenti oma vara väärtusest. Turul tavaline maakleritasu 2–4% — fikseeritud tasu on läbipaistev ja sellel objektil enamasti soodsam.':'Fikseeritud tasu katab kogu professionaalse teenuse sõltumata objekti hinnast — te ei maksa rohkem lihtsalt seetõttu, et vara on väärtuslikum.';return{amt:eur(net)+' € + km',note:'eluruum · '+eur(gross)+' €',line:eur(net)+' € + käibemaks (24%) = '+eur(gross)+' €'+(pct!=null?(' ≈ '+String(pct).replace('.',',')+'% müügihinnast'):''),logic:logic};}
   function feeUpd(){var f=feeFor();document.getElementById('feeAmt').textContent=f.amt;document.getElementById('feeNote').textContent=f.note;}
   async function genCover(){var f=feeFor();var lines=[O.property_address&&('Aadress: '+O.property_address),O.property_type&&('Tüüp: '+O.property_type),(O.price!=null)&&('Hind: '+O.price+' €'),'Vahendustasu: '+f.line,O.contact_name&&('Omanik: '+O.contact_name)].filter(Boolean).join('\n');var ta=document.getElementById('coverTa');ta.value='Mell kirjutab…';var out=await aiFetch({system:COVER_SYS,max_tokens:300,model:'claude-sonnet-4-6',messages:[{role:'user',content:'Andmed:\n'+lines}]});ta.value=(out&&out.indexOf('Viga')!==0)?out:'';renderDoc();}
+  /* Valmista ette — üks klõps: hinnang → kuulutus → kaaskiri → pakkumine. Ainult lisandus, ei muuda olemasolevaid nuppe. */
+  async function prepObj(){
+    if(!O){return;}
+    var btn=document.getElementById('prepBtn'),msg=document.getElementById('prepMsg');
+    function step(t){if(msg){msg.style.color='#93a89b';msg.textContent=t;}}
+    if(btn)btn.disabled=true;
+    try{
+      step('1/4 · Hindan turgu…');
+      try{calcReality();}catch(e){}
+      try{renderKulud();}catch(e){}
+      try{renderPricing();}catch(e){}
+      try{await renderMkt();}catch(e){}
+      step('2/4 · Kirjutan kuulutust…');
+      await genKuul('portal','et');
+      try{await saveListing();}catch(e){}
+      step('3/4 · Kirjutan kaaskirja…');
+      await genCover();
+      step('4/4 · Koostan pakkumise…');
+      try{renderDoc();}catch(e){}
+      var w=(typeof mellWarnings==='function'&&O)?mellWarnings(O):[];
+      if(msg){msg.style.color=w.length?'#d8a24e':'#48c281';msg.textContent=w.length?('Valmis mustandina. ⚠ Kontrolli: '+w.join(' ')):'Valmis mustandina — vaata tabid üle ja saada.';}
+    }catch(e){
+      if(msg){msg.style.color='#e0715f';msg.textContent='Ahel katkes: '+((e&&e.message)||e)+'. Vanad nupud töötavad edasi.';}
+    }finally{
+      if(btn)btn.disabled=false;
+    }
+  }
   function photoList(){var raw=(O&&O.photos)||'';var arr=raw.split(/[\n,]+/).map(function(s){return s.trim();}).filter(function(s){return /^https?:\/\//i.test(s);});if(!arr.length&&O&&O.img_url)arr=[O.img_url];return arr;}
   async function saveGallery(){if(!O)return;var txt=document.getElementById('galTa').value.trim(),m=document.getElementById('galMsg');m.style.color='#93a89b';m.textContent='Salvestan…';var up=await sb.from('leads').update({photos:txt||null}).eq('id',O.id);if(up.error){m.style.color='#e0715f';m.textContent='Viga';return;}O.photos=txt;var i=LEADS.findIndex(function(l){return l.id===O.id;});if(i>=0)LEADS[i].photos=txt;m.style.color='#48c281';m.textContent='✓ Salvestatud';renderDoc();}
   /* Faas 1A/1B — failide üleslaadimine + Mell loeb pildid (vision) */
