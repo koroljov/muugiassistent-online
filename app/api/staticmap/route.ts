@@ -57,8 +57,10 @@ export async function GET(request: Request) {
     `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${overlays.join(",")}/${viewport}/${w}x${h}@2x` +
     `?access_token=${encodeURIComponent(token)}` + (hasPoi ? "&padding=40" : "");
 
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
   try {
-    const r = await fetch(url);
+    const r = await fetch(url, { signal: ctrl.signal });
     if (!r.ok) {
       return new Response("Kaarditeenus ei vastanud (" + r.status + ")", { status: 502 });
     }
@@ -71,5 +73,7 @@ export async function GET(request: Request) {
     });
   } catch {
     return new Response("Kaardi laadimine ebaõnnestus", { status: 502 });
+  } finally {
+    clearTimeout(timer);
   }
 }
