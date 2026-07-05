@@ -12,7 +12,8 @@ Kõneabi · Statistika + konversioon · Ostjad + sobitamine · Postkast (Outlook
 
 1. Tervise-riba backend: ühenda ülejäänud allikad source_health'i raporteerima.
 2. **Meeldiv laadimine kõikjale** — Fookuse laadimine tundub meeldivam kui teised vaated (Meelis 06.07). Vii sama tunne teistele: skeleton/õrn animatsioon "Laen…" asemel (Statistika, Postkast, Meeskond, Ostjad).
-3. Visuaalne ühtsuse pass — kogu app üks disainikeel, ATH-rahulik. Fookuse etalon-eelvaade tehtud (mell-fookus-etalon.html) → vii rütm teistele vaadetele.
+3. Visuaalne ühtsuse pass — kogu app üks disainikeel, ATH-rahulik. Fookuse etalon-eelvaade tehtud (mell-fookus-etalon.html) → vii rütm teistele vaadetele. Pehmem palett tehtud 06.07 (silmamugavus).
+4. **Liikumine ja üleminekud kõikjal** (Meelis 06.07) — kõik vaated silmale ja meeltele mugavad: pehmed üleminekud vaadete ja olekute vahel, mugav tempo (kiire aga sujuv, mitte järsk), õrn liikumine õigetes kohtades. Osa visuaalsest ühtsusest.
 4. Homebeat — auto väärtus-uuendus omanikule (konkurent-idee).
 5. Hinnang usaldusvahemikuga (±%, N tehingut) (konkurent-idee).
 6. Kõneabi: e-posti küsimise punkt küsimustikku (vajan sult variandid).
