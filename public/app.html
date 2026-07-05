@@ -129,6 +129,25 @@
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 4px}
   .chip{font-size:12.5px;padding:8px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--cd);color:var(--ink2);cursor:pointer;user-select:none;transition:all .12s}
   .chip.on{background:var(--grsoft);border-color:var(--gr);color:var(--gr);font-weight:600}
+  :root{--ease:cubic-bezier(.32,.72,0,1)}
+  .view.on{animation:fade .42s var(--ease)}
+  .nav a{transition:background .22s var(--ease),color .22s var(--ease),transform .16s var(--ease)}
+  .nav a:active{transform:scale(.97)}
+  .btn{transition:transform .18s var(--ease),background .22s var(--ease),box-shadow .22s var(--ease),border-color .22s var(--ease),filter .2s var(--ease)}
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active{transform:scale(.96)}
+  .otab{transition:color .2s var(--ease),border-color .2s var(--ease),transform .16s var(--ease)}
+  .otab:active{transform:scale(.97)}
+  .chip{transition:background .18s var(--ease),border-color .18s var(--ease),color .18s var(--ease),transform .16s var(--ease)}
+  .chip:active{transform:scale(.95)}
+  .fcard{transition:transform .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease)}
+  .panel{transition:transform .2s var(--ease),border-color .2s var(--ease)}
+  .fab{transition:transform .2s var(--ease),filter .2s var(--ease)}
+  .fab:hover{transform:translateY(-2px)}
+  .fab:active{transform:scale(.95)}
+  .sync{transition:transform .2s var(--ease),border-color .2s var(--ease)}
+  .sync:active{transform:scale(.97)}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
   .ilbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:15px 0 7px}
   /* KÕNEABI — vanast CRMist üle toodud, Studio-ilme */
   .kabi-back{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:401;display:none}
