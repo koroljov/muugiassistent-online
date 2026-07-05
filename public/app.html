@@ -233,7 +233,7 @@
 
       <div class="view on" id="v-fookus">
         <div class="hello" id="hello"></div>
-        <div class="h1 serif" id="fkTitle" style="margin-top:5px">Täna vajab sind <span class="g">fookust</span>.</div>
+        <div class="h1 serif" id="fkTitle" style="margin-top:5px">Sinu <span class="g">fookus</span> täna.</div>
         <div class="coach" id="fkCoach"></div>
         <button class="btn gh" id="ttsBtn" onclick="speakBriefing()" style="margin:-8px 0 16px">🔊 Loe ette</button>
         <div class="fgrid">
@@ -307,7 +307,7 @@
               <div class="flabel">Tehinguhind (€)</div><input class="inp" id="tBuyPrice" oninput="calcBuyerTool()" placeholder="nt 250000">
               <div id="tBuyOut" style="margin-top:10px;font-size:12px;color:var(--ink2)">Sisesta hind.</div>
             </div>
-            <div class="section"><h3>Laenukalkulaator<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Annuiteetmakse: võrdne kuumakse kogu perioodi. Intress on aastane, jagatakse kuudeks. Ligikaudne — pank annab täpse graafiku.</span></i></h3>
+            <div class="section"><h3>Laenukalkulaator<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Annuiteetmakse: võrdne kuumakse kogu perioodi vältel. Intress on aastane, jagatakse kuudeks. Ligikaudne — pank annab täpse graafiku.</span></i></h3>
               <div class="grid3">
                 <div><div class="flabel">Laenusumma (€)</div><input class="inp" id="tLoanSum" oninput="calcLoan()" placeholder="200000"></div>
                 <div><div class="flabel">Intress (% /a)</div><input class="inp" id="tLoanRate" oninput="calcLoan()" placeholder="4.5"></div>
@@ -501,7 +501,7 @@
           </div>
           <div class="section"><h3>Plussid & tähelepanu</h3><div class="pm" id="oPm"></div></div>
           <div class="section mell"><div class="mh"><span class="orb"></span><div><div style="font-weight:700;font-size:14px">Mell</div><div style="font-size:11px;color:var(--ink2)">sinu häälega · aus</div></div></div><div class="mline" id="oMell"></div></div>
-          <div class="section"><h3>Spikker · Resolve<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Kompaktne kokkuvõte objektist — kopeeri ja kleebi UusMaa Resolve'i või kolleegile.</span></i></h3>
+          <div class="section"><h3>Spikker · Resolve<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Kompaktne kokkuvõte objektist — kopeeri ja kleebi Uus Maa Resolve'i või kolleegile.</span></i></h3>
             <textarea class="ta" id="spikkerTa" style="min-height:120px" readonly></textarea>
             <div class="row" style="margin-top:8px"><button class="btn go" onclick="copyTa('spikkerTa')">Kopeeri spikker</button></div>
           </div>
@@ -694,8 +694,8 @@ function stateFull(v){
       return '<div class="fcard'+(i===0?' hot':'')+'" style="animation-delay:'+(i*70)+'ms" onclick="openObj(\''+l.id+'\')"><div class="fglow"></div><div class="frow"><div class="num">'+(i+1)+'</div>'+thumb(l)+'<div style="flex:1"><div class="why">'+m.head+'</div><div class="who">'+esc(l.contact_name||l.property_address||'(nimeta)')+(l.property_address?(' · '+esc(l.property_address)):'')+'</div></div>'+(u.txt?'<div class="when '+u.cls+'">'+esc(u.txt)+'</div>':'')+'</div>'+((m.reason||x.ml)?'<div class="reason">'+(m.reason||'')+(x.ml?((m.reason?'<br>':'')+'<span style="color:var(--gr)">'+x.ml+'</span>'):'')+'</div>':'')+(function(){var bc=buyerCount(l);return bc?'<div class="reason" style="color:var(--gr)">◇ '+bc+' ostjat su nimekirjast sobib sellele — hea põhjus ühendust võtta.</div>':'';})()+'<div class="acts">'+pr+'<button class="btn gh" onclick="event.stopPropagation();openObj(\''+l.id+'\')">Ava töölaud</button></div></div>';}
     feed.innerHTML=top.length?(top.map(c).join('')+(rest.length?('<div class="lbl" style="margin:20px 0 10px">Veel radaril</div>'+rest.map(function(x,i){return c(x,i+3);}).join('')):'')):'<div class="empty">Täna pole kiireloomulist.</div>';
     var over=sc.filter(function(x){return x.u.rank===0;}).length,tod=sc.filter(function(x){return x.u.rank===1;}).length,frs=sc.filter(function(x){return x.fr;}).length;
-    var w=top.length>=3?'kolm asja':(top.length?(top.length===1?'ühe asja':top.length+' asja'):'fookust');
-    document.getElementById('fkTitle').innerHTML='Täna vajab sind <span class="g">'+w+'</span>. Ülejäänut hoian mina silmas peal.';
+    var w=top.length>=3?'kolm asja':(top.length===2?'kaks asja':'üks asi');
+    document.getElementById('fkTitle').innerHTML=top.length?('Täna vajab su tähelepanu <span class="g">'+w+'</span>. Ülejäänul hoian ise silma peal.'):'Täna on <span class="g">puhas laud</span>. Ülejäänul hoian ise silma peal.';
     var first=esc((top[0]&&(top[0].l.contact_name||top[0].l.property_address))||'ülalt');
     var parts=[];if(over)parts.push('<b>'+over+'</b> üle tähtaja');if(tod)parts.push('<b>'+tod+'</b> täna');if(frs)parts.push('<b>'+frs+'</b> värsket');
     var line=parts.length?parts.join(' · '):'midagi kiireloomulist pole';
