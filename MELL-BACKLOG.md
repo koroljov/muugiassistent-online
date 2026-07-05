@@ -6,13 +6,13 @@ Oluline: enamik vana "ootel" nimekirjast on juba **tehtud app.html-is** (autonoo
 
 ## ✅ Tehtud ja live (tundus ootel — pole enam)
 
-Kõneabi · Statistika + konversioon · Ostjad + sobitamine · Postkast (Outlook) · Kuulutuse generaator · Kaaskiri/argumendid · Ostja kulud (klapib ametlikuga) · Laenukalkulaator · Üüritootlus · Koostööpakkumine (konfigureeritav + PDF/PNG/HTML) · Kaart + POI · EHR auto-täida · Turuhind asum/linnaosa/maakond · Self-error (mellChecks) · Onboarding · Uuendused-vaade · Teavitused (kell) · Dossier · PWA · Foto-AI · Määrad keskne · Kinnistu vs hoone · RLS turve (buyers/orgs) · Valmista ette (voog) · Turg+Postkast cache · Hõljuv M · Tervise-riba.
+Kõneabi · Statistika + konversioon · Ostjad + sobitamine · Postkast (Outlook) · Kuulutuse generaator · Kaaskiri/argumendid · Ostja kulud (klapib ametlikuga) · Laenukalkulaator · Üüritootlus · Koostööpakkumine (konfigureeritav + PDF/PNG/HTML) · Kaart + POI · EHR auto-täida · Turuhind asum/linnaosa/maakond · Self-error (mellChecks) · Onboarding · Uuendused-vaade · Teavitused (kell) · Dossier · PWA · Foto-AI · Määrad keskne · Kinnistu vs hoone · RLS turve (buyers/orgs) · Valmista ette (voog) · Turg+Postkast cache · Hõljuv M · Tervise-riba · Ajaneutraalne tervitus · Fail-safe augud (timeout/catch) · Keeleülevaatus · AI hääl (rikas stiil + "Hei" + kaasaegne, robootlik välja).
 
 ## ⏳ Päriselt ootel — ohutu, saan ise teha
 
-1. Tervise-riba backend: ühenda ülejäänud allikad source_health'i raporteerima + timeout/catch augud (staticmap, outlook/status).
-2. Isiklikum tervitus ilma kellata (praegu "Head õhtut" / "Päev läbi" — vastuolus su põhimõttega).
-3. Visuaalne ühtsuse pass — kogu app üks disainikeel, ATH-rahulik (ARENG #9, ammu pooleli).
+1. Tervise-riba backend: ühenda ülejäänud allikad source_health'i raporteerima.
+2. **Meeldiv laadimine kõikjale** — Fookuse laadimine tundub meeldivam kui teised vaated (Meelis 06.07). Vii sama tunne teistele: skeleton/õrn animatsioon "Laen…" asemel (Statistika, Postkast, Meeskond, Ostjad).
+3. Visuaalne ühtsuse pass — kogu app üks disainikeel, ATH-rahulik. Fookuse etalon-eelvaade tehtud (mell-fookus-etalon.html) → vii rütm teistele vaadetele.
 4. Homebeat — auto väärtus-uuendus omanikule (konkurent-idee).
 5. Hinnang usaldusvahemikuga (±%, N tehingut) (konkurent-idee).
 6. Kõneabi: e-posti küsimise punkt küsimustikku (vajan sult variandid).

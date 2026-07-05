@@ -46,7 +46,8 @@
   .sync{display:flex;align-items:center;gap:8px;background:var(--sf);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--ink2)}
   .ldot{width:7px;height:7px;border-radius:50%;background:var(--gr);box-shadow:0 0 0 0 rgba(72,194,129,.5);animation:pulse 2.6s infinite} @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(72,194,129,.5)}70%{box-shadow:0 0 0 7px rgba(72,194,129,0)}100%{box-shadow:0 0 0 0 rgba(72,194,129,0)}}
   .content{flex:1;overflow-y:auto;padding:22px 24px 50px}
-  .view{display:none} .view.on{display:block;animation:fade .3s ease} @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .view{display:none} .view.on{display:block;animation:fade .3s ease}
+  .panel,.section,.stat-block{animation:fkIn .5s ease both} @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   #authWarn{display:none;margin:20px;background:rgba(224,113,95,.12);border:1px solid rgba(224,113,95,.3);color:var(--red);border-radius:12px;padding:14px;font-size:13px} #authWarn a{color:var(--gr)}
   .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);margin:0 0 12px}
   .h1{font-size:27px;font-weight:600;letter-spacing:-.02em;line-height:1.15} .h1 .g{color:var(--gr)} .hello{font-size:12.5px;color:var(--ink2)}
