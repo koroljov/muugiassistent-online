@@ -75,7 +75,8 @@
   .rail .panel{background:var(--sf);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--sh);margin-bottom:14px}
   .stat{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)} .stat:last-child{border:none} .stat .k{font-size:12px;color:var(--ink2)} .stat .v{font-size:14.5px;font-weight:700} .stat .v.up{color:var(--gr)}
   /* kanban */
-  .board{margin-top:20px}
+  .board{display:flex;gap:12px;margin-top:20px;overflow-x:auto;padding-bottom:10px;align-items:flex-start}
+  .cmvs{display:flex;gap:6px;margin-top:9px}
   .col{flex:0 0 230px;display:flex;flex-direction:column;gap:9px} .colh{display:flex;align-items:center;gap:8px;padding:2px 4px;font-size:12px;font-weight:700} .colh .d{width:8px;height:8px;border-radius:50%} .colh .c{margin-left:auto;font-size:11px;color:var(--ink3)} .colsum{font-size:11px;color:var(--ink2);padding:0 4px;margin-top:-3px}
   .card{position:relative;background:linear-gradient(180deg,var(--cd),var(--sf));border:1px solid var(--line);border-radius:15px;overflow:hidden;cursor:pointer;box-shadow:var(--sh);transition:transform .16s,border-color .16s} .card:hover{transform:translateY(-2px);border-color:var(--line2)}
   .card .glow{position:absolute;top:-24px;right:-24px;width:84px;height:84px;border-radius:50%;filter:blur(22px);opacity:.45;transition:.2s} .card:hover .glow{opacity:.8}
@@ -167,7 +168,7 @@
   @keyframes shim{0%{background-position:-260px 0}100%{background-position:260px 0}}
   .skel{border-radius:14px;background:linear-gradient(90deg,var(--sf) 25%,var(--cd2) 40%,var(--sf) 60%);background-size:520px 100%;animation:shim 1.5s linear infinite}
   .skc{height:88px;margin-bottom:14px}
-  #v-toru{max-width:720px}
+  #v-toru{max-width:1400px}
   .pstage{margin-bottom:22px}
   .pshead{display:flex;align-items:center;gap:9px;margin-bottom:10px;padding:0 2px}
   .pshead .d{width:9px;height:9px;border-radius:50%;flex-shrink:0}
@@ -205,6 +206,8 @@
     #v-fookus,#v-buyers,#v-mail,#v-tools,#v-team,#v-updates,#v-settings,#v-toru{max-width:100%}
     .h1,h1.title{font-size:23px}
     .fab{right:16px;bottom:16px}
+    .board{flex-direction:column;overflow-x:visible}
+    .col{width:100%;flex:none}
   }
   .ilbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:15px 0 7px}
   /* KÕNEABI — vanast CRMist üle toodud, Studio-ilme */
@@ -793,7 +796,7 @@ function stateFull(v){
     document.getElementById('sToday').textContent=sc.filter(function(x){return x.u.rank<=1||x.fr;}).length;
   }
   var PIPE=['uus','vestlus toimus','vajab järelkõnet','prospect','k_kontakt','leping','ettevalmistus','ostja','t_ettevalmistus','k_tehing'];
-  function renderKanban(){var b=document.getElementById('board');if(!b)return;var h='';COLS.forEach(function(c){var ls=LEADS.filter(function(l){return l.status===c[0];});if(!ls.length)return;var sum=ls.reduce(function(a,l){return a+(Number(l.price)||0);},0);h+='<div class="pstage"><div class="pshead"><span class="d" style="background:'+c[2]+'"></span><span class="psn">'+esc(c[1])+'</span><span class="psc">'+ls.length+'</span><span class="pssum">'+eur(sum)+' €</span></div>';ls.forEach(function(l){var u=urg(l),idx=PIPE.indexOf(l.status);var prevB=idx>0?('<button class="pmv" onclick="event.stopPropagation();moveStage(\''+l.id+'\',-1)" title="Etapp tagasi">←</button>'):'<span class="pmv gh"></span>';var nextB=(idx>=0&&idx<PIPE.length-1)?('<button class="pmv" onclick="event.stopPropagation();moveStage(\''+l.id+'\',1)" title="Etapp edasi">→</button>'):'<span class="pmv gh"></span>';var ph=l.img_url?('<div class="pph" style="background-image:url(\''+esc(l.img_url)+'\')"></div>'):('<div class="pph e">'+esc(initials(l.contact_name))+'</div>');var bc=buyerCount(l),bch=bc?(' · <span style="color:var(--gr)">◇ '+bc+'</span>'):'';h+='<div class="prow" onclick="openObj(\''+l.id+'\')">'+ph+'<div class="pcb"><div class="pnm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="paddr">'+esc(l.property_address||l.asum||'')+(l.price!=null?(' · '+eur(l.price)+' €'):'')+bch+'</div>'+(u.txt?('<div class="pnext">'+esc(u.txt)+'</div>'):'')+'</div><div class="pmvs">'+prevB+nextB+'</div></div>';});h+='</div>';});b.innerHTML=h||'<div class="empty">Objekte veel pole.</div>';}
+  function renderKanban(){var b=document.getElementById('board');if(!b)return;var h='';COLS.forEach(function(c){var ls=LEADS.filter(function(l){return l.status===c[0];});if(!ls.length)return;var sum=ls.reduce(function(a,l){return a+(Number(l.price)||0);},0);h+='<div class="col"><div class="colh"><span class="d" style="background:'+c[2]+'"></span>'+esc(c[1])+'<span class="c">'+ls.length+'</span></div><div class="colsum">'+eur(sum)+' €</div>';ls.forEach(function(l){var u=urg(l),idx=PIPE.indexOf(l.status);var mv='<div class="cmvs">'+(idx>0?'<button class="pmv" onclick="event.stopPropagation();moveStage(\''+l.id+'\',-1)" title="Etapp tagasi">←</button>':'')+((idx>=0&&idx<PIPE.length-1)?'<button class="pmv" onclick="event.stopPropagation();moveStage(\''+l.id+'\',1)" title="Etapp edasi">→</button>':'')+'</div>';var ph=l.img_url?('<div class="ph" style="background-image:url(\''+esc(l.img_url)+'\')"><span class="sdot" style="background:'+c[2]+'"></span></div>'):('<div class="ph e"><span class="sdot" style="background:'+c[2]+'"></span>'+esc(initials(l.contact_name))+'</div>');var bc=buyerCount(l),bch=bc?('<div style="margin-top:6px;display:inline-block;font-size:10px;color:var(--gr);border:1px solid var(--gr);border-radius:10px;padding:1px 7px">◇ '+bc+' ostjat</div>'):'';h+='<div class="card" onclick="openObj(\''+l.id+'\')"><div class="glow" style="background:'+c[2]+'"></div>'+ph+'<div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||l.asum||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+(u.txt?('<div class="next '+u.cls+'">'+esc(u.txt)+'</div>'):'')+bch+mv+'</div></div>';});h+='</div>';});b.innerHTML=h||'<div class="empty">Objekte veel pole.</div>';}
   async function moveStage(id,dir){var l=LEADS.find(function(x){return x.id===id;});if(!l)return;var idx=PIPE.indexOf(l.status);if(idx<0)idx=(dir>0?-1:PIPE.length);var ni=Math.max(0,Math.min(PIPE.length-1,idx+dir));if(ni===idx)return;var from=l.status,to=PIPE[ni];var up=await sb.from('leads').update({status:to}).eq('id',id);if(up.error){toast('Ei õnnestunud liigutada — proovi uuesti');return;}l.status=to;if(O&&O.id===id)O.status=to;try{await sb.from('stage_events').insert({lead_id:id,user_id:(ME&&ME.id)||null,from_status:from,to_status:to});}catch(e){}renderKanban();try{renderFookus();}catch(e){}try{renderBell();}catch(e){}}
 
   /* object workspace */
