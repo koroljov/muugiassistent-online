@@ -34,6 +34,11 @@
   .nav a{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:11px;color:var(--ink2);font-size:13.5px;font-weight:600;cursor:pointer;transition:.14s;text-decoration:none}
   .nav a:hover{background:var(--sf);color:var(--ink)} .nav a.on{background:var(--grsoft);color:var(--gr)}
   .nav a .i{width:17px;text-align:center;font-size:14px} .nav a .b{margin-left:auto;font-size:10px;font-weight:700;background:rgba(224,113,95,.18);color:var(--red);border-radius:20px;padding:1px 7px}
+  .nav .ndiv{height:1px;background:var(--line);margin:9px 6px}
+  .nav a.sec{font-size:12.5px;color:var(--ink3);padding:8px 11px}
+  .nav a.sec .i{font-size:13px;opacity:.85}
+  .nav a.sec:hover{color:var(--ink2)}
+  .nav a.sec.on{color:var(--gr)}
   .side .sp{flex:1}
   .newbtn{display:flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(180deg,var(--gr),var(--gr2));color:#06140d;border:none;border-radius:11px;padding:11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;margin:8px 0 12px;text-decoration:none}
   .me{display:flex;align-items:center;gap:9px;padding:8px;border-top:1px solid var(--line)} .me i{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gr2),var(--gold));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-style:normal;color:#06140d} .me .n{font-size:12.5px;font-weight:600} .me .r{font-size:10.5px;color:var(--ink2)}
@@ -230,11 +235,12 @@
       <a data-v="toru"><span class="i">▥</span>Müügitoru</a>
       <a data-v="buyers"><span class="i">◇</span>Ostjad</a>
       <a data-v="mail"><span class="i">✉</span>Postkast</a>
-      <a data-v="tools"><span class="i">▦</span>Tööriistad</a>
-      <a data-v="stats"><span class="i">▤</span>Statistika</a>
-      <a data-v="team" id="navTeam" style="display:none"><span class="i">⧉</span>Meeskond</a>
-      <a data-v="updates"><span class="i">✨</span>Uuendused</a>
-      <a data-v="settings"><span class="i">⚙</span>Seaded</a>
+      <div class="ndiv"></div>
+      <a data-v="tools" class="sec"><span class="i">▦</span>Tööriistad</a>
+      <a data-v="stats" class="sec"><span class="i">▤</span>Statistika</a>
+      <a data-v="team" id="navTeam" class="sec" style="display:none"><span class="i">⧉</span>Meeskond</a>
+      <a data-v="updates" class="sec"><span class="i">✨</span>Uuendused</a>
+      <a data-v="settings" class="sec"><span class="i">⚙</span>Seaded</a>
     </div>
     <a class="newbtn" href="/uus.html">＋ Uus objekt</a>
     <div class="sp"></div>
