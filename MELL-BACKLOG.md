@@ -17,6 +17,15 @@ Mell'i AI EI tohi olla saareke. M teab / juriidika / tehniline peab **teadma joo
 - **Kuidas:** ask/overlay saab kaasa aktiivse objekti + toru konteksti (nagu Kõneabi juba saab O). Kui objekt avatud → "Küsi selle objekti kohta" eelvalitud. Kontekst voolab kõikjale.
 - See on vana MELL-VALMIS #29 "keskne aju + per-assistent" — oli parkitud "vajab su visiooni"; nüüd visioon antud.
 
+## 💬 AI-chat next-gen (Meelis 06.07) — järgmine suur tükk
+
+M teab / ask → päris **jätkatav vestlus** (mitte üks-shot):
+- **Sõnumimullid** (kasutaja + Mell), keritav vestlus; all **sisendkast** nagu Claude'i chatis — vasta ja jätka.
+- **Chip'id üleval, kompaktsemad** (valmisküsimused). Kuum teema esile: **varjatud puudused** (praegu populaarseim).
+- **Kontekstiteadlik** (juba tehtud) — teab aktiivset objekti; kirjuta objektist → tunneb ära.
+- **Salvesta objektile** — vestluse olulised kohad / kokkuvõte → objekti märkmetesse (mell_notes), vajadusel.
+- Toon: elav, next-gen, kompaktne. "Juriidiline abi" nimi kitsas — katab õigus + protsess + turg + tehnika; kaalu "Mell teab" / "Küsi Mellilt".
+
 ## 🆕 Uued soovid (06.07)
 
 - **Personaliseeritavad kiir-nupud** — kasutaja valib tab-riba/kiirklahvi sisu (igaühel oma).
