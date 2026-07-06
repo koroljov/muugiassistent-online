@@ -60,10 +60,11 @@ Kliendid ootavad infot müügiprotsessi kohta. Anna neile turvaline link (osalt 
 ## 🔧 Loose end'id nädalast (kontrolli/lõpeta)
 
 - Tervise-riba **backend** — ainult Maa-amet raporteerib source_health'i; ülejäänud "seire tulekul".
-- **Fotode lohistamine** — mainitud, tegemata.
-- **Kõnede ajalugu** — üldine "Kõne"; tulemus + klikitav detail tegemata.
-- **Uuendused/CHANGELOG** — ei kajasta nädala muudatusi → Raul ei näe mis muutus.
-- **Arvuti kanban** hetkel vertikaalne (regressioon) — go korral tagasi veergudeks.
+- ~~Fotode lohistamine~~ — ⭐ pea-pildiks + ✕ eemalda olemas (renderFiles); tegelik drag-reorder jäi, aga ⭐ katab põhivajaduse.
+- ~~Kõnede ajalugu — üldine "Kõne"~~ ✅ callTitle annab sisuka pealkirja (still_listed·tüüp·aeg), read klikitavad/laienevad.
+- ~~Uuendused/CHANGELOG ei kajasta~~ ✅ 6. juuli kirje lisatud (06.07).
+- ~~Arvuti kanban vertikaalne~~ ✅ veerud kõrvuti, mobiilis virnastub.
+- ✅ **De-personaliseerimine** — uue kasutaja nimi tuletatakse e-postist (ei näita enam "Meelis" Raulile).
 - Kontrolli: kas **esitlus kaks vaadet** (klient vs kolleeg) sai app.html-i? (mälus idee olemas)
 - **Turg täna** paneel Fookuses on veel hooldatav baas (TURG konstant, juuni 2026), mitte live — ühenda Turuhinna mootori/trendiga.
 - **Mitme-foto galerii** (#30) — kontrolli et esitlusel/PDF-is töötab (photos-väli olemas).
