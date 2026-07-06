@@ -164,6 +164,9 @@
   .fkmore button:hover{color:var(--ink2);border-color:var(--ink3)}
   .deep{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s var(--ease),opacity .3s var(--ease)}
   .deep.open{max-height:1000px;opacity:1;margin-top:16px}
+  @keyframes shim{0%{background-position:-260px 0}100%{background-position:260px 0}}
+  .skel{border-radius:14px;background:linear-gradient(90deg,var(--sf) 25%,var(--cd2) 40%,var(--sf) 60%);background-size:520px 100%;animation:shim 1.5s linear infinite}
+  .skc{height:88px;margin-bottom:14px}
   .ilbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:15px 0 7px}
   /* KÕNEABI — vanast CRMist üle toodud, Studio-ilme */
   .kabi-back{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:401;display:none}
@@ -274,7 +277,7 @@
         <div class="coach" id="fkCoach"></div>
         <button class="btn gh" id="ttsBtn" onclick="speakBriefing()" style="margin:-8px 0 16px">🔊 Loe ette</button>
         <div class="lbl" style="margin:34px 0 14px">Täna</div>
-        <div class="feed" id="feed"><div class="empty">Laen…</div></div>
+        <div class="feed" id="feed"><div class="skel skc"></div><div class="skel skc"></div><div class="skel skc"></div></div>
 
         <div class="ctx">
           <div class="it"><span class="k">Toru väärtus</span><span class="v" id="sVal">—</span></div>
