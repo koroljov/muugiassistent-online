@@ -167,6 +167,26 @@
   @keyframes shim{0%{background-position:-260px 0}100%{background-position:260px 0}}
   .skel{border-radius:14px;background:linear-gradient(90deg,var(--sf) 25%,var(--cd2) 40%,var(--sf) 60%);background-size:520px 100%;animation:shim 1.5s linear infinite}
   .skc{height:88px;margin-bottom:14px}
+  #v-toru{max-width:720px}
+  .pstage{margin-bottom:22px}
+  .pshead{display:flex;align-items:center;gap:9px;margin-bottom:10px;padding:0 2px}
+  .pshead .d{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .pshead .psn{font-size:12.5px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em}
+  .pshead .psc{font-size:11px;font-weight:700;color:var(--ink3);background:var(--sf);border-radius:999px;padding:1px 8px}
+  .pshead .pssum{margin-left:auto;font-size:12px;color:var(--ink2)}
+  .prow{display:flex;align-items:center;gap:12px;background:var(--cd);border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:9px;cursor:pointer;transition:transform .18s var(--ease),border-color .18s var(--ease)}
+  .prow:hover{transform:translateY(-1px);border-color:var(--line2)}
+  .pph{width:42px;height:42px;border-radius:11px;background-size:cover;background-position:center;flex-shrink:0}
+  .pph.e{display:flex;align-items:center;justify-content:center;background:var(--sf);color:var(--ink2);font-size:13px;font-weight:700}
+  .pcb{flex:1;min-width:0}
+  .pnm{font-size:14px;font-weight:600;color:var(--ink)}
+  .paddr{font-size:12px;color:var(--ink2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pnext{font-size:11px;color:var(--amber);margin-top:3px}
+  .pmvs{display:flex;gap:5px;flex-shrink:0}
+  .pmv{width:30px;height:30px;border-radius:9px;border:1px solid var(--line2);background:var(--sf);color:var(--ink2);font-size:14px;cursor:pointer;transition:.16s var(--ease);display:inline-flex;align-items:center;justify-content:center}
+  .pmv:hover{color:var(--gr);border-color:var(--gr)}
+  .pmv:active{transform:scale(.9)}
+  .pmv.gh{border:none;background:transparent;visibility:hidden}
   .ilbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:15px 0 7px}
   /* KÕNEABI — vanast CRMist üle toodud, Studio-ilme */
   .kabi-back{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:401;display:none}
@@ -750,7 +770,9 @@ function stateFull(v){
     document.getElementById('fkCoach').innerHTML=coach;
     document.getElementById('sToday').textContent=sc.filter(function(x){return x.u.rank<=1||x.fr;}).length;
   }
-  function renderKanban(){var b=document.getElementById('board'),h='';COLS.forEach(function(c){var ls=LEADS.filter(function(l){return l.status===c[0];});if(!ls.length)return;var sum=ls.reduce(function(a,l){return a+(Number(l.price)||0);},0);h+='<div class="col"><div class="colh"><span class="d" style="background:'+c[2]+'"></span>'+esc(c[1])+'<span class="c">'+ls.length+'</span></div><div class="colsum">'+eur(sum)+' €</div>';ls.forEach(function(l){var u=urg(l);var ph=l.img_url?('<div class="ph" style="background-image:url(\''+esc(l.img_url)+'\')"><span class="sdot" style="background:'+c[2]+'"></span></div>'):('<div class="ph e"><span class="sdot" style="background:'+c[2]+'"></span>'+esc(initials(l.contact_name))+'</div>');h+='<div class="card" onclick="openObj(\''+l.id+'\')"><div class="glow" style="background:'+c[2]+'"></div>'+ph+'<div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="addr">'+esc(l.property_address||l.asum||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+(u.txt?('<div class="next '+u.cls+'">'+esc(u.txt)+'</div>'):'')+(function(){var bc=buyerCount(l);return bc?('<div style="margin-top:4px;display:inline-block;font-size:10px;color:var(--gr);border:1px solid var(--gr);border-radius:10px;padding:1px 7px">◇ '+bc+' ostjat</div>'):'';})()+'</div></div>';});h+='</div>';});b.innerHTML=h||'<div class="empty">Objekte veel pole.</div>';}
+  var PIPE=['uus','vestlus toimus','vajab järelkõnet','prospect','k_kontakt','leping','ettevalmistus','ostja','t_ettevalmistus','k_tehing'];
+  function renderKanban(){var b=document.getElementById('board');if(!b)return;var h='';COLS.forEach(function(c){var ls=LEADS.filter(function(l){return l.status===c[0];});if(!ls.length)return;var sum=ls.reduce(function(a,l){return a+(Number(l.price)||0);},0);h+='<div class="pstage"><div class="pshead"><span class="d" style="background:'+c[2]+'"></span><span class="psn">'+esc(c[1])+'</span><span class="psc">'+ls.length+'</span><span class="pssum">'+eur(sum)+' €</span></div>';ls.forEach(function(l){var u=urg(l),idx=PIPE.indexOf(l.status);var prevB=idx>0?('<button class="pmv" onclick="event.stopPropagation();moveStage(\''+l.id+'\',-1)" title="Etapp tagasi">←</button>'):'<span class="pmv gh"></span>';var nextB=(idx>=0&&idx<PIPE.length-1)?('<button class="pmv" onclick="event.stopPropagation();moveStage(\''+l.id+'\',1)" title="Etapp edasi">→</button>'):'<span class="pmv gh"></span>';var ph=l.img_url?('<div class="pph" style="background-image:url(\''+esc(l.img_url)+'\')"></div>'):('<div class="pph e">'+esc(initials(l.contact_name))+'</div>');var bc=buyerCount(l),bch=bc?(' · <span style="color:var(--gr)">◇ '+bc+'</span>'):'';h+='<div class="prow" onclick="openObj(\''+l.id+'\')">'+ph+'<div class="pcb"><div class="pnm">'+esc(l.contact_name||'(nimeta)')+'</div><div class="paddr">'+esc(l.property_address||l.asum||'')+(l.price!=null?(' · '+eur(l.price)+' €'):'')+bch+'</div>'+(u.txt?('<div class="pnext">'+esc(u.txt)+'</div>'):'')+'</div><div class="pmvs">'+prevB+nextB+'</div></div>';});h+='</div>';});b.innerHTML=h||'<div class="empty">Objekte veel pole.</div>';}
+  async function moveStage(id,dir){var l=LEADS.find(function(x){return x.id===id;});if(!l)return;var idx=PIPE.indexOf(l.status);if(idx<0)idx=(dir>0?-1:PIPE.length);var ni=Math.max(0,Math.min(PIPE.length-1,idx+dir));if(ni===idx)return;var from=l.status,to=PIPE[ni];var up=await sb.from('leads').update({status:to}).eq('id',id);if(up.error){toast('Ei õnnestunud liigutada — proovi uuesti');return;}l.status=to;if(O&&O.id===id)O.status=to;try{await sb.from('stage_events').insert({lead_id:id,user_id:(ME&&ME.id)||null,from_status:from,to_status:to});}catch(e){}renderKanban();try{renderFookus();}catch(e){}try{renderBell();}catch(e){}}
 
   /* object workspace */
   function openObj(id){O=LEADS.find(function(l){return l.id===id;});if(!O)return;_backTo=document.querySelector('.side .nav a.on')?document.querySelector('.side .nav a.on').dataset.v:'toru';go('obj');
