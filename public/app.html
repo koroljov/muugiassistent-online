@@ -153,6 +153,17 @@
   .sync{transition:transform .2s var(--ease),border-color .2s var(--ease)}
   .sync:active{transform:scale(.97)}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  #v-fookus{max-width:840px}
+  .ctx{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:26px;padding:16px 18px;background:var(--sf);border:1px solid var(--line);border-radius:14px}
+  .ctx .it{display:flex;flex-direction:column;gap:2px}
+  .ctx .k{font-size:11px;color:var(--ink3)}
+  .ctx .v{font-size:15px;font-weight:700;color:var(--ink)}
+  .ctx .v.g{color:var(--gr)}
+  .fkmore{margin-top:20px}
+  .fkmore button{background:transparent;border:1px solid var(--line2);color:var(--ink3);border-radius:999px;padding:9px 18px;font-size:12.5px;cursor:pointer;transition:.2s var(--ease)}
+  .fkmore button:hover{color:var(--ink2);border-color:var(--ink3)}
+  .deep{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s var(--ease),opacity .3s var(--ease)}
+  .deep.open{max-height:1000px;opacity:1;margin-top:16px}
   .ilbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:15px 0 7px}
   /* KÕNEABI — vanast CRMist üle toodud, Studio-ilme */
   .kabi-back{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:401;display:none}
@@ -262,26 +273,28 @@
         <div class="h1 serif" id="fkTitle" style="margin-top:5px">Sinu <span class="g">fookus</span> täna.</div>
         <div class="coach" id="fkCoach"></div>
         <button class="btn gh" id="ttsBtn" onclick="speakBriefing()" style="margin:-8px 0 16px">🔊 Loe ette</button>
-        <div class="fgrid">
-          <div><div class="lbl" style="margin-bottom:0">Täna — tähtsuse järjekorras</div><div class="feed" id="feed" style="margin-top:12px"><div class="empty">Laen…</div></div></div>
-          <div class="rail">
-            <div class="panel"><div class="lbl" style="margin-bottom:6px">Sinu müügitoru</div>
-              <div class="stat"><span class="k">Aktiivne väärtus</span><span class="v" id="sVal">—</span></div>
-              <div class="stat"><span class="k">Kaalutud prognoos<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Toru väärtus korrutatuna etapi tõenäosusega. Mitte lubadus — tõenäosuspõhine ootus.</span></i></span><span class="v up" id="sFcast">—</span></div>
-              <div class="stat"><span class="k">Objekte kokku</span><span class="v" id="sCnt">—</span></div>
-              <div class="stat"><span class="k">Vajab täna tähelepanu</span><span class="v up" id="sToday">—</span></div>
-            </div>
-            <div class="panel" style="margin-top:12px"><div class="lbl" style="margin-bottom:6px">Turg täna · Maa-amet<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt" id="turgTip">Suunav turubaas (Maa-amet tehingustatistika). Võrdlusalus, mitte täpne hindamine.</span></i></div>
-              <div class="stat"><span class="k">Tallinn korterid</span><span class="v" id="tLinn">—</span></div>
-              <div class="stat"><span class="k">Hinnaindeks</span><span class="v up" id="tIdx">—</span></div>
-              <div class="stat"><span class="k" style="font-size:10px;color:var(--ink3)" id="tDate"></span><span class="v"></span></div>
-            </div>
-            <div class="panel" style="margin-top:12px"><div class="lbl" style="margin-bottom:6px">Kus lekib<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Kus toru kaotab kõige rohkem — arvutatud kõne-tulemustest (stage_events). Kasvab, mida rohkem kõne-ringi kasutad.</span></i></div>
-              <div id="leakOut" style="font-size:12px;color:var(--ink2);line-height:1.5">Analüüsin…</div>
-            </div>
-            <div class="panel" style="margin-top:12px"><div class="lbl" style="margin-bottom:6px">Sinu nädal<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Su viimase 7 päeva tegevus kõne-ringist — Mell õpib sind. Koguneb kasutamisega.</span></i></div>
-              <div id="weekBox" style="font-size:12px;color:var(--ink2);line-height:1.5">—</div>
-            </div>
+        <div class="lbl" style="margin:34px 0 14px">Täna</div>
+        <div class="feed" id="feed"><div class="empty">Laen…</div></div>
+
+        <div class="ctx">
+          <div class="it"><span class="k">Toru väärtus</span><span class="v" id="sVal">—</span></div>
+          <div class="it"><span class="k">Prognoos<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Toru väärtus korrutatuna etapi tõenäosusega. Mitte lubadus — tõenäosuspõhine ootus.</span></i></span><span class="v g" id="sFcast">—</span></div>
+          <div class="it"><span class="k">Objekte</span><span class="v" id="sCnt">—</span></div>
+          <div class="it"><span class="k">Vajab täna</span><span class="v g" id="sToday">—</span></div>
+        </div>
+
+        <div class="fkmore"><button onclick="toggleDeep(this)">Näita ülevaadet ▾</button></div>
+        <div class="deep" id="fkDeep">
+          <div class="panel"><div class="lbl" style="margin-bottom:6px">Turg täna · Maa-amet<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt" id="turgTip">Suunav turubaas (Maa-amet tehingustatistika). Võrdlusalus, mitte täpne hindamine.</span></i></div>
+            <div class="stat"><span class="k">Tallinn korterid</span><span class="v" id="tLinn">—</span></div>
+            <div class="stat"><span class="k">Hinnaindeks</span><span class="v up" id="tIdx">—</span></div>
+            <div class="stat"><span class="k" style="font-size:10px;color:var(--ink3)" id="tDate"></span><span class="v"></span></div>
+          </div>
+          <div class="panel"><div class="lbl" style="margin-bottom:6px">Kus lekib<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Kus toru kaotab kõige rohkem — arvutatud kõne-tulemustest (stage_events). Kasvab, mida rohkem kõne-ringi kasutad.</span></i></div>
+            <div id="leakOut" style="font-size:12px;color:var(--ink2);line-height:1.5">Analüüsin…</div>
+          </div>
+          <div class="panel"><div class="lbl" style="margin-bottom:6px">Sinu nädal<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Su viimase 7 päeva tegevus kõne-ringist — Mell õpib sind. Koguneb kasutamisega.</span></i></div>
+            <div id="weekBox" style="font-size:12px;color:var(--ink2);line-height:1.5">—</div>
           </div>
         </div>
       </div>
@@ -697,6 +710,7 @@ function stateFull(v){
   function closeAsk(){var o=document.getElementById('askOverlay');if(o)o.classList.remove('on');}
   function openHealth(){var o=document.getElementById('healthOverlay');if(o){o.classList.add('on');renderHealth();}}
   function closeHealth(){var o=document.getElementById('healthOverlay');if(o)o.classList.remove('on');}
+  function toggleDeep(b){var d=document.getElementById('fkDeep');if(!d)return;d.classList.toggle('open');b.textContent=d.classList.contains('open')?'Peida ülevaade ▴':'Näita ülevaadet ▾';}
   var SRC_NAMES={maaamet_htraru:'Maa-amet · turuhind',ehr:'EHR · ehitise faktid',inads:'in-ADS · aadress',portaalid:'Portaalid · kuulutus',nearby:'Naabruskond · POI',mapbox:'Kaart',outlook:'Outlook · postkast'};
   async function healthRows(){try{var r=await sb.from('source_health').select('source,status,detail,checked_at');return r.data||[];}catch(e){return [];}}
   async function refreshSyncPill(){var t=document.getElementById('syncTxt'),d=document.getElementById('ldot');if(!t)return;var rows=await healthRows();var bad=rows.filter(function(x){return x.status&&x.status!=='ok';});if(bad.length){t.textContent=bad.length+(bad.length===1?' allikas':' allikat')+' vajab pilku';if(d)d.style.background='var(--amber)';}else{t.textContent='Andmed korras';if(d)d.style.background='var(--gr)';}}
