@@ -205,6 +205,11 @@
   .burger{display:inline-flex;background:transparent;border:1px solid var(--line2);color:var(--ink2);border-radius:9px;width:36px;height:36px;font-size:16px;cursor:pointer;flex-shrink:0;margin-right:6px;align-items:center;justify-content:center;transition:.16s var(--ease)}
   .burger:hover{color:var(--gr);border-color:var(--gr)}
   .sideback{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:190}
+  .tabbar{display:none;position:fixed;left:0;right:0;bottom:0;height:64px;background:rgba(19,27,22,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);z-index:170;padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar .tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;color:var(--ink3);text-decoration:none;cursor:pointer;transition:color .18s var(--ease)}
+  .tabbar .tb .ti{font-size:19px}
+  .tabbar .tb.on{color:var(--gr)}
+  .tabbar .tb:active{transform:scale(.94)}
   @media(max-width:760px){
     .side{position:fixed;top:0;bottom:0;left:0;z-index:200;transform:translateX(-100%);transition:transform .3s var(--ease);box-shadow:0 0 40px rgba(0,0,0,.55)}
     .side.open{transform:translateX(0)}
@@ -220,7 +225,9 @@
     .main{overflow-x:hidden}
     #v-fookus,#v-buyers,#v-mail,#v-tools,#v-team,#v-updates,#v-settings,#v-toru{max-width:100%}
     .h1,h1.title{font-size:23px}
-    .fab{right:16px;bottom:16px}
+    .fab{display:none}
+    .tabbar{display:flex}
+    .content{padding-bottom:82px}
     .board{flex-direction:column;overflow-x:visible}
     .col{width:100%;flex:none}
   }
@@ -402,6 +409,13 @@
       </div>
 
       <button class="fab" onclick="openAsk()" title="Küsi M-lt">✦ M</button>
+      <div class="tabbar">
+        <a class="tb" data-v="fookus" onclick="go('fookus')"><span class="ti">◎</span>Fookus</a>
+        <a class="tb" data-v="toru" onclick="go('toru')"><span class="ti">▥</span>Toru</a>
+        <a class="tb" data-v="buyers" onclick="go('buyers')"><span class="ti">◇</span>Ostjad</a>
+        <a class="tb" onclick="openAsk()"><span class="ti">✦</span>Küsi</a>
+        <a class="tb" onclick="toggleSide()"><span class="ti">☰</span>Rohkem</a>
+      </div>
 
       <div class="view" id="v-tools">
         <div class="hello">Tööriistad</div>
@@ -789,7 +803,7 @@ function stateFull(v){
   async function renderHealth(){var el=document.getElementById('healthList');if(!el)return;el.innerHTML='<div style="color:var(--ink3);font-size:12px">Laen…</div>';var rows=await healthRows(),by={};rows.forEach(function(x){by[x.source]=x;});el.innerHTML=Object.keys(SRC_NAMES).map(function(k){var x=by[k],st=x?x.status:null;var color=st==='ok'?'var(--gr)':st==='degraded'?'var(--amber)':'var(--ink3)';var lbl=st==='ok'?'korras':st==='degraded'?'vajab pilku':'seire tulekul';var when=(x&&x.checked_at)?new Date(x.checked_at).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';var det=(st==='degraded'&&x.detail)?('<div style="font-size:11px;color:var(--amber);margin-top:2px">'+esc(x.detail)+'</div>'):'';return '<div style="display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)"><span style="width:9px;height:9px;border-radius:50%;background:'+color+';flex-shrink:0"></span><div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">'+esc(SRC_NAMES[k])+'</div>'+det+'</div><div style="font-size:11px;color:var(--ink3);text-align:right;white-space:nowrap">'+lbl+(when?('<br>'+when):'')+'</div></div>';}).join('');}
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeAsk();closeHealth();}});
   document.addEventListener('click',function(e){var a=document.getElementById('askOverlay');if(a&&e.target===a)closeAsk();var h=document.getElementById('healthOverlay');if(h&&e.target===h)closeHealth();});
-  function go(v){var _s=document.querySelector('.side');if(_s)_s.classList.remove('open');var _b=document.getElementById('sideback');if(_b)_b.classList.remove('on');document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on');});var el=document.getElementById('v-'+v);if(el)el.classList.add('on');document.querySelector('.content').scrollTop=0;if(v==='team')renderTeam();if(v==='stats')renderStats();if(v==='buyers')renderBuyers();if(v==='updates')renderUpdates();if(v==='mail')renderMail();try{localStorage.setItem('mell_view',v);}catch(e){}}
+  function go(v){var _s=document.querySelector('.side');if(_s)_s.classList.remove('open');var _b=document.getElementById('sideback');if(_b)_b.classList.remove('on');document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.tabbar a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on');});var el=document.getElementById('v-'+v);if(el)el.classList.add('on');document.querySelector('.content').scrollTop=0;if(v==='team')renderTeam();if(v==='stats')renderStats();if(v==='buyers')renderBuyers();if(v==='updates')renderUpdates();if(v==='mail')renderMail();try{localStorage.setItem('mell_view',v);}catch(e){}}
   document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.addEventListener('click',function(){go(a.dataset.v);});});
   document.querySelectorAll('.otab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.otab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.oview').forEach(function(x){x.classList.remove('on');});document.getElementById('o-'+t.dataset.o).classList.add('on');if(t.dataset.o==='pakk')renderDoc();});});
 

@@ -32,6 +32,16 @@ M teab / ask → päris **jätkatav vestlus** (mitte üks-shot):
 - **Sujuvus läbiv** — "tee kõik sujuvaks ja mugavaks" iga tükis.
 - **Tehniline abi** (M teab laiendus): el võimsus (mis on, kust leida), ventilatsioon, küte, vundament → valmis projekt; uued JA vanad majad. ANTIHALLU: ei leiuta spekke — õpetab kust kontrollida (peakaitse elektrikilbis, energiamärgis, EHR, ventseade).
 
+## 🏰 Kopeerimatuse müür (Meelis 06.07) — strateegiline, läbiv
+
+Ehita nii, et konkurendil on raske/võimatu Mell'i kopeerida:
+- **Eesti andmete sügav integratsioon** (Maa-amet, EHR, kinnistusraamat, in-ADS, portaalid) — kõige raskem osa taastada; laienda pidevalt. See on müür, mida USA-tööriistad ei ületa.
+- **Liituv proprietaarne andmestik**: market_prices cache + stage_events + kõne-tulemused kasvavad iga kasutusega → ennustusvõime; konkurent alustab nullist andmetega (data network effect).
+- **Kontekstiteadlik üks-süsteem** (AI teab kõike) — kopeerimiseks tuleb kogu integreeritud süsteem üle ehitada, mitte üksik feature.
+- **Usaldus/AntiHallu** kui bränd + kultuur — autentselt raske järele teha (nende ärimudel on "genereeri rohkem", mitte "ütle tõde").
+- **Kliendi/omaniku portaalid** → switching cost (kliendid seotud maakleri Mell-linkidega).
+Konkreetne töö: tugevda õppe-ringi (mida rohkem kasutad, seda targem Mell), hoia Eesti-andmete pipeline elus + laienev, ehita liituvat andmestikku, mis konkurendil puudub.
+
 ## 👥 Kliendi/omaniku portaal (Meelis 06.07) — personaalne per objekt/klient
 
 Kliendid ootavad infot müügiprotsessi kohta. Anna neile turvaline link (osalt olemas: /vaade.html "Jaga omanikuga"), aga laienda:
