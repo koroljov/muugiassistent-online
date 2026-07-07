@@ -314,7 +314,9 @@
   .ob-jump{display:flex;align-items:center;gap:10px;text-align:left;padding:11px 13px;border-radius:12px;background:var(--cd);border:1px solid var(--line2);color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
   .ob-jump:hover{border-color:var(--gr);transform:translateY(-1px)}
   .ob-jump .oji{font-size:17px;width:22px;text-align:center;color:var(--gr);flex-shrink:0}
-  .ob-card{animation:obPop .4s var(--ease) both} @keyframes obPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+  .ob-card{position:relative;animation:obPop .4s var(--ease) both} @keyframes obPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+  .ob-x{position:absolute;top:12px;right:14px;width:28px;height:28px;border-radius:8px;background:transparent;border:none;color:var(--ink3);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .ob-x:hover{background:var(--cd);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -1211,6 +1213,7 @@ function stateFull(v){
 <div id="toast"></div>
 <div class="ob-back" id="obBack">
   <div class="ob-card">
+    <button class="ob-x" onclick="obDecline()" aria-label="Sulge">✕</button>
     <div class="ob-prog" id="obProg"><span id="obProgBar"></span></div>
     <div class="ob-emoji" id="obEmoji">👋</div>
     <div class="ob-title" id="obTitle">Tere tulemast</div>
