@@ -303,6 +303,18 @@
   .ob-btn{font-size:13px;padding:10px 18px;border-radius:11px;cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--ink)}
   .ob-btn.primary{background:var(--gr);border-color:var(--gr);color:#06140d;font-weight:600}
   .ob-btn:hover{opacity:0.9}
+  .ob-prog{height:4px;border-radius:99px;background:var(--line2);overflow:hidden;margin:-6px 0 16px}
+  .ob-prog span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gr2),var(--gr));border-radius:99px;transition:width .45s var(--ease)}
+  .ob-extra{margin-bottom:16px}
+  .ob-extra .obf{text-align:left;margin-bottom:10px}
+  .ob-extra .obf label{display:block;font-size:11px;color:var(--ink2);margin-bottom:4px}
+  .ob-extra .obf input{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--inp);border:1px solid var(--line2);border-radius:10px;padding:11px 12px;transition:.15s}
+  .ob-extra .obf input:focus{outline:none;border-color:var(--gr);box-shadow:0 0 0 3px var(--grsoft)}
+  .ob-jumps{display:flex;flex-direction:column;gap:8px}
+  .ob-jump{display:flex;align-items:center;gap:10px;text-align:left;padding:11px 13px;border-radius:12px;background:var(--cd);border:1px solid var(--line2);color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .ob-jump:hover{border-color:var(--gr);transform:translateY(-1px)}
+  .ob-jump .oji{font-size:17px;width:22px;text-align:center;color:var(--gr);flex-shrink:0}
+  .ob-card{animation:obPop .4s var(--ease) both} @keyframes obPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -319,7 +331,7 @@
       <a data-v="tools" class="sec"><span class="i">▦</span>Tööriistad</a>
       <a data-v="stats" class="sec"><span class="i">▤</span>Statistika</a>
       <a data-v="team" id="navTeam" class="sec" style="display:none"><span class="i">⧉</span>Meeskond</a>
-      <a data-v="updates" class="sec"><span class="i">✨</span>Uuendused</a>
+      <a data-v="updates" class="sec"><span class="i">✨</span>Uuendused<span class="b" id="updBadge" style="display:none"></span></a>
       <a data-v="settings" class="sec"><span class="i">⚙</span>Seaded</a>
     </div>
     <a class="newbtn" href="/uus.html">＋ Uus objekt</a>
@@ -1133,12 +1145,15 @@ function stateFull(v){
     el.innerHTML=head+'<div id="mailList">'+listHtml+'</div>';MAIL_MEM=el.innerHTML;}
   /* ========== UUENDUSED — muudatuste märkmed ========== */
   var CHANGELOG=[
-    {d:'6. juuli 2026',t:'Next-gen: rahulikum, mobiilne, vestlus',items:['Rahulikum ilme — pehmem palett silmamugavuseks, sujuv liikumine, skeleton-laadimine.','Telefon — täisekraan, alumine tab-riba (Fookus · Toru · Ostjad · Küsi · Rohkem), külgriba libiseb; iOS + Android.','Müügitoru — arvutis veerud, mobiilis virnastub; leadi saab ←/→ nupuga etapi edasi/tagasi.','✦ M on nüüd päris vestlus — jätkatav, kontekstiteadlik (teab avatud objekti), vestluse saab objektile lisada.','Tehniline abi — Mell vastab ka ehitus/tehnika küsimustele (elekter, ventilatsioon, küte); pildi peale selgitab, mida näeb.','Turuhind näitab usaldusvahemikku (vähem tehinguid = laiem vahemik).','Külgriba kokkuklapp arvutis; ülariba mahub igale ekraanile.']},
+    {d:'6. juuli 2026',t:'Next-gen: rahulikum, mobiilne, vestlus',items:['Rahulikum ilme — pehmem palett silmamugavuseks, sujuv liikumine, skeleton-laadimine.','Telefon — täisekraan, alumine tab-riba (Fookus · Toru · Ostjad · Küsi · Rohkem), külgriba libiseb; iOS + Android.','Müügitoru — arvutis veerud, mobiilis virnastub; leadi saab ←/→ nupuga etapi edasi/tagasi.','✦ M on nüüd päris vestlus — jätkatav, kontekstiteadlik (teab avatud objekti), vestluse saab objektile lisada.','Tehniline abi — Mell vastab ka ehitus/tehnika küsimustele (elekter, ventilatsioon, küte); pildi peale selgitab, mida näeb.','Turuhind näitab usaldusvahemikku (vähem tehinguid = laiem vahemik).','Külgriba kokkuklapp arvutis; ülariba mahub igale ekraanile.'],try:{label:'Ava Müügitoru',view:'toru'}},
     {d:'4. juuli 2026',t:'Ostjad ja veebis kokkuvõte',items:['Ostjate sobitamine — uus "Ostjad" vaade: salvesta soovid (eelarve, tüüp, piirkond), Mell näitab sobivad objektid ja objektil rohelise ribana "N ostjat sobib".','Kõnede ajalugu objektil — iga salvestatud kõne on näha ja laiendatav.','Koostööpakkumise HTML-eksport ("⬇ Veeb") — sama sisu ja stiil mis PDF.','Refresh hoiab sind samal vaatel/objektil (enam ei viska Fookusesse).','See "Uuendused" vaade — näed, mis on muutunud.']},
     {d:'3. juuli 2026',t:'Kõneabi, statistika, iseparandus',items:['Kõneabi — kõne ajal tugi: avalöök + vastuväited, inimtüüp vihjetega, 57-valikuline andmekorje, AI väljundid (kokkuvõte, kuulutuse tagasiside, kiri kliendile), salvesta kõne.','Statistika — kõneandmed pildiks: miks omanikud ise müüvad, mis takistab, konversioon, müügitulemused, AI turuanalüüs.','Mell märkab viga ise — hoiatab, kui pind, €/m², ehitusaasta või tüüp on ebaloogiline.','Teavituste kell menüüribal — tänased ja hilinenud järelkõned.','Interaktiivne esmatutvustus uuele kasutajale.','PWA — Mell telefoni koduekraanile.','Koostööpakkumine — sektsioonid lisa/eemalda/nihuta.','Foto-AI — hindab pilte (pea-pilt, järjekord, kvaliteet).','Auto-täida (EHR) — aadressist ehitusaasta, pind, katastritunnus, energiamärgis.','Meeskond — lisa liikmeid ja näe tulemusi; nädalaraport; omaniku-link.']},
     {d:'2. juuli 2026',t:'Lipulaev app.html + Studio ilme',items:['Ühtne rakendus — Fookus, Müügitoru, objekti töölaud (kokkuvõte / kuulutus / koostööpakkumine PDF).','Mell räägib (Neurokõne hääl), turg täna Maa-ameti andmetel, ostja kulud + müüja neto, kõne-tulemuse ring.','Termini-seletused (ⓘ), juriidika allikaviitega, Määrad ühes kohas, kalkulaatorid (laen, üüritootlus).','Failide üleslaadimine + Mell loeb pildid (vision) → kuulutuse tekst. Objekti ülevaatuse vorm. Kakskeelne ET/EN.']}
   ];
-  function renderUpdates(){var el=document.getElementById('updatesBox');if(!el)return;el.innerHTML=CHANGELOG.map(function(g){return '<div style="margin-bottom:20px"><div style="display:flex;align-items:baseline;gap:10px;margin-bottom:9px"><span style="font-size:11px;font-weight:700;color:var(--gr);background:var(--grsoft);padding:3px 10px;border-radius:20px;white-space:nowrap">'+esc(g.d)+'</span><span style="font-weight:600;font-size:14px">'+esc(g.t)+'</span></div>'+g.items.map(function(it){return '<div style="display:flex;gap:8px;font-size:12.5px;line-height:1.55;color:var(--ink);margin-bottom:5px"><span style="color:var(--gr);flex-shrink:0">✦</span><span>'+esc(it)+'</span></div>';}).join('')+'</div>';}).join('');}
+  function updatesSeen(){try{return JSON.parse(localStorage.getItem('mell_upd_seen')||'[]');}catch(e){return [];}}
+  function updatesUnseen(){var seen=updatesSeen();return CHANGELOG.filter(function(g){return seen.indexOf(g.d)<0;}).length;}
+  function refreshUpdBadge(){var b=document.getElementById('updBadge');if(!b)return;var n=updatesUnseen();b.textContent=n||'';b.style.display=n?'':'none';}
+  function renderUpdates(){var el=document.getElementById('updatesBox');if(!el)return;var seen=updatesSeen();el.innerHTML=CHANGELOG.map(function(g){var isNew=seen.indexOf(g.d)<0;var badge=isNew?'<span style="font-size:9px;font-weight:800;letter-spacing:.06em;color:#06140d;background:var(--gr);padding:2px 7px;border-radius:20px">UUS</span>':'';var tryBtn=(g.try&&g.try.view)?'<button class="btn mell" style="margin-top:10px;font-size:12px;padding:8px 13px" onclick="go(\''+esc(g.try.view)+'\')">▸ '+esc(g.try.label||'Proovi kohe')+'</button>':'';return '<div style="margin-bottom:20px'+(isNew?';padding:14px 14px 4px;background:var(--grsoft);border:1px solid rgba(72,194,129,.22);border-radius:14px':'')+'"><div style="display:flex;align-items:center;gap:9px;margin-bottom:9px;flex-wrap:wrap"><span style="font-size:11px;font-weight:700;color:var(--gr);background:var(--cd);padding:3px 10px;border-radius:20px;white-space:nowrap">'+esc(g.d)+'</span><span style="font-weight:600;font-size:14px">'+esc(g.t)+'</span>'+badge+'</div>'+g.items.map(function(it){return '<div style="display:flex;gap:8px;font-size:12.5px;line-height:1.55;color:var(--ink);margin-bottom:5px"><span style="color:var(--gr);flex-shrink:0">✦</span><span>'+esc(it)+'</span></div>';}).join('')+tryBtn+'</div>';}).join('');try{localStorage.setItem('mell_upd_seen',JSON.stringify(CHANGELOG.map(function(g){return g.d;})));}catch(e){}refreshUpdBadge();}
   /* ========== DOSSIER — objekti täispilt klahvivahemällu (Resolve/kiri) ========== */
   function dossierText(){if(!O)return '';var L=[];L.push('OBJEKT: '+(O.property_type||'Objekt')+(O.property_address?(' — '+O.property_address):''));var loc=[O.asum,O.district,O.county].filter(Boolean).join(', ');if(loc)L.push('Asukoht: '+loc);var fc=[];if(O.area!=null)fc.push(O.area+' m²');if(O.plot_area!=null)fc.push('kinnistu '+O.plot_area+' m²');if(O.rooms!=null)fc.push(O.rooms+' tuba');if(O.floor)fc.push('korrus '+O.floor);if(O.build_year!=null)fc.push('ehit. '+O.build_year);if(O.condition)fc.push(O.condition);if(O.energy_label)fc.push('energiaklass '+O.energy_label);if(fc.length)L.push(fc.join(' · '));var om2=(O.price&&O.area)?Math.round(O.price/O.area):null;if(O.price!=null)L.push('Hind: '+eur(O.price)+' €'+(om2?(' ('+eur(om2)+' €/m²)'):''));var b=turgBase(O);if(b&&O.price&&O.area){var p=Math.round((O.price/O.area/b.v-1)*100);L.push('Turg ('+(b.real?'Maa-amet':'suunav')+'): '+b.nm+' mediaan '+eur(b.v)+' €/m² — objekt '+(p>=0?'+':'')+p+'%. Piirkonna keskmine, ei arvesta seisukorda/korrust.');}var f=feeFor();L.push('Vahendustasu: '+f.line);if(O.price!=null)L.push('Müüja neto pärast vahendustasu: '+eur(Number(O.price)-feeNum())+' €');var bm=(BUYERS||[]).filter(function(x){return buyerMatch(x,O).ok;});if(bm.length)L.push('Sobivad ostjad ('+bm.length+'): '+bm.slice(0,5).map(function(x){return (x.name||'ostja')+(x.phone?(' '+x.phone):'');}).join('; '));if(O.contact_name||O.phone)L.push('Omanik: '+(O.contact_name||'')+(O.phone?(' · '+O.phone):''));if(O.mell_notes)L.push('Märkmed: '+O.mell_notes);L.push('—');L.push([SETTINGS.name,SETTINGS.role,SETTINGS.phone,SETTINGS.email].filter(Boolean).join(' · '));return L.join('\n');}
   async function copyDossier(){var m=document.getElementById('callMsg');var t=dossierText();try{await navigator.clipboard.writeText(t);toast('📋 Dossier kopeeritud');if(m){m.style.color='#48c281';m.textContent='✓ Dossier kopeeritud — kleebi Resolve\'i või kirja.';}}catch(e){var w=document.getElementById('callScriptBox');if(w){w.style.display='block';w.textContent=t;}if(m){m.style.color='#48c281';m.textContent='✓ Dossier valmis (kopeeri käsitsi ülalt).';}}}
@@ -1149,8 +1164,10 @@ function stateFull(v){
     {emoji:'◎',title:'Fookus',text:'Mida teen nüüd — Mell reastab objektid tähtsuse järgi. Alusta päeva siit: kellele täna helistada, mis vajab tegevust.'},
     {emoji:'▥',title:'Müügitoru',text:'Objektid liiguvad etappide kaupa. Lohista kaarte või ava objekt, et näha kokkuvõtet, kuulutust ja koostööpakkumist.'},
     {emoji:'📞',title:'Kõneabi',text:'Ava objekt → Kokkuvõte → Kõneabi. Kõne ajal tugi: avalöök, inimtüüp, andmekorje klõpsuga ja AI väljundid (kokkuvõte, kiri kliendile).'},
-    {emoji:'▤',title:'Statistika',text:'Kogutud kõned muutuvad pildiks: miks omanikud ise müüvad, mis takistab, mis viib edasi. Mida rohkem kõnesid salvestad, seda täpsem.'},
-    {emoji:'✦',title:'Koostööpakkumine',text:'Objekti Koostööpakkumine-tabis koostad omanikule PDF-i. Sektsioonid on paindlikud — lisa, eemalda, nihuta. Jaga ka turvalise omaniku-lingina.'}
+    {emoji:'✦',title:'Küsi Mellilt',text:'Paremal all ✦ — päris vestlus. Mell teab õigust, protsessi, turgu ja tehnikat, ka avatud objekti konteksti. Pildi peale selgitab, mida näeb.'},
+    {emoji:'📊',title:'Statistika',text:'Kogutud kõned muutuvad pildiks: miks omanikud ise müüvad, mis takistab, mis viib edasi. Mida rohkem kõnesid salvestad, seda täpsem.'},
+    {emoji:'⚙',title:'Tee süsteem enda omaks',text:'Pane oma nimi ja number. Mell kasutab neid kirjades ja koostööpakkumises — kohe sinu näoga.',setup:true},
+    {emoji:'✅',title:'Valmis — hakkame pihta',text:'Sa oled stardis. Alusta Fookusest või hüppa kohe sisse.',finish:true}
   ];
   var obStep=0;
   function maybeShowOnboarding(){try{if(localStorage.getItem('mell_ob_done'))return;var n=parseInt(localStorage.getItem('mell_ob_count')||'0',10)+1;localStorage.setItem('mell_ob_count',String(n));if(n>3)return;showOnboarding();}catch(e){}}
@@ -1160,7 +1177,18 @@ function stateFull(v){
   function obStart(){obStep=1;obRender();}
   function obNext(){if(obStep>=OB_TOUR.length){try{localStorage.setItem('mell_ob_done','1');}catch(e){}obClose();}else{obStep++;obRender();}}
   function showOnboardingFromSettings(){try{localStorage.removeItem('mell_ob_done');localStorage.removeItem('mell_ob_count');}catch(e){}showOnboarding();}
-  function obRender(){var emoji=document.getElementById('obEmoji'),title=document.getElementById('obTitle'),text=document.getElementById('obText'),dots=document.getElementById('obDots'),actions=document.getElementById('obActions');if(!emoji)return;if(obStep===0){emoji.textContent='👋';title.textContent='Tere tulemast Melli';text.textContent='Soovid lühikest tutvustust? Näitan põhiosad ühe minutiga. Saad selle alati Seadetest uuesti avada.';dots.innerHTML='';actions.innerHTML='<button class="ob-btn" onclick="obDecline()">Ei, aitäh</button><button class="ob-btn primary" onclick="obStart()">Jah, näita</button>';}else{var s=OB_TOUR[obStep-1];emoji.textContent=s.emoji;title.textContent=s.title;text.textContent=s.text;dots.innerHTML=OB_TOUR.map(function(_,i){return '<div class="ob-dot'+(i===obStep-1?' on':'')+'"></div>';}).join('');var last=obStep>=OB_TOUR.length;actions.innerHTML='<button class="ob-btn" onclick="obDecline()">Jäta vahele</button><button class="ob-btn primary" onclick="obNext()">'+(last?'Valmis':'Edasi')+'</button>';}}
+  function obFirst(){return (SETTINGS.name||'').trim().split(/\s+/)[0]||'';}
+  function obSetProg(){var b=document.getElementById('obProgBar');if(b)b.style.width=(obStep<=0?0:Math.round(obStep/OB_TOUR.length*100))+'%';}
+  function obRender(){var emoji=document.getElementById('obEmoji'),title=document.getElementById('obTitle'),text=document.getElementById('obText'),extra=document.getElementById('obExtra'),dots=document.getElementById('obDots'),actions=document.getElementById('obActions');if(!emoji)return;if(extra)extra.innerHTML='';if(dots)dots.innerHTML='';obSetProg();
+    if(obStep===0){var fn=obFirst();emoji.textContent='👋';title.textContent=fn?('Tere, '+fn):'Tere tulemast';text.textContent='Mell on su müügi töölaud. Näitan põhiosad minutiga ja seame selle sinu järgi. Alati Seadetest uuesti avatav.';actions.innerHTML='<button class="ob-btn" onclick="obDecline()">Ei, aitäh</button><button class="ob-btn primary" onclick="obStart()">Alustame</button>';return;}
+    var s=OB_TOUR[obStep-1];emoji.textContent=s.emoji;title.textContent=s.title;text.textContent=s.text;
+    if(s.setup){extra.innerHTML='<div class="obf"><label>Sinu nimi</label><input id="obName" value="'+esc(SETTINGS.name||'')+'" placeholder="Ees- ja perekonnanimi"></div><div class="obf"><label>Telefon</label><input id="obPhone" value="'+esc(SETTINGS.phone||'')+'" placeholder="+372 ..."></div>';actions.innerHTML='<button class="ob-btn" onclick="obNext()">Jäta vahele</button><button class="ob-btn primary" onclick="obSaveSetup()">Salvesta ja edasi</button>';return;}
+    if(s.finish){extra.innerHTML='<div class="ob-jumps"><button class="ob-jump" onclick="obJump(\'fookus\')"><span class="oji">◎</span>Ava Fookus — mida teen täna</button><button class="ob-jump" onclick="obJump(\'toru\')"><span class="oji">▥</span>Vaata müügitoru</button><button class="ob-jump" onclick="obAsk()"><span class="oji">✦</span>Küsi Mellilt midagi</button></div>';actions.innerHTML='<button class="ob-btn primary" onclick="obFinish()">Valmis</button>';return;}
+    actions.innerHTML='<button class="ob-btn" onclick="obDecline()">Jäta vahele</button><button class="ob-btn primary" onclick="obNext()">Edasi</button>';}
+  function obSaveSetup(){var n=document.getElementById('obName'),p=document.getElementById('obPhone');if(n&&n.value.trim())SETTINGS.name=n.value.trim();if(p)SETTINGS.phone=p.value.trim();try{localStorage.setItem('mell_settings',JSON.stringify(SETTINGS));}catch(e){}try{fillSettings();}catch(e){}obNext();}
+  function obJump(v){obDecline();try{go(v);}catch(e){}}
+  function obAsk(){obDecline();try{openAsk();}catch(e){}}
+  function obFinish(){obDecline();try{go('fookus');}catch(e){}}
 
   /* ========== STATISTIKA — vanast CRMist üle toodud ========== */
   function normType(t){if(!t)return '';var s=String(t).toLowerCase();if(/korter/.test(s))return 'Korter';if(/ridaelamu|paariselamu/.test(s))return 'Ridaelamu';if(/maja|elamu/.test(s))return 'Maja';if(/krunt|maa|kinnistu/.test(s))return 'Maa / krunt';if(/äri|büroo|kaubandus|tootmis|ladu|garaaž|garaaz/.test(s))return 'Äripind';return String(t).charAt(0).toUpperCase()+String(t).slice(1);}
@@ -1177,15 +1205,17 @@ function stateFull(v){
     else if(savedV==='obj'&&savedO&&LEADS.find(function(l){return l.id===savedO;}))openObj(savedO);
     else if(savedV&&savedV!=='fookus'&&document.getElementById('v-'+savedV))go(savedV);
     var _mail=new URLSearchParams(location.search).get('mail');if(_mail){if(_mail==='connected'){toast('✉ Outlook ühendatud');go('mail');}else{toast('Outlooki ühendamine ebaõnnestus ('+_mail+')');}try{var _u=new URL(location.href);_u.searchParams.delete('mail');history.replaceState({},'',_u.toString());}catch(e){}}
-    maybeShowOnboarding();refreshSyncPill();}
+    maybeShowOnboarding();refreshSyncPill();try{refreshUpdBadge();}catch(e){}}
   init();
 </script>
 <div id="toast"></div>
 <div class="ob-back" id="obBack">
   <div class="ob-card">
+    <div class="ob-prog" id="obProg"><span id="obProgBar"></span></div>
     <div class="ob-emoji" id="obEmoji">👋</div>
     <div class="ob-title" id="obTitle">Tere tulemast</div>
     <div class="ob-text" id="obText"></div>
+    <div class="ob-extra" id="obExtra"></div>
     <div class="ob-dots" id="obDots"></div>
     <div class="ob-actions" id="obActions"></div>
   </div>
