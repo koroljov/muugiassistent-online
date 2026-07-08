@@ -12,77 +12,45 @@ Kaasas (eraldi projekt): Mell Juriidika vundament — juriidika-kaart.md, projek
 
 ## 🟡 Osaliselt tehtud — jääk
 
-- **Telefon:** iOS tab-riba ✅, külgriba lisamenüüks ✅. JÄÄK: widget-hero avaekraanil, kiir-capture (＋) — pooleli, vt allpool.
-- **Arvuti:** kanban veergudeks ✅, kokkuklapp burgeriga ✅. (Peen serva-nool asemel praegu ☰ bar-vasakus — piisav.)
+- **Telefon:** iOS tab-riba ✅, külgriba lisamenüüks ✅. JÄÄK: widget-hero avaekraanil, kiir-capture (＋).
+- **Arvuti:** kanban veergudeks ✅, kokkuklapp burgeriga ✅.
 
-## 🧠 KANDEV — Kontekstiteadlik Mell (Meelis 06.07 + vana idee #29 "Mell-pealik / keskne aju")
+---
 
-Mell'i AI EI tohi olla saareke. M teab / juriidika / tehniline peab **teadma jooksvat konteksti**: mis objektil sa oled (faktid, hind, EHR, turg), su toru seis, viimane kõne. Kirjuta "Erik Bambuse oma" → Mell teab, MIS objekt, ei küsi üle. Üks seotud süsteem, Mell teab igal sammul kus mis on.
-- **Kuidas:** ask/overlay saab kaasa aktiivse objekti + toru konteksti (nagu Kõneabi juba saab O). Kui objekt avatud → "Küsi selle objekti kohta" eelvalitud. Kontekst voolab kõikjale.
-- See on vana MELL-VALMIS #29 "keskne aju + per-assistent" — oli parkitud "vajab su visiooni"; nüüd visioon antud.
+# 🔴 TEGEMATA — täielik seis (08.07, tagasiulatuv)
 
-## 💬 AI-chat next-gen (Meelis 06.07) — järgmine suur tükk
+Ainus tõeallikas tegemata tööle. Avalik Uuendused näitab ainult TEHTUT — siin on see, mis veel POLE tehtud. Hoia elus.
 
-M teab / ask → päris **jätkatav vestlus** (mitte üks-shot):
-- **Sõnumimullid** (kasutaja + Mell), keritav vestlus; all **sisendkast** nagu Claude'i chatis — vasta ja jätka.
-- **Chip'id üleval, kompaktsemad** (valmisküsimused). Kuum teema esile: **varjatud puudused** (praegu populaarseim).
-- **Kontekstiteadlik** (juba tehtud) — teab aktiivset objekti; kirjuta objektist → tunneb ära.
-- **Salvesta objektile** — vestluse olulised kohad / kokkuvõte → objekti märkmetesse (mell_notes), vajadusel.
-- Toon: elav, next-gen, kompaktne. "Juriidiline abi" nimi kitsas — katab õigus + protsess + turg + tehnika; kaalu "Mell teab" / "Küsi Mellilt".
+## A. Järgmisena (väike, saan ise teha)
 
-## 🆕 Uued soovid (06.07)
+1. **Kiir-capture** — üks-tapp märge/todo, salvestub kohe (tasks-tabel). POOLELI.
+2. **Üleandmisakti Word-mall** — täidetav .docx. POOLELI.
+3. **Tervise-riba backend** — ainult Maa-amet kirjutab source_health'i; ehr / nearby / portaalid / outlook veel ei raporteeri (näitavad "seire tulekul").
+4. **Personaliseeritavad kiir-nupud** — kasutaja valib tab-riba / kiirklahvi sisu (igaühel oma).
+5. **Telefon widget-hero** — avaekraani "täna N asja" kaart (näidises olemas, app-is mitte).
+6. **Turg täna → live** — Fookuse paneel on konstant (TURG, juuni 2026), mitte live; ühenda Turuhinna mootori/trendiga.
+7. **Kõnejärgsed mugavused mobiilis** — logi + järgmine samm ühe tapiga.
+8. **Kontrollid:** kas esitlus kaks vaadet (klient vs kolleeg) on app.html-is? · mitme-foto galerii esitlusel/PDF-is? · fotode päris drag-reorder (praegu ⭐ pea-pildiks + ✕, mis katab põhivajaduse).
 
-- **Personaliseeritavad kiir-nupud** — kasutaja valib tab-riba/kiirklahvi sisu (igaühel oma).
-- **Sujuvus läbiv** — "tee kõik sujuvaks ja mugavaks" iga tükis.
-- **Tehniline abi** (M teab laiendus): el võimsus (mis on, kust leida), ventilatsioon, küte, vundament → valmis projekt; uued JA vanad majad. ANTIHALLU: ei leiuta spekke — õpetab kust kontrollida (peakaitse elektrikilbis, energiamärgis, EHR, ventseade).
+## B. Dokumendid
 
-## 🏰 Kopeerimatuse müür (Meelis 06.07) — strateegiline, läbiv
+- **Müügileping · ülevaatusakt · muud** → täida / salvesta / PDF / saada. (Üleandmisakt = A2.)
 
-Ehita nii, et konkurendil on raske/võimatu Mell'i kopeerida:
-- **Eesti andmete sügav integratsioon** (Maa-amet, EHR, kinnistusraamat, in-ADS, portaalid) — kõige raskem osa taastada; laienda pidevalt. See on müür, mida USA-tööriistad ei ületa.
-- **Liituv proprietaarne andmestik**: market_prices cache + stage_events + kõne-tulemused kasvavad iga kasutusega → ennustusvõime; konkurent alustab nullist andmetega (data network effect).
-- **Kontekstiteadlik üks-süsteem** (AI teab kõike) — kopeerimiseks tuleb kogu integreeritud süsteem üle ehitada, mitte üksik feature.
-- **Usaldus/AntiHallu** kui bränd + kultuur — autentselt raske järele teha (nende ärimudel on "genereeri rohkem", mitte "ütle tõde").
-- **Kliendi/omaniku portaalid** → switching cost (kliendid seotud maakleri Mell-linkidega).
-Konkreetne töö: tugevda õppe-ringi (mida rohkem kasutad, seda targem Mell), hoia Eesti-andmete pipeline elus + laienev, ehita liituvat andmestikku, mis konkurendil puudub.
+## C. Suured / strateegilised
 
-## 👥 Kliendi/omaniku portaal (Meelis 06.07) — personaalne per objekt/klient
+- **Kliendi/omaniku portaal** (per objekt/klient). Turvaline link (osalt olemas /vaade.html "Jaga omanikuga"), laienda: protsessi ajajoon (kuulutus üleval, N vaatamist, kõned, pakkumised, hinnamuutus — päris andmed); klient küsib Mellilt scoped ("mis seis?", "miks pole müünud?") → vastab objekti andmetest + turg, AntiHallu; automaatne personaalne kokkuvõte (link/e-kiri: "sel nädalal 3 vaatamist, 1 pakkumine"). Next-gen: live-link, klient bookmarkib, maakler otsustab mida näeb. Seob Homebeat + e-kirja.
+- **Kopeerimatuse müür** (läbiv). Eesti andmete süvaintegratsioon (Maa-amet, EHR, kinnistusraamat, in-ADS, portaalid) — laienda pidevalt. Liituv proprietaarne andmestik: market_prices + stage_events + kõne-tulemused kasvavad iga kasutusega → ennustusvõime (data network effect). Kontekstiteadlik üks-süsteem: kopeerimiseks tuleb kogu tervik üle ehitada. Usaldus/AntiHallu bränd. Kliendiportaal → switching cost. Töö: tugevda õppe-ringi, hoia + laienda andmepipeline'i.
+- **Next-gen tehniline:** häälega küsi (käed-vabad vaatamisel) · objekti-teadlik tehniline vastus (EHR vanus/tüüp: 1970 paneel vs uusarendus) · vaatamise tehniline checklist maja vanuse järgi (elekter/vent/niiskus/vundament).
+- **Suured moodulid:** Homebeat · turu-trend (maaruum indeks) · äripindade moodul.
+- **Mell Juriidika** (eraldi projekt) — vundament valmis (.../Claude/Mell Juriidika); järgmine: päris tööriist (juhtumid, dokumendipõhjad, tähtajad).
 
-Kliendid ootavad infot müügiprotsessi kohta. Anna neile turvaline link (osalt olemas: /vaade.html "Jaga omanikuga"), aga laienda:
-- **Protsessi ajajoon** per objekt: mis tehtud (kuulutus üleval, N vaatamist, kõned, pakkumised, hinnamuutus) — aus, päris andmed.
-- **Klient küsib Mell'ilt** (scoped tema objektile): "mis seis?", "miks pole müünud?" → Mell vastab objekti päris andmetest + turg, ausalt (AntiHallu, ei leiuta).
-- **Automaatne personaalne kokkuvõte** (link/e-kiri): "sel nädalal: 3 vaatamist, 1 pakkumine, turg liikus X" — per klient/objekt. Seob Homebeat + e-kirja saatmisega.
-- Next-gen: live-link (nagu Homebeat), klient bookmarkib, näeb alati värsket — null app-installi. Maakler (sina) otsustab, mida klient näeb (privaatsus: ei telefoni/märkmeid).
+## D. Vajab sind (blokeeritud — üks otsus/tegevus, MITTE takistus)
 
-## 💡 Next-gen ideed (Meelis avatud)
-
-- **Foto → vastus:** pildista elektrikilpi/ventilatsiooni/kütet → Mell tuvastab + selgitab (vision). On-site tugev.
-- **Häälega küsi** — vaatamisel käed-vabad.
-- **Objekti-teadlik tehniline** — vastus arvestab maja vanust/tüüpi (EHR): 1970 paneelmaja vs uusarendus.
-- **Vaatamise tehniline checklist** — mida kontrollida (elekter/vent/niiskus/vundament) maja vanuse järgi.
-
-## 🔧 Loose end'id nädalast (kontrolli/lõpeta)
-
-- Tervise-riba **backend** — ainult Maa-amet raporteerib source_health'i; ülejäänud "seire tulekul".
-- ~~Fotode lohistamine~~ — ⭐ pea-pildiks + ✕ eemalda olemas (renderFiles); tegelik drag-reorder jäi, aga ⭐ katab põhivajaduse.
-- ~~Kõnede ajalugu — üldine "Kõne"~~ ✅ callTitle annab sisuka pealkirja (still_listed·tüüp·aeg), read klikitavad/laienevad.
-- ~~Uuendused/CHANGELOG ei kajasta~~ ✅ 6. juuli kirje lisatud (06.07).
-- ~~Arvuti kanban vertikaalne~~ ✅ veerud kõrvuti, mobiilis virnastub.
-- ✅ **De-personaliseerimine** — uue kasutaja nimi tuletatakse e-postist (ei näita enam "Meelis" Raulile).
-- Kontrolli: kas **esitlus kaks vaadet** (klient vs kolleeg) sai app.html-i? (mälus idee olemas)
-- **Turg täna** paneel Fookuses on veel hooldatav baas (TURG konstant, juuni 2026), mitte live — ühenda Turuhinna mootori/trendiga.
-- **Mitme-foto galerii** (#30) — kontrolli et esitlusel/PDF-is töötab (photos-väli olemas).
-
-## 📋 Sinu palutud (A)
-
-- **Kiir-capture** (märge/todo, üks tapp, oma vaade).
-- **Dokumendid**: üleandmisakt · müügileping · ülevaatusakt jm → täida/salvesta/PDF/saada.
-- **Kõnejärgsed mugavused** mobiilis (logi + järgmine samm ühe tapiga).
-
-## 🧱 Suured eraldi / vajab sind
-
-Suured: Homebeat · turu-trend (maaruum indeks) · äripindade moodul.
-Vajab sind: e-kirja saatmine · **digiallkiri** (Smart-ID/DigiDoc leping) · kalender-OAuth · Supabase parool-lüliti · AI-vendori valik · Scrapfly kvoodi-hoiatus.
+- **Kalender** — ütle Outlook või Google → ehitan (OAuth, töötab igal seadmel).
+- **E-kirja saatmine** — saatmis-infra/konto kinnitus.
+- **Digiallkiri** — Smart-ID / DigiDoc leping.
+- **Supabase parool-lüliti** — dashboard toggle (leaked password protection).
+- **AI-vendori valik** · **Scrapfly kvoodi-hoiatus**.
 
 ## Reeglid
-Üks muudatus korraga · additiivne · süntaks + live-test · deploy GitHub Desktop · crm.html EI puutu (Raul).
+Üks muudatus korraga · additiivne · süntaks + live-test · deploy GitHub Desktop · crm.html EI puutu (Raul) · miski pole lukus (välju/naase/muuda tagasiulatuvalt) · lahendus mitte takistus.
