@@ -1,15 +1,19 @@
 # Mell — üks backlog (kõik ootel ühes kohas)
 
-Uuendatud 06.07.2026. Ainus koht — hoia elus, kustuta tehtud read.
+Uuendatud 08.07.2026. Ainus koht — hoia elus, kustuta tehtud read. Tagasiulatuv: kajastab kogu tehtut, ka viimase seansi tööd.
 
-## ✅ Tehtud ja live (sh nädala calm/next-gen pass)
+## ✅ Tehtud ja live
 
-Kõneabi · Statistika+konversioon · Ostjad+sobitamine · Postkast (Outlook) · Kuulutuse generaator · Kaaskiri/argumendid · Ostja kulud · Laenu-/üürikalkulaator · Koostööpakkumine (konfig + PDF/PNG/HTML, osad lohistatavad) · Kaart+POI · EHR auto-täida · Turuhind (asum/linnaosa/maakond) + **usaldusvahemik** · Self-error · Onboarding · Uuendused-vaade · Teavitused · Dossier · PWA · Foto-AI · Määrad · Kinnistu vs hoone · Valmista ette (voog) · Turg+Postkast cache · Hõljuv ✦ M · § Juriidiline abi · Tervise-riba (frontend) · Ajaneutraalne tervitus · Fail-safe augud · Keeleülevaatus · AI hääl ("Hei", kaasaegne) · De-personaliseeritud (toode) · Pehmem palett · Apple-liikumiskiht · Skeleton-laadimine · Rahulikud sõnumid · Rahulik Fookus · Grupeeritud tulp · Tagline · Mobiil (off-canvas riba + ülariba mahutatud).
+Baas: Kõneabi · Statistika+konversioon · Ostjad+sobitamine · Postkast (Outlook) · Kuulutuse generaator · Kaaskiri/argumendid · Ostja kulud · Laenu-/üürikalkulaator · Koostööpakkumine (konfig + PDF/PNG/HTML, osad lohistatavad) · Kaart+POI · EHR auto-täida · Turuhind (asum/linnaosa/maakond) + usaldusvahemik · Self-error · Teavitused · Dossier · PWA · Foto-AI (kuulutus) · Määrad · Kinnistu vs hoone · Valmista ette (voog) · Turg+Postkast cache · Hõljuv ✦ M · Tervise-riba (frontend) · Ajaneutraalne tervitus · Fail-safe augud · Keeleülevaatus · AI hääl · Pehmem palett · Apple-liikumiskiht · Skeleton-laadimine · Rahulikud sõnumid · Rahulik Fookus · Grupeeritud tulp · Tagline.
 
-## 🟡 Näidistest kinnitatud — OOTAB ROHELIST TULD
+Seanss 06.–08.07 (üleandmis-pass): Mobiil (off-canvas riba, iOS tab-riba, ülariba mahutatud) · Kanban veergudeks + ←/→ liigutus + arvuti külgriba kokkuklapp · Kontekstiteadlik ✦ Mell (teab avatud objekti) · AI-chat jätkatav vestlus (mullid, sisendkast, auto-veniv, "Lisa objektile") · Foto→vastus chatis (vision) · Tehniline abi (elekter/vent/küte/vundament) · **§ Juriidiline abi laiendus** (kohtud, rollid, institutsioonid, kontrollikohad, AntiHallu) · De-personaliseeritud (nimi e-postist, mitte "Meelis") · **Interaktiivne esmakasutus** (tervitus nimega, edenemisriba, personaalne setup, kohe-proovi, alati ✕ + naase Seadetest) · **Kaasavad Uuendused** (UUS-märgistus, nav-badge, proovi kohe) · CHANGELOG 8.07 kirje.
 
-- **Telefon:** iOS tab-riba (Fookus·Toru·＋·Ostjad·✦M) + widget-hero + kiir-capture; külgriba lisamenüüks. (Meelis: "tel ok")
-- **Arvuti:** kanban TAGASI veergudeks + kokkuklapitav külgriba — **collapse-nupp elegantseks** (peen nool serval, mitte kohmakas ☰).
+Kaasas (eraldi projekt): Mell Juriidika vundament — juriidika-kaart.md, projektijuhised, CLAUDE.md (kaustas .../Claude/Mell Juriidika).
+
+## 🟡 Osaliselt tehtud — jääk
+
+- **Telefon:** iOS tab-riba ✅, külgriba lisamenüüks ✅. JÄÄK: widget-hero avaekraanil, kiir-capture (＋) — pooleli, vt allpool.
+- **Arvuti:** kanban veergudeks ✅, kokkuklapp burgeriga ✅. (Peen serva-nool asemel praegu ☰ bar-vasakus — piisav.)
 
 ## 🧠 KANDEV — Kontekstiteadlik Mell (Meelis 06.07 + vana idee #29 "Mell-pealik / keskne aju")
 
