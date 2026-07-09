@@ -21,13 +21,13 @@ Kaasas (eraldi projekt): Mell Juriidika vundament — juriidika-kaart.md, projek
 
 Ainus tõeallikas tegemata tööle. Avalik Uuendused näitab ainult TEHTUT — siin on see, mis veel POLE tehtud. Hoia elus. NB: vana (crm.html) ja uus (app.html) jagavad SAMA andmebaasi — objekte ei migreerita.
 
-## 0. Et app.html asendaks vana täielikult (ESMAJÄRJEKORD — teeb "poolik → töökorras")
+## 0. Et app.html asendaks vana täielikult — ✅ TEHTUD (08.–09.07)
 
-1. **Sisse/välja logimine** — oma login-ekraan + logout app.html-is (praegu sisse ainult crm.html kaudu). POOLELI.
-2. **Kuulutuse import** — "tõmba kuulutus nagu vanas" (portaali link → objekt täitub).
-3. **Piltide tõmbamine** kuulutusest objektile.
-4. **Arhiveeri / kustuta objekt.**
-5. Kontroll: "Uus objekt" (/uus.html) töötab app.html-ist puhtalt.
+1. ✅ **Sisse/välja logimine** — oma login-ekraan (signInWithPassword) + logout külgribas + sessioonikadu. LIVE.
+2. ✅ **Kuulutuse import** — uus.html: portaali link → "✦ Loe kuulutus" → AI täidab väljad (kv.ee/kinnisvara24/city24, vajab SCRAPFLY_KEY). LIVE. TESTI päris lingiga.
+3. ⚠️ **Piltide tõmbamine** — read-listing endpoint EI tagasta og-pilti; pilt käsitsi lingina või failina (üleslaadimine olemas). Kui vaja auto: lisa endpointi og:image.
+4. ✅ **Arhiveeri / kustuta objekt** — objekti Muuda-sektsioonis, kinnitusega. LIVE.
+5. Kontroll (sinu): "Uus objekt" (/uus.html) + import + logout→login päris kasutuses.
 
 ## A. Järgmisena (väike, saan ise teha)
 
