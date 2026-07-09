@@ -623,6 +623,7 @@
         <div class="oview on" id="o-kok">
           <div id="oChecks" style="display:none"></div>
           <div id="oBuyers"></div>
+          <div id="ariBox"></div>
           <div class="section callp"><h3>Kõne — enne ja pärast<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Enne: Mell koostab kõne-spikri. Pärast: vajuta tulemus, Mell salvestab, seab järgmise sammu ja õpib su konversiooni.</span></i></h3>
             <div class="callrow" style="margin-bottom:8px"><button class="btn gh" onclick="callScript()">✦ Kõne-spikker (enne kõnet)</button><button class="btn go" onclick="openKabi()">📞 Kõneabi (kõne ajal)</button><button class="btn gh" onclick="copyDossier()">📋 Kopeeri dossier</button></div>
             <div id="callScriptBox" style="display:none;white-space:pre-wrap;font-size:12px;line-height:1.55;background:var(--cd2);border:1px solid var(--line2);border-radius:9px;padding:11px;margin-bottom:10px"></div>
@@ -855,6 +856,7 @@ function stateFull(v){
   return STATE_FULL[STATE_FULL.length-1][1];
 }
   function feeNum(){var p=O&&O.price!=null?Number(O.price):0;if(!p)return 0;if(O.property_type==="Äripind")return Math.round(p*0.015*1.24);return Math.round((Number(SETTINGS.feeEluruum)||5000)*1.24);}
+  function renderAri(){var el=document.getElementById('ariBox');if(!el)return;if(!O||!/äri/i.test(O.property_type||'')){el.innerHTML='';return;}var p=Number(O.price)||0,a=Number(O.area)||0,rent=Number(O.rent_current)||0;var m2=(p&&a)?Math.round(p/a):0;var yld=(rent&&p)?(rent*12/p*100):0;var vat=(O.vat_applies===true)?'Jah (+24%)':(O.vat_applies===false?'Ei':'—');var rows=[['Hind €/m²',m2?eur(m2)+' €/m²':'—'],['Bruto üüritootlus',yld?(yld.toFixed(1)+' % / a'):'—'],['Praegune üür',rent?eur(rent)+' €/kuu':'—'],['Käibemaks lisandub',vat]];if(O.registry_parts)rows.push(['Registriosad',esc(O.registry_parts)]);if(O.use_purpose)rows.push(['Sobib kasutuseks',esc(O.use_purpose)]);el.innerHTML='<div class="section"><h3>Äripind — analüüs</h3><div class="facts">'+rows.map(function(r){return '<div class="fact"><div class="v">'+r[1]+'</div><div class="k">'+r[0]+'</div></div>';}).join('')+'</div>'+(yld?('<div class="coach" style="margin-top:10px">Bruto tootlus '+yld.toFixed(1)+'% aastas. Neto arvuta kuludega (haldus, tühjus, maamaks). Võrdle piirkonna ootusega.</div>'):(rent?'':'<div class="coach" style="margin-top:10px">Lisa "Praegune üür", et Mell arvutaks üüritootluse.</div>'))+'</div>';}
   function renderKulud(){if(!O)return;var kb=document.getElementById("kBuyer"),ks=document.getElementById("kSeller"),brk=document.getElementById("kBreak");if(!kb)return;var H=Number(O.price)||0;if(!H){kb.textContent="—";ks.textContent="—";brk.textContent="Lisa hind, et näha kulusid.";return;}var notNet=2*notaryFull(H),km=notNet*MAARAD.km,riigil=stateFull(H),buyer=notNet+km+riigil;var fee=feeNum(),seller=H-fee;kb.textContent=eur(Math.round(buyer))+" €";ks.textContent=eur(Math.round(seller))+" €";brk.innerHTML="Ostja: notar "+eur(Math.round(notNet))+" € + km "+eur(Math.round(km))+" € + riigilõiv "+eur(Math.round(riigil))+" €. Müüja: vahendustasu −"+eur(fee)+" €. Ligikaudne · "+MAARAD.allikas+" "+MAARAD.paev+".";}
 
   function eur(n){return Math.round(n).toLocaleString('et-EE');}
@@ -946,7 +948,7 @@ function stateFull(v){
     document.getElementById('plot').value=O.plot_area!=null?O.plot_area:'';
     document.getElementById('portTa').value=O.listing_text||'';document.getElementById('socTa').value='';document.getElementById('coverTa').value='';document.getElementById('galTa').value=O.photos||'';
     document.querySelectorAll('.otab')[0].click();
-    facts();mellChecks();analysis();calcReality();feeUpd();renderKulud();renderMkt();renderFiles();genSpikker();loadInspection();renderPricing();renderCallHist();renderObjBuyers();setPhaseRow();var _cb=document.getElementById('calBtn');if(_cb)_cb.style.display=(O&&O.next_action_at)?'inline-flex':'none';try{localStorage.setItem('mell_obj',O.id);}catch(e){}
+    facts();mellChecks();analysis();calcReality();feeUpd();renderKulud();renderMkt();renderFiles();genSpikker();loadInspection();renderPricing();renderCallHist();renderObjBuyers();renderAri();setPhaseRow();var _cb=document.getElementById('calBtn');if(_cb)_cb.style.display=(O&&O.next_action_at)?'inline-flex':'none';try{localStorage.setItem('mell_obj',O.id);}catch(e){}
   }
   function mellWarnings(o){if(!o)return [];var w=[];var pt=(o.property_type||'').toLowerCase();var isKorter=/korter/.test(pt),isRes=/korter|maja|elamu|ridaelamu|paariselamu/.test(pt);var area=Number(o.area)||0,price=Number(o.price)||0,yr=Number(o.build_year)||0,rooms=Number(o.rooms)||0,plot=Number(o.plot_area)||0,nowY=new Date().getFullYear();
     if(price>0&&area<=0)w.push('Hind on, aga pind puudub — €/m² ei saa arvutada. Lisa pind.');
