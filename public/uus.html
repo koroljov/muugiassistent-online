@@ -154,7 +154,7 @@
     <div class="grid3">
       <div class="field"><label>Hind (€)</label><input class="inp" id="price" placeholder="nt 152000"></div>
       <div class="field"><label>Kommunaalkulud (suvi / talv)</label><input class="inp" id="utilityCosts" placeholder="nt 92 / 187 €"></div>
-      <div class="field"><label>Portaali link (kui olemas)</label><input class="inp" id="propertyLink" placeholder="kv.ee/..."></div>
+      <div class="field"><label>Portaali link (kui olemas)</label><input class="inp" id="propertyLink" placeholder="kv.ee / kinnisvara24 / city24"><button class="btn go" type="button" id="listingBtn" onclick="readListing()" style="margin-top:6px;font-size:12px;padding:6px 10px">✦ Loe kuulutus (AI täidab väljad)</button><div id="listingMsg" style="font-size:10.5px;margin-top:4px;color:var(--tx2)"></div></div>
     </div>
   </div>
 
@@ -207,6 +207,39 @@
   function num(id){ var s=v(id).replace(/\s/g,'').replace(',','.'); if(!s) return null; var n=parseFloat(s); return isNaN(n)?null:n; }
   function intg(id){ var s=v(id).replace(/\D/g,''); if(!s) return null; var n=parseInt(s,10); return isNaN(n)?null:n; }
 
+  async function freshToken(f){try{if(f)await sb.auth.refreshSession();var s=await sb.auth.getSession();return(s.data&&s.data.session)?s.data.session.access_token:'';}catch(e){return'';}}
+  async function aiFetch(p){try{var t=await freshToken();var r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify(p),signal:AbortSignal.timeout(60000)});if(r.status===401){t=await freshToken(true);r=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+t},body:JSON.stringify(p)});}var j=await r.json();if(!r.ok)return'Viga: '+(j.error||r.status);return j.text||'';}catch(e){return'Viga: '+(e&&e.message||e);}}
+  async function readListing(){
+    var url=v('propertyLink'), st=document.getElementById('listingMsg'), b=document.getElementById('listingBtn');
+    if(url&&!/^https?:\/\//i.test(url)) url='https://'+url;
+    if(!/^https?:\/\//i.test(url)){ if(st){st.style.color='#e0715f';st.textContent='Lisa korrektne kuulutuse URL (kv.ee / kinnisvara24 / city24).';} return; }
+    if(b)b.disabled=true; if(st){st.style.color='#93a89b';st.textContent='Loen kuulutust serverist… ~15 s';}
+    try{
+      var t=await freshToken();
+      var doF=function(tok){return fetch('/api/read-listing',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+tok},body:JSON.stringify({url:url}),signal:AbortSignal.timeout(60000)});};
+      var r=await doF(t); if(r.status===401){t=await freshToken(true);r=await doF(t);}
+      var j=await r.json();
+      if(!r.ok){ if(st){st.style.color='#e0715f';st.textContent='Ei õnnestunud lugeda: '+(j.error||r.status);} if(b)b.disabled=false; return; }
+      if(st){st.style.color='#93a89b';st.textContent='AI loeb kuulutust…';}
+      var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON kujul {"addr":"","type":"","condition":"","deal":"","price":"","area":"","rooms":"","floor":"","buildYear":"","name":"","phone":"","email":""}. type=ÜKS: Korter, Maja, Majaosa, Maa-krunt, Äripind, Garaaž. deal="muuk" kui müük, "uur" kui üür. condition=ÜKS kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". price=ainult number eurodes. area=üldpind m2 number. rooms=tubade arv number. floor="3/5" voi "3". buildYear=4-kohaline aasta. name/phone/email=kontakt. Puuduv jäta "".';
+      var usr='Pealkiri: '+(j.ogTitle||'')+'\nKirjeldus: '+(j.ogDesc||'')+'\nTelefon: '+(j.tel||'')+'\nE-post: '+(j.email||'')+'\nTekst: '+(j.text||'');
+      var ans=await aiFetch({system:sys,max_tokens:300,messages:[{role:'user',content:usr}]});
+      var jm=(ans||'').match(/\{[\s\S]*\}/); var d=jm?JSON.parse(jm[0]):{};
+      if(!d.addr&&!d.type&&!d.price&&!d.area&&!d.name){ if(st){st.style.color='#e0715f';st.textContent='AI ei leidnud andmeid — kontrolli URL või täida käsitsi.';} if(b)b.disabled=false; return; }
+      var setV=function(id,val){var el=document.getElementById(id);if(el&&val!=null&&val!==''&&!el.value)el.value=val;};
+      var tmap={'korter':'korter','maja':'maja','majaosa':'majaosa','maa-krunt':'maa','maa':'maa','äripind':'ari','aripind':'ari','garaaž':'garaaz','garaaz':'garaaz'};
+      if(d.type){var tk=tmap[String(d.type).toLowerCase()];if(tk){var te=document.querySelector('.type[data-t="'+tk+'"]');if(te)te.click();}}
+      if(d.deal){var dv=(String(d.deal).toLowerCase()==='uur')?'uur':'muuk';var db=document.querySelector('#dealSeg button[data-v="'+dv+'"]');if(db)db.click();}
+      setV('address',d.addr); setV('condition',d.condition); setV('contactName',d.name); setV('phone',d.phone); setV('email',d.email);
+      if(d.price)setV('price',String(d.price).replace(/[^\d]/g,''));
+      if(d.area)setV('area',String(d.area).replace(/[^\d.,]/g,'').replace(',','.'));
+      if(d.rooms)setV('rooms',String(d.rooms).replace(/[^\d]/g,''));
+      if(d.floor)setV('floor',String(d.floor).trim());
+      if(d.buildYear){var by=String(d.buildYear).replace(/[^\d]/g,'').slice(0,4);if(by.length===4)setV('buildYear',by);}
+      if(st){st.style.color='#48c281';st.textContent='✓ AI luges kuulutuse — kontrolli väljad ja salvesta. Aadressi järgi saab veel ✦ Maa-amet+EHR täita.';}
+    }catch(e){ if(st){st.style.color='#e0715f';st.textContent='Viga: '+(e&&e.message||'tundmatu');} }
+    if(b)b.disabled=false;
+  }
   async function init(){
     try{
       const { data:{ session } } = await sb.auth.getSession();
