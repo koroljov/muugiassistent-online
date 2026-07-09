@@ -626,13 +626,14 @@
           <div class="section callp"><h3>Kõne — enne ja pärast<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Enne: Mell koostab kõne-spikri. Pärast: vajuta tulemus, Mell salvestab, seab järgmise sammu ja õpib su konversiooni.</span></i></h3>
             <div class="callrow" style="margin-bottom:8px"><button class="btn gh" onclick="callScript()">✦ Kõne-spikker (enne kõnet)</button><button class="btn go" onclick="openKabi()">📞 Kõneabi (kõne ajal)</button><button class="btn gh" onclick="copyDossier()">📋 Kopeeri dossier</button></div>
             <div id="callScriptBox" style="display:none;white-space:pre-wrap;font-size:12px;line-height:1.55;background:var(--cd2);border:1px solid var(--line2);border-radius:9px;padding:11px;margin-bottom:10px"></div>
-            <div class="callrow">
+            <div class="callrow" id="outcomeRow">
               <button class="btn go" onclick="callOutcome('vestlus toimus')">Ühendust võetud</button>
               <button class="btn gh" onclick="document.getElementById('followRow').style.display='flex'">Vajab järelkõnet</button>
               <button class="btn gh" onclick="callOutcome('prospect')" title="Anna objekt üle müügispetsialistile (Potentsiaalne)">Anna üle</button>
               <button class="btn gh" onclick="callOutcome('ei soovi abi')">Ei soovi</button>
               <button class="btn gh" onclick="voiceOutcome()" title="Ütle tulemus häälega">🎤 Ütle</button>
             </div>
+            <div id="warmNote" style="display:none;font-size:12px;color:var(--ink2);background:var(--cd2);border:1px solid var(--line);border-radius:9px;padding:10px 12px">See objekt on juba töövoos edasi liikunud — etappe liiguta Müügitorus (←/→). Kõneabi ja spikker on ülal alati saadaval.</div>
             <div class="callrow" id="followRow" style="display:none;margin-top:8px">
               <span class="flabel" style="margin:0;align-self:center">Järelkontakt millal:</span>
               <button class="btn gh" onclick="callOutcome('vajab järelkõnet',2)">+2 päeva</button>
@@ -944,7 +945,7 @@ function stateFull(v){
     document.getElementById('plot').value=O.plot_area!=null?O.plot_area:'';
     document.getElementById('portTa').value=O.listing_text||'';document.getElementById('socTa').value='';document.getElementById('coverTa').value='';document.getElementById('galTa').value=O.photos||'';
     document.querySelectorAll('.otab')[0].click();
-    facts();mellChecks();analysis();calcReality();feeUpd();renderKulud();renderMkt();renderFiles();genSpikker();loadInspection();renderPricing();renderCallHist();renderObjBuyers();var _cb=document.getElementById('calBtn');if(_cb)_cb.style.display=(O&&O.next_action_at)?'inline-flex':'none';try{localStorage.setItem('mell_obj',O.id);}catch(e){}
+    facts();mellChecks();analysis();calcReality();feeUpd();renderKulud();renderMkt();renderFiles();genSpikker();loadInspection();renderPricing();renderCallHist();renderObjBuyers();setPhaseRow();var _cb=document.getElementById('calBtn');if(_cb)_cb.style.display=(O&&O.next_action_at)?'inline-flex':'none';try{localStorage.setItem('mell_obj',O.id);}catch(e){}
   }
   function mellWarnings(o){if(!o)return [];var w=[];var pt=(o.property_type||'').toLowerCase();var isKorter=/korter/.test(pt),isRes=/korter|maja|elamu|ridaelamu|paariselamu/.test(pt);var area=Number(o.area)||0,price=Number(o.price)||0,yr=Number(o.build_year)||0,rooms=Number(o.rooms)||0,plot=Number(o.plot_area)||0,nowY=new Date().getFullYear();
     if(price>0&&area<=0)w.push('Hind on, aga pind puudub — €/m² ei saa arvutada. Lisa pind.');
@@ -986,6 +987,7 @@ function stateFull(v){
   function calcYield(){var H=Number(document.getElementById('tYPrice').value)||0,rent=Number(document.getElementById('tYRent').value)||0,cost=Number(document.getElementById('tYCost').value)||0,o=document.getElementById('tYieldOut');if(!(H>0&&rent>0)){o.innerHTML='Sisesta hind ja üür.';return;}var bruto=rent*12/H*100,neto=(rent-cost)*12/H*100;var f=function(x){return x.toFixed(1).replace('.',',');};o.innerHTML='<div style="display:flex;justify-content:space-between;padding:3px 0;font-weight:700;color:var(--gr)"><span>Bruto tootlus</span><span>'+f(bruto)+'% /a</span></div><div style="display:flex;justify-content:space-between;padding:3px 0"><span>Neto tootlus</span><span>'+f(neto)+'% /a</span></div>'+(neto>0?('<div style="color:var(--ink3);margin-top:4px">Tasuvusaeg ~'+Math.round(100/neto)+' a (neto).</div>'):'');}
   /* Kiht 3 — kõne tulemuse-ring (järgib crm.html stage_events mustrit) */
   var _statusLabel={'uus':'Kontakt','vestlus toimus':'Ühendust võetud','vajab järelkõnet':'Järelkontakt','prospect':'Edastatud','ei soovi abi':'Ei soovi'};
+  function setPhaseRow(){var early=(!O||!O.status||['uus','vestlus toimus','vajab järelkõnet'].indexOf(O.status)>=0);var o=document.getElementById('outcomeRow'),w=document.getElementById('warmNote'),f=document.getElementById('followRow');if(o)o.style.display=early?'flex':'none';if(w)w.style.display=early?'none':'block';if(f&&!early)f.style.display='none';}
   async function callOutcome(newKey,days){
     if(!O)return;var from=O.status||null;var patch={status:newKey,next_action_at:null};
     if(newKey==='vajab järelkõnet'){var d=new Date();d.setDate(d.getDate()+(days||3));patch.next_action_at=d.toISOString().slice(0,10);}
@@ -998,7 +1000,7 @@ function stateFull(v){
     document.getElementById('followRow').style.display='none';
     var extra=patch.next_action_at?(' · järelkontakt '+new Date(patch.next_action_at).toLocaleDateString('et-EE',{day:'numeric',month:'short'})):'';
     msg.style.color='#48c281';msg.textContent='✓ '+(_statusLabel[newKey]||newKey)+extra+'. Fookus uuendatud.';
-    var cb=document.getElementById('calBtn');if(cb)cb.style.display=patch.next_action_at?'inline-flex':'none';
+    var cb=document.getElementById('calBtn');if(cb)cb.style.display=patch.next_action_at?'inline-flex':'none';setPhaseRow();
     countUp('sFcast',forecast(),' €');renderFookus();renderKanban();renderLeak();renderBell();
   }
   function icsEsc(s){return String(s==null?'':s).replace(/([,;\\])/g,'\\$1').replace(/\r?\n/g,'\\n');}
