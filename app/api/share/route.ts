@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   if (!token) return NextResponse.json({ error: "token puudub" }, { status: 400 });
 
   const admin = getSupabaseAdmin();
-  const { data: sh } = await admin.from("object_shares").select("lead_id").eq("token", token).maybeSingle();
+  const { data: sh } = await admin.from("object_shares").select("lead_id,created_by,agent_name,agent_phone,agent_email").eq("token", token).maybeSingle();
   if (!sh) return NextResponse.json({ error: "Linki ei leitud." }, { status: 404 });
 
   const { data: l } = await admin
@@ -42,6 +42,19 @@ export async function GET(request: Request) {
     ok: true,
     object: l,
     market,
-    agent: { name: "Meelis Koroljov", phone: "+372 53 441 365", email: "meelis.koroljov@uusmaa.ee", org: "Uus Maa" },
+    agent: await resolveAgent(admin, sh),
   });
+}
+
+async function resolveAgent(admin: any, sh: any) {
+  let name = (sh.agent_name || "").trim();
+  const phone = (sh.agent_phone || "").trim();
+  const email = (sh.agent_email || "").trim();
+  if (!name && sh.created_by) {
+    try {
+      const { data: p } = await admin.from("profiles").select("name").eq("id", sh.created_by).maybeSingle();
+      if (p && p.name) name = String(p.name).trim();
+    } catch (e) { /* ignore */ }
+  }
+  return { name: name || "Uus Maa maakler", phone, email, org: "Uus Maa" };
 }
