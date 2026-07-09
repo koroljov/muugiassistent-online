@@ -28,6 +28,10 @@
   .agent a{color:var(--gr);text-decoration:none}
   .foot{text-align:center;color:var(--ink3);font-size:11px;padding-top:16px}
   .msg{text-align:center;color:var(--ink2);padding:60px 20px}
+  .askrow{display:flex;gap:8px}
+  .askrow input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;color:var(--ink);font:inherit;font-size:13px}
+  .askrow input:focus{outline:none;border-color:var(--gr)}
+  .askrow button{background:var(--gr);color:#06140d;border:none;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -37,11 +41,13 @@
   <div class="foot">See on aus ülevaade teie objektist — turupositsioon päris Maa-ameti andmetel. Küsimuste korral võtke ühendust.</div>
 </div>
 <script>
+  var SHARE_TOKEN='';
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  async function askShare(){var q=document.getElementById('shareQ'),a=document.getElementById('shareA');var t=(q&&q.value||'').trim();if(!t)return;a.style.color='var(--ink2)';a.textContent='Mõtlen…';try{var r=await fetch('/api/share-ask',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:SHARE_TOKEN,question:t})});var j=await r.json();a.style.color='var(--ink)';a.textContent=(j&&j.answer)||(j&&j.error)||'Ei saanud vastata.';}catch(e){a.style.color='var(--te)';a.textContent='Viga — proovige hiljem.';}}
   function eur(n){return Number(n).toLocaleString('et-EE');}
   function photoList(o){var raw=(o&&o.photos)||'';var arr=String(raw).split(/[\n,]+/).map(function(s){return s.trim();}).filter(function(s){return /^https?:\/\//i.test(s);});if(!arr.length&&o&&o.img_url)arr=[o.img_url];return arr;}
   async function load(){
-    var token=new URLSearchParams(location.search).get('token');var app=document.getElementById('app');
+    var token=new URLSearchParams(location.search).get('token');SHARE_TOKEN=token||'';var app=document.getElementById('app');
     if(!token){app.innerHTML='<div class="msg">Vigane link.</div>';return;}
     try{var r=await fetch('/api/share?token='+encodeURIComponent(token));var j=await r.json();
       if(!j||!j.ok){app.innerHTML='<div class="msg">'+esc((j&&j.error)||'Linki ei leitud.')+'</div>';return;}
@@ -56,6 +62,7 @@
       if(j.market&&o.price&&o.area){var om2=Math.round(o.price/o.area),diff=Math.round((om2/j.market.median-1)*100);h+='<div class="card"><div class="lbl">Turupositsioon · Maa-amet</div><div class="mkt">Piirkonna mediaan <b>'+eur(j.market.median)+' €/m²</b> ('+j.market.tx+' tehingut). Teie objekt <b>'+eur(om2)+' €/m²</b> — '+(diff>0?('<b>'+diff+'% üle</b>'):diff<0?('<b>'+Math.abs(diff)+'% alla</b>'):'samal tasemel')+' turu.</div><div style="font-size:10px;color:var(--ink3);margin-top:6px">Piirkonna keskmine, ei arvesta seisukorda/korrust.</div></div>';}
       if(ph.length>1)h+='<div class="card"><div class="lbl">Pildid</div><div class="gal">'+ph.slice(1,9).map(function(u){return '<img src="'+esc(u)+'" onerror="this.style.display=\'none\'">';}).join('')+'</div></div>';
       if(o.listing_text)h+='<div class="card"><div class="lbl">Kirjeldus</div><div class="listing">'+esc(o.listing_text)+'</div></div>';
+      h+='<div class="card"><div class="lbl">Küsi oma objekti kohta</div><div style="font-size:12.5px;color:var(--ink2);margin-bottom:10px">Aus vastus objekti andmete ja piirkonna turu põhjal.</div><div class="askrow"><input id="shareQ" placeholder="nt Kas hind on turuga kooskõlas?" onkeydown="if(event.key===\'Enter\')askShare()"><button onclick="askShare()">Küsi</button></div><div id="shareA" style="margin-top:10px;font-size:13.5px;line-height:1.6;white-space:pre-wrap"></div></div>';
       var ag=j.agent||{};h+='<div class="card"><div class="lbl">Teie maakler</div><div class="agent"><div class="a">MK</div><div><div style="font-weight:600">'+esc(ag.name)+'</div><div style="font-size:12px;color:var(--ink2)">'+esc(ag.org)+'</div><div style="font-size:13px;margin-top:3px"><a href="tel:'+esc(ag.phone)+'">'+esc(ag.phone)+'</a> · <a href="mailto:'+esc(ag.email)+'">'+esc(ag.email)+'</a></div></div></div></div>';
       app.innerHTML=h;
     }catch(e){app.innerHTML='<div class="msg">Viga laadimisel.</div>';}
