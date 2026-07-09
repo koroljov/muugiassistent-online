@@ -61,4 +61,4 @@ Ainus tõeallikas tegemata tööle. Avalik Uuendused näitab ainult TEHTUT — s
 - **AI-vendori valik** · **Scrapfly kvoodi-hoiatus**.
 
 ## Reeglid
-Üks muudatus korraga · additiivne · süntaks + live-test · deploy GitHub Desktop · crm.html EI puutu (Raul) · miski pole lukus (välju/naase/muuda tagasiulatuvalt) · lahendus mitte takistus.
+Üks muudatus korraga · additiivne · süntaks + live-test · **deploy taustal: `git push bg main` (GitHub Desktopi enam vaja pole, ei võta Meelise arvutit üle)** · crm.html EI puutu (Raul) · miski pole lukus (välju/naase/muuda tagasiulatuvalt) · lahendus mitte takistus.
