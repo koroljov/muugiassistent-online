@@ -19,7 +19,15 @@ Kaasas (eraldi projekt): Mell Juriidika vundament — juriidika-kaart.md, projek
 
 # 🔴 TEGEMATA — täielik seis (08.07, tagasiulatuv)
 
-Ainus tõeallikas tegemata tööle. Avalik Uuendused näitab ainult TEHTUT — siin on see, mis veel POLE tehtud. Hoia elus.
+Ainus tõeallikas tegemata tööle. Avalik Uuendused näitab ainult TEHTUT — siin on see, mis veel POLE tehtud. Hoia elus. NB: vana (crm.html) ja uus (app.html) jagavad SAMA andmebaasi — objekte ei migreerita.
+
+## 0. Et app.html asendaks vana täielikult (ESMAJÄRJEKORD — teeb "poolik → töökorras")
+
+1. **Sisse/välja logimine** — oma login-ekraan + logout app.html-is (praegu sisse ainult crm.html kaudu). POOLELI.
+2. **Kuulutuse import** — "tõmba kuulutus nagu vanas" (portaali link → objekt täitub).
+3. **Piltide tõmbamine** kuulutusest objektile.
+4. **Arhiveeri / kustuta objekt.**
+5. Kontroll: "Uus objekt" (/uus.html) töötab app.html-ist puhtalt.
 
 ## A. Järgmisena (väike, saan ise teha)
 
