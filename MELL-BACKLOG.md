@@ -40,9 +40,11 @@ Ainus tõeallikas tegemata tööle. Avalik Uuendused näitab ainult TEHTUT — s
 7. **Kõnejärgsed mugavused mobiilis** — logi + järgmine samm ühe tapiga.
 8. **Kontrollid:** kas esitlus kaks vaadet (klient vs kolleeg) on app.html-is? · mitme-foto galerii esitlusel/PDF-is? · fotode päris drag-reorder (praegu ⭐ pea-pildiks + ✕, mis katab põhivajaduse).
 
-## B. Dokumendid
+## B. Dokumendid → app.html (OTSUS TEHTUD: app.html, üks süsteem)
 
-- **Müügileping · ülevaatusakt · muud** → täida / salvesta / PDF / saada. (Üleandmisakt = A2.)
+- ✅ **Üleandmis-vastuvõtuakt + Ülevaatusakt** — objekti Dokumendid-tab, auto-täidetud objektist, prindi/PDF. LIVE (testitud).
+- **Müügileping · notarimemo · broneerimisleping** — vajavad juristi kontrollitud malli (AntiHallu: siduvat lepingut AI ei genereeri). Kui annad malli, lisan täitmise + PDF.
+- **Väljasaatmine e-postiga** — seob e-kirja infraga (D).
 
 ## C. Suured / strateegilised
 
@@ -54,8 +56,8 @@ Ainus tõeallikas tegemata tööle. Avalik Uuendused näitab ainult TEHTUT — s
 
 ## D. Vajab sind (blokeeritud — üks otsus/tegevus, MITTE takistus)
 
-- **Kalender** — ütle Outlook või Google → ehitan (OAuth, töötab igal seadmel).
-- **E-kirja saatmine** — saatmis-infra/konto kinnitus.
+- ✅ **Kalender (ICS)** — "📅 Lisa kalendrisse" järelkontaktil → .ics fail, töötab Outlookis + igal seadmel (Windows kaasa), ilma OAuthita. LIVE. (Otsus: Outlook.) UPGRADE valikuline: päris kahesuunaline Graph-sünkroon (auto-sündmused Outlookis) — vajab kasutaja uut nõusolekut + Azure Calendars.ReadWrite; Outlook OAuth (Mail.Read) juba olemas, laiendatav.
+- **E-kirja saatmine** — saatmis-infra/konto kinnitus (Outlook Graph Mail.Send scope või SMTP).
 - **Digiallkiri** — Smart-ID / DigiDoc leping.
 - **Supabase parool-lüliti** — dashboard toggle (leaked password protection).
 - **AI-vendori valik** · **Scrapfly kvoodi-hoiatus**.
