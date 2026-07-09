@@ -31,12 +31,12 @@ Ainus tõeallikas tegemata tööle. Avalik Uuendused näitab ainult TEHTUT — s
 
 ## A. Järgmisena (väike, saan ise teha)
 
-1. **Kiir-capture** — üks-tapp märge/todo, salvestub kohe (tasks-tabel). POOLELI.
-2. **Üleandmisakti Word-mall** — täidetav .docx. POOLELI.
+1. ✅ **Kiir-capture** — Kiirmärkmed vaade (quick_notes + RLS, sünkroonis). LIVE.
+2. ✅ **Üleandmisakti Word-mall** — täidetav .docx tehtud.
 3. **Tervise-riba backend** — ainult Maa-amet kirjutab source_health'i; ehr / nearby / portaalid / outlook veel ei raporteeri (näitavad "seire tulekul").
 4. **Personaliseeritavad kiir-nupud** — kasutaja valib tab-riba / kiirklahvi sisu (igaühel oma).
-5. **Telefon widget-hero** — avaekraani "täna N asja" kaart (näidises olemas, app-is mitte).
-6. **Turg täna → live** — Fookuse paneel on konstant (TURG, juuni 2026), mitte live; ühenda Turuhinna mootori/trendiga.
+5. ⏸️ **Telefon widget-hero** — VAHELE JÄETUD: Fookuse päis katab juba (tervitus + "täna N asja" + statistika). Mobiili eraldi hero on visuaalne ümberkujundus → vajab Meelise ülevaatust enne (mitte pime muudatus live'is).
+6. ✅ **Turg täna → live** — tx-kaalutud Maa-ameti mediaan MKTMAP-ist (fallback konstant). LIVE.
 7. **Kõnejärgsed mugavused mobiilis** — logi + järgmine samm ühe tapiga.
 8. **Kontrollid:** kas esitlus kaks vaadet (klient vs kolleeg) on app.html-is? · mitme-foto galerii esitlusel/PDF-is? · fotode päris drag-reorder (praegu ⭐ pea-pildiks + ✕, mis katab põhivajaduse).
 
@@ -48,7 +48,7 @@ Ainus tõeallikas tegemata tööle. Avalik Uuendused näitab ainult TEHTUT — s
 
 - **Kliendi/omaniku portaal** (per objekt/klient). Turvaline link (osalt olemas /vaade.html "Jaga omanikuga"), laienda: protsessi ajajoon (kuulutus üleval, N vaatamist, kõned, pakkumised, hinnamuutus — päris andmed); klient küsib Mellilt scoped ("mis seis?", "miks pole müünud?") → vastab objekti andmetest + turg, AntiHallu; automaatne personaalne kokkuvõte (link/e-kiri: "sel nädalal 3 vaatamist, 1 pakkumine"). Next-gen: live-link, klient bookmarkib, maakler otsustab mida näeb. Seob Homebeat + e-kirja.
 - **Kopeerimatuse müür** (läbiv). Eesti andmete süvaintegratsioon (Maa-amet, EHR, kinnistusraamat, in-ADS, portaalid) — laienda pidevalt. Liituv proprietaarne andmestik: market_prices + stage_events + kõne-tulemused kasvavad iga kasutusega → ennustusvõime (data network effect). Kontekstiteadlik üks-süsteem: kopeerimiseks tuleb kogu tervik üle ehitada. Usaldus/AntiHallu bränd. Kliendiportaal → switching cost. Töö: tugevda õppe-ringi, hoia + laienda andmepipeline'i.
-- **Next-gen tehniline:** häälega küsi (käed-vabad vaatamisel) · objekti-teadlik tehniline vastus (EHR vanus/tüüp: 1970 paneel vs uusarendus) · vaatamise tehniline checklist maja vanuse järgi (elekter/vent/niiskus/vundament).
+- **Next-gen tehniline:** häälega küsi (käed-vabad vaatamisel) · objekti-teadlik tehniline vastus (EHR vanus/tüüp: 1970 paneel vs uusarendus) · ✅ vaatamise tehniline checklist maja vanuse järgi (Ülevaatus-tabis, LIVE).
 - **Suured moodulid:** Homebeat · turu-trend (maaruum indeks) · äripindade moodul.
 - **Mell Juriidika** (eraldi projekt) — vundament valmis (.../Claude/Mell Juriidika); järgmine: päris tööriist (juhtumid, dokumendipõhjad, tähtajad).
 
