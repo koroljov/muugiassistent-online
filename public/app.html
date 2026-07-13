@@ -21,6 +21,18 @@
     --gr:#48c281;--gr2:#2b8f5a;--grsoft:rgba(72,194,129,.15);--gold:#d2b06c;--te:#dd8d61;--red:#e0715f;--amber:#d8a24e;--violet:#a78bfa;--blue:#5aa2e0;
     --sh:0 18px 40px -28px rgba(0,0,0,.7);
   }
+  html[data-mtheme="sinine"]{--bg:#101720;--bg2:#0b1016;--sf:#161f2a;--cd:#1c2735;--cd2:#243140;--inp:#0c1218;--ink:#e4eaf1;--ink2:#a4b2c2;--ink3:#73839a;--gr:#5f9fd8;--gr2:#396f9f;--grsoft:rgba(95,159,216,.15)}
+  html[data-mtheme="burgundia"]{--bg:#1b1214;--bg2:#130d0f;--sf:#251a1d;--cd:#2e2125;--cd2:#382a2e;--inp:#160f12;--ink:#f0e6e4;--ink2:#c0aaa8;--ink3:#8d7876;--gr:#cd8b62;--gr2:#9c603c;--grsoft:rgba(205,139,98,.15)}
+  html[data-mtheme="grafiit"]{--bg:#15181b;--bg2:#0f1215;--sf:#1d2125;--cd:#25292e;--cd2:#2e3338;--inp:#111417;--ink:#e7eaec;--ink2:#a8b0b7;--ink3:#78828b;--gr:#8fb6cf;--gr2:#5f8299;--grsoft:rgba(143,182,207,.15)}
+  html[data-mtheme="hele"]{--bg:#f2efe7;--bg2:#e9e5da;--sf:#faf8f2;--cd:#ffffff;--cd2:#f4f1e9;--inp:#ffffff;--ink:#272b27;--ink2:#65706a;--ink3:#8e978f;--line:rgba(30,40,30,.1);--line2:rgba(30,40,30,.18);--gr:#1f7a4d;--gr2:#15603a;--grsoft:rgba(31,122,77,.12);--sh:0 16px 36px -26px rgba(60,60,40,.35)}
+  html[data-mtheme="hele"] .btn.go{color:#fff}
+  html[data-dens="k"] .content{padding:14px 16px 40px}
+  html[data-dens="k"] .section{padding:11px 13px;margin-bottom:9px;border-radius:12px}
+  html[data-dens="k"] .h1{font-size:22px}
+  html[data-dens="k"] .panel{padding:11px 13px}
+  .thsw,.dnsw{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--cd);color:var(--ink2);font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+  .thsw.on,.dnsw.on{border-color:var(--gr);color:var(--ink)}
+  .thsw .dot{width:12px;height:12px;border-radius:50%}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;color:var(--ink);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;background:var(--bg);height:100vh;overflow:hidden}
   .serif{font-family:"Georgia","Times New Roman",serif}
@@ -497,6 +509,11 @@
               <div style="font-size:12px;color:var(--ink2);margin-bottom:10px">Küsi Mellilt õigusküsimus — leping, omand, kanded, vaidlused.</div>
               <button class="btn go" onclick="openAsk()">§ Ava juriidiline abi</button>
             </div>
+            <div class="section"><h3>Dokumendid<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Üleandmis-vastuvõtuakt ja ülevaatusakt täituvad objekti andmetest. Vali objekt — viin su otse tema dokumentide juurde.</span></i></h3>
+              <div class="flabel">Objekt</div>
+              <select class="inp" id="tDocSel" onfocus="fillDocSel()"></select>
+              <div class="row" style="margin-top:10px"><button class="btn go" onclick="openObjDocs()">Ava dokumendid</button></div>
+            </div>
           </div>
           <div class="rail">
             <div class="panel"><div class="lbl" style="margin-bottom:6px">Määrad<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Üks koht, kust kõik arvutused loevad. Muutuvad harva — uuenda siit, kui seadus muutub.</span></i></div>
@@ -515,6 +532,22 @@
         <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">Mell</span>, sinu seaded.</div>
         <div class="coach">Mell on aus (AntiHallu), räägib sinu häälega ja töötab su päris andmetega. Siin seadistad, kes sa oled ja mida Mell su nimel kirjutab.</div>
         <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn gh" id="navTeam" style="display:none" onclick="go('team')">⧉ Meeskond</button><button class="btn gh" onclick="go('updates')">✨ Mis on uut</button></div>
+        <div class="section"><h3>Välimus</h3>
+          <div class="flabel" style="margin-bottom:7px">Värviteema — muudab sinu tööjaama; kliendile minevad dokumendid jäävad alati Uus Maa rohelisse</div>
+          <div class="row" style="gap:8px;flex-wrap:wrap">
+            <button class="thsw on" data-th="" onclick="setTheme('')"><span class="dot" style="background:#48c281"></span>Roheline</button>
+            <button class="thsw" data-th="sinine" onclick="setTheme('sinine')"><span class="dot" style="background:#5f9fd8"></span>Öösinine</button>
+            <button class="thsw" data-th="burgundia" onclick="setTheme('burgundia')"><span class="dot" style="background:#cd8b62"></span>Burgundia</button>
+            <button class="thsw" data-th="grafiit" onclick="setTheme('grafiit')"><span class="dot" style="background:#8fb6cf"></span>Grafiit</button>
+            <button class="thsw" data-th="hele" onclick="setTheme('hele')"><span class="dot" style="background:#1f7a4d;box-shadow:0 0 0 2px #f2efe7 inset"></span>Hele</button>
+          </div>
+          <div class="flabel" style="margin:13px 0 7px">Tihedus</div>
+          <div class="row" style="gap:8px">
+            <button class="dnsw on" data-dn="" onclick="setDens('')">Tavaline</button>
+            <button class="dnsw" data-dn="k" onclick="setDens('k')">Kompaktne</button>
+          </div>
+          <div style="font-size:11.5px;color:var(--ink3);margin-top:10px">Valik salvestub selles brauseris kohe.</div>
+        </div>
         <div class="fgrid">
           <div>
             <div class="section"><h3>Sina — allkiri ja kontakt</h3>
@@ -905,7 +938,13 @@ function stateFull(v){
   async function renderHealth(){var el=document.getElementById('healthList');if(!el)return;el.innerHTML='<div style="color:var(--ink3);font-size:12px">Laen…</div>';var rows=await healthRows(),by={};rows.forEach(function(x){by[x.source]=x;});el.innerHTML=Object.keys(SRC_NAMES).map(function(k){var x=by[k],st=x?x.status:null;var color=st==='ok'?'var(--gr)':st==='degraded'?'var(--amber)':'var(--ink3)';var lbl=st==='ok'?'korras':st==='degraded'?'vajab pilku':'seire tulekul';var when=(x&&x.checked_at)?new Date(x.checked_at).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';var det=(st==='degraded'&&x.detail)?('<div style="font-size:11px;color:var(--amber);margin-top:2px">'+esc(x.detail)+'</div>'):'';return '<div style="display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)"><span style="width:9px;height:9px;border-radius:50%;background:'+color+';flex-shrink:0"></span><div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--ink)">'+esc(SRC_NAMES[k])+'</div>'+det+'</div><div style="font-size:11px;color:var(--ink3);text-align:right;white-space:nowrap">'+lbl+(when?('<br>'+when):'')+'</div></div>';}).join('');}
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeAsk();closeHealth();}});
   document.addEventListener('click',function(e){var a=document.getElementById('askOverlay');if(a&&e.target===a)closeAsk();var h=document.getElementById('healthOverlay');if(h&&e.target===h)closeHealth();});
-  function go(v){var _s=document.querySelector('.side');if(_s)_s.classList.remove('open');var _b=document.getElementById('sideback');if(_b)_b.classList.remove('on');document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.tabbar a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on');});var el=document.getElementById('v-'+v);if(el)el.classList.add('on');document.querySelector('.content').scrollTop=0;if(v==='team')renderTeam();if(v==='stats')renderStats();if(v==='buyers')renderBuyers();if(v==='updates')renderUpdates();if(v==='mail')renderMail();if(v==='notes')loadNotes();try{localStorage.setItem('mell_view',v);}catch(e){}}
+  function applyLook(t,d){try{if(t)document.documentElement.setAttribute('data-mtheme',t);else document.documentElement.removeAttribute('data-mtheme');if(d==='k')document.documentElement.setAttribute('data-dens','k');else document.documentElement.removeAttribute('data-dens');try{localStorage.setItem('mell_theme',t||'');localStorage.setItem('mell_dens',d||'');}catch(e){}document.querySelectorAll('.thsw').forEach(function(b){b.classList.toggle('on',(b.dataset.th||'')===(t||''));});document.querySelectorAll('.dnsw').forEach(function(b){b.classList.toggle('on',(b.dataset.dn||'')===(d||''));});}catch(e){}}
+  function setTheme(t){var d='';try{d=localStorage.getItem('mell_dens')||'';}catch(e){}applyLook(t,d);}
+  function setDens(d){var t='';try{t=localStorage.getItem('mell_theme')||'';}catch(e){}applyLook(t,d);}
+  try{applyLook(localStorage.getItem('mell_theme')||'',localStorage.getItem('mell_dens')||'');}catch(e){}
+  function fillDocSel(){var s=document.getElementById('tDocSel');if(!s)return;var cur=s.value;var opts=(LEADS||[]).map(function(l){return '<option value="'+l.id+'">'+String((l.property_address||l.name||'Objekt')+(l.price?(' · '+eur(l.price)+' €'):'')).replace(/</g,'')+'</option>';}).join('');s.innerHTML=opts||'<option value="">Objekte pole veel</option>';if(cur)s.value=cur;}
+  function openObjDocs(){var s=document.getElementById('tDocSel');if(!s)return;if(!s.value){fillDocSel();if(!s.value)return;}openObj(s.value);setTimeout(function(){var t=null;document.querySelectorAll('.otab').forEach(function(x){if(x.dataset.o==='dok')t=x;});if(t)t.click();},80);}
+  function go(v){var _s=document.querySelector('.side');if(_s)_s.classList.remove('open');var _b=document.getElementById('sideback');if(_b)_b.classList.remove('on');document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.tabbar a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on');});var el=document.getElementById('v-'+v);if(el)el.classList.add('on');document.querySelector('.content').scrollTop=0;if(v==='team')renderTeam();if(v==='stats')renderStats();if(v==='buyers')renderBuyers();if(v==='updates')renderUpdates();if(v==='mail')renderMail();if(v==='notes')loadNotes();if(v==='tools'){try{fillDocSel();}catch(e){}}try{localStorage.setItem('mell_view',v);}catch(e){}}
   document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.addEventListener('click',function(){go(a.dataset.v);});});
   document.querySelectorAll('.otab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.otab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.oview').forEach(function(x){x.classList.remove('on');});document.getElementById('o-'+t.dataset.o).classList.add('on');if(t.dataset.o==='pakk')renderDoc();});});
 
