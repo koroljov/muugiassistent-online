@@ -160,3 +160,4 @@ export async function fetchMessages(token: string, top = 25): Promise<MailMsg[]>
 }
 
 // redeploy: MS_CLIENT env aktiveerimine
+// env fix redeploy 2
