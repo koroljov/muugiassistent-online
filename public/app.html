@@ -355,12 +355,9 @@
       <a data-v="mail"><span class="i">✉</span>Postkast</a>
       <a data-v="notes"><span class="i">✎</span>Kiirmärkmed</a>
       <div class="ndiv"></div>
-      <a class="sec" onclick="openAsk()" style="cursor:pointer"><span class="i">§</span>Juriidiline abi</a>
       <a data-v="tools" class="sec"><span class="i">▦</span>Tööriistad</a>
       <a data-v="stats" class="sec"><span class="i">▤</span>Statistika</a>
-      <a data-v="team" id="navTeam" class="sec" style="display:none"><span class="i">⧉</span>Meeskond</a>
-      <a data-v="updates" class="sec"><span class="i">✨</span>Uuendused<span class="b" id="updBadge" style="display:none"></span></a>
-      <a data-v="settings" class="sec"><span class="i">⚙</span>Seaded</a>
+      <a data-v="settings" class="sec"><span class="i">⚙</span>Seaded<span class="b" id="updBadge" style="display:none"></span></a>
     </div>
     <a class="newbtn" href="/uus.html">＋ Uus objekt</a>
     <div class="sp"></div>
@@ -496,6 +493,10 @@
               </div>
               <div id="tYieldOut" style="margin-top:10px;font-size:12px;color:var(--ink2)">Sisesta hind ja üür.</div>
             </div>
+            <div class="section"><h3>Juriidiline abi<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Kinnisvaraõigus, tehingud, kohtusüsteem ja rollid. AntiHallu: ei leiuta paragrahve ega lahendeid — suunab ametlikku allikasse.</span></i></h3>
+              <div style="font-size:12px;color:var(--ink2);margin-bottom:10px">Küsi Mellilt õigusküsimus — leping, omand, kanded, vaidlused.</div>
+              <button class="btn go" onclick="openAsk()">§ Ava juriidiline abi</button>
+            </div>
           </div>
           <div class="rail">
             <div class="panel"><div class="lbl" style="margin-bottom:6px">Määrad<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Üks koht, kust kõik arvutused loevad. Muutuvad harva — uuenda siit, kui seadus muutub.</span></i></div>
@@ -513,6 +514,7 @@
         <div class="hello">Mell — keskne aju</div>
         <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">Mell</span>, sinu seaded.</div>
         <div class="coach">Mell on aus (AntiHallu), räägib sinu häälega ja töötab su päris andmetega. Siin seadistad, kes sa oled ja mida Mell su nimel kirjutab.</div>
+        <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn gh" onclick="go('updates')">✨ Mis on uut</button></div>
         <div class="fgrid">
           <div>
             <div class="section"><h3>Sina — allkiri ja kontakt</h3>
@@ -545,6 +547,7 @@
         <div class="hello">Meeskond</div>
         <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">tiimi</span> tulemused.</div>
         <div class="coach">Kes kus seisab — toru väärtus, objektid, tänane koormus ja aktiivsus (viimased 30 päeva). Koguneb kasutamisega.</div>
+        <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn gh" onclick="go('stats')">▤ Kõned</button><button class="btn go" disabled style="opacity:.85;cursor:default">⧉ Meeskond</button></div>
         <div class="section"><div id="teamBox"><div class="skel skc"></div><div class="skel skc"></div></div></div>
         <div class="section"><h3>Lisa liige<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Loob liikmele konto ja annab ajutise parooli. Liige logib sisse Töövoos ja vahetab parooli. Näeb ainult oma tööd; sina näed kõiki.</span></i></h3>
           <div class="grid2">
@@ -587,6 +590,7 @@
         <div class="hello">Statistika</div>
         <div class="h1 serif" style="margin-top:5px">Kõned <span class="g">pildiks</span>.</div>
         <div class="coach">Kogutud kõneandmed näitavad, miks omanikud ise müüvad, mis müüki takistab ja mis konverteerib. Mida rohkem kõnesid Kõneabis salvestad, seda täpsem pilt.</div>
+        <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn go" disabled style="opacity:.85;cursor:default">▤ Kõned</button><button class="btn gh" id="navTeam" style="display:none" onclick="go('team')">⧉ Meeskond</button></div>
         <div class="section"><div id="statsWrap"><div class="skel skc"></div><div class="skel skc"></div></div></div>
       </div>
 
