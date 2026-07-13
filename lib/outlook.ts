@@ -41,7 +41,7 @@ export function verifyState(state: string): string | null {
   }
 }
 const GRAPH = "https://graph.microsoft.com/v1.0";
-export const OUTLOOK_SCOPES = "offline_access openid email User.Read Mail.Read";
+export const OUTLOOK_SCOPES = "offline_access openid email User.Read Mail.Read Mail.Send";
 
 function appUrl(): string {
   return (process.env.APP_URL || "https://muugiassistent-online.vercel.app").replace(/\/$/, "");
@@ -108,6 +108,28 @@ export async function getValidToken(userId: string): Promise<string | null> {
     return tok.access_token;
   } catch (e) {
     return null;
+  }
+}
+
+export async function sendMail(token: string, msg: { to: string; subject: string; text: string; attachments?: { name: string; contentType: string; contentBytes: string }[] }) {
+  const message: any = {
+    subject: msg.subject,
+    body: { contentType: "Text", content: msg.text || "" },
+    toRecipients: [{ emailAddress: { address: msg.to } }],
+  };
+  if (msg.attachments && msg.attachments.length) {
+    message.attachments = msg.attachments.map((a) => ({ "@odata.type": "#microsoft.graph.fileAttachment", name: a.name, contentType: a.contentType, contentBytes: a.contentBytes }));
+  }
+  const r = await fetch(`${GRAPH}/me/sendMail`, {
+    method: "POST",
+    headers: { authorization: "Bearer " + token, "content-type": "application/json" },
+    body: JSON.stringify({ message, saveToSentItems: true }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (r.status !== 202) {
+    let detail = "";
+    try { const j: any = await r.json(); detail = j?.error?.message || ""; } catch {}
+    throw new Error("Graph sendMail " + r.status + (detail ? ": " + detail : ""));
   }
 }
 
