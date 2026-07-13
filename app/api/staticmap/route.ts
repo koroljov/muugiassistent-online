@@ -4,6 +4,7 @@
 // Avalik endpoint (img src ei saa Authorization-päist saata), aga IP-rate-limit + Eesti-koordinaatide
 // piir hoiavad kuritarvituse ja Mapboxi kvoodi raisu eemal.
 import { rateLimit } from "@/lib/rate-limit";
+import { reportHealth } from "@/lib/source-health";
 
 export const dynamic = "force-dynamic";
 
@@ -62,9 +63,11 @@ export async function GET(request: Request) {
   try {
     const r = await fetch(url, { signal: ctrl.signal });
     if (!r.ok) {
+      await reportHealth("mapbox", "degraded", "Mapbox vastas " + r.status);
       return new Response("Kaarditeenus ei vastanud (" + r.status + ")", { status: 502 });
     }
     const buf = await r.arrayBuffer();
+    await reportHealth("mapbox", "ok");
     return new Response(buf, {
       headers: {
         "content-type": r.headers.get("content-type") || "image/png",
@@ -72,6 +75,7 @@ export async function GET(request: Request) {
       },
     });
   } catch {
+    await reportHealth("mapbox", "degraded", "Mapbox timeout/viga");
     return new Response("Kaardi laadimine ebaõnnestus", { status: 502 });
   } finally {
     clearTimeout(timer);
