@@ -347,10 +347,10 @@
 </div>
 <div class="app">
   <div class="side">
-    <div class="logo tipwrap"><span class="mark">UM</span>Mell<span class="tt" style="bottom:auto;top:130%;left:0;transform:none;width:274px;padding:13px 15px;font-size:12px;line-height:1.5;border-radius:13px"><b style="font-weight:600">Mell</b> · <span style="color:var(--gr)">Market · Estate · Listing · Logic</span><span style="display:block;height:1px;background:var(--line2);margin:9px 0"></span><span style="color:var(--ink2)">Eesmärgini igal sammul.</span></span></div>
+    <div class="logo tipwrap"><span class="mark">UM</span>Mell<span style="font-size:9.5px;color:var(--ink3);margin-left:7px;letter-spacing:.14em;text-transform:uppercase;font-weight:600">tööjaam</span><span class="tt" style="bottom:auto;top:130%;left:0;transform:none;width:274px;padding:13px 15px;font-size:12px;line-height:1.5;border-radius:13px"><b style="font-weight:600">Mell</b> · <span style="color:var(--gr)">Market · Estate · Listing · Logic</span><span style="display:block;height:1px;background:var(--line2);margin:9px 0"></span><span style="color:var(--ink2)">Sinu tööjaam. Eesmärgini igal sammul.</span></span></div>
     <div class="nav">
       <a data-v="fookus" class="on"><span class="i">◎</span>Fookus</a>
-      <a data-v="toru"><span class="i">▥</span>Müügitoru</a>
+      <a data-v="toru"><span class="i">▥</span>Töövoog</a>
       <a data-v="buyers"><span class="i">◇</span>Ostjad</a>
       <a data-v="mail"><span class="i">✉</span>Postkast</a>
       <a data-v="notes"><span class="i">✎</span>Kiirmärkmed</a>
@@ -407,8 +407,8 @@
       </div>
 
       <div class="view" id="v-toru">
-        <div class="hello">Töövoog</div>
-        <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">müügitoru</span>.</div>
+        <div class="hello">Müük</div>
+        <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">töövoog</span>.</div>
         <div class="coach">Objektid etappide kaupa. Lohista või vajuta kaardil ←/→. Vali, kelle objekte näidata.</div>
         <div class="toruscope" id="toruScope">
           <button class="tsc on" data-s="minu" onclick="setToruScope('minu')">Minu</button>
@@ -461,7 +461,7 @@
       <button class="fab" onclick="openAsk()" title="Küsi M-lt">✦ M</button>
       <div class="tabbar">
         <a class="tb" data-v="fookus" onclick="go('fookus')"><span class="ti">◎</span>Fookus</a>
-        <a class="tb" data-v="toru" onclick="go('toru')"><span class="ti">▥</span>Toru</a>
+        <a class="tb" data-v="toru" onclick="go('toru')"><span class="ti">▥</span>Töövoog</a>
         <a class="tb" data-v="buyers" onclick="go('buyers')"><span class="ti">◇</span>Ostjad</a>
         <a class="tb" onclick="openAsk()"><span class="ti">✦</span>Küsi</a>
         <a class="tb" onclick="toggleSide()"><span class="ti">☰</span>Rohkem</a>
@@ -514,7 +514,7 @@
         <div class="hello">Mell — keskne aju</div>
         <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">Mell</span>, sinu seaded.</div>
         <div class="coach">Mell on aus (AntiHallu), räägib sinu häälega ja töötab su päris andmetega. Siin seadistad, kes sa oled ja mida Mell su nimel kirjutab.</div>
-        <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn gh" onclick="go('updates')">✨ Mis on uut</button></div>
+        <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn gh" id="navTeam" style="display:none" onclick="go('team')">⧉ Meeskond</button><button class="btn gh" onclick="go('updates')">✨ Mis on uut</button></div>
         <div class="fgrid">
           <div>
             <div class="section"><h3>Sina — allkiri ja kontakt</h3>
@@ -546,8 +546,8 @@
       <div class="view" id="v-team">
         <div class="hello">Meeskond</div>
         <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">tiimi</span> tulemused.</div>
-        <div class="coach">Kes kus seisab — toru väärtus, objektid, tänane koormus ja aktiivsus (viimased 30 päeva). Koguneb kasutamisega.</div>
-        <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn gh" onclick="go('stats')">▤ Kõned</button><button class="btn go" disabled style="opacity:.85;cursor:default">⧉ Meeskond</button></div>
+        <div class="coach">Kes kus seisab — töövoo väärtus, objektid, tänane koormus ja aktiivsus (viimased 30 päeva). Koguneb kasutamisega.</div>
+        <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn gh" onclick="go('settings')">⚙ Seaded</button><button class="btn go" disabled style="opacity:.85;cursor:default">⧉ Meeskond</button></div>
         <div class="section"><div id="teamBox"><div class="skel skc"></div><div class="skel skc"></div></div></div>
         <div class="section"><h3>Lisa liige<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Loob liikmele konto ja annab ajutise parooli. Liige logib sisse Töövoos ja vahetab parooli. Näeb ainult oma tööd; sina näed kõiki.</span></i></h3>
           <div class="grid2">
@@ -590,7 +590,6 @@
         <div class="hello">Statistika</div>
         <div class="h1 serif" style="margin-top:5px">Kõned <span class="g">pildiks</span>.</div>
         <div class="coach">Kogutud kõneandmed näitavad, miks omanikud ise müüvad, mis müüki takistab ja mis konverteerib. Mida rohkem kõnesid Kõneabis salvestad, seda täpsem pilt.</div>
-        <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn go" disabled style="opacity:.85;cursor:default">▤ Kõned</button><button class="btn gh" id="navTeam" style="display:none" onclick="go('team')">⧉ Meeskond</button></div>
         <div class="section"><div id="statsWrap"><div class="skel skc"></div><div class="skel skc"></div></div></div>
       </div>
 
@@ -637,7 +636,7 @@
               <button class="btn gh" onclick="callOutcome('ei soovi abi')">Ei soovi</button>
               <button class="btn gh" onclick="voiceOutcome()" title="Ütle tulemus häälega">🎤 Ütle</button>
             </div>
-            <div id="warmNote" style="display:none;font-size:12px;color:var(--ink2);background:var(--cd2);border:1px solid var(--line);border-radius:9px;padding:10px 12px">See objekt on juba töövoos edasi liikunud — etappe liiguta Müügitorus (←/→). Kõneabi ja spikker on ülal alati saadaval.</div>
+            <div id="warmNote" style="display:none;font-size:12px;color:var(--ink2);background:var(--cd2);border:1px solid var(--line);border-radius:9px;padding:10px 12px">See objekt on juba töövoos edasi liikunud — etappe liiguta Töövoos (←/→). Kõneabi ja spikker on ülal alati saadaval.</div>
             <div class="callrow" id="followRow" style="display:none;margin-top:8px">
               <span class="flabel" style="margin:0;align-self:center">Järelkontakt millal:</span>
               <button class="btn gh" onclick="callOutcome('vajab järelkõnet',2)">+2 päeva</button>
@@ -815,7 +814,7 @@
     'kinnistu-vs-hoone':'Kinnistu vs hoone — kui suur osa hinnast tuleb maast (asukoht) ja kui suur hoonest. Maa hoiab väärtust, hoone kulub.',
     'vahendustasu':'Vahendustasu — tasu eduka tehingu korral. Eluruumil kokkuleppeline kindel summa, äripinnal % tehinguväärtusest.',
     'kaibemaks':'Käibemaks (km) — riiklik maks teenuselt, praegu 24%. Lisandub vahendustasule.',
-    'prognoos':'Prognoos — hinnang toru väärtusest etapi tõenäosuse järgi. Mitte lubadus, vaid tõenäosuspõhine ootus.'
+    'prognoos':'Prognoos — hinnang töövoo väärtusest etapi tõenäosuse järgi. Mitte lubadus, vaid tõenäosuspõhine ootus.'
   };
   function tip(k){var t=GLOSS[k];return t?('<i class="tip" tabindex="0" onclick="event.stopPropagation();this.classList.toggle(\'on\')">i<span class="tt">'+esc(t)+'</span></i>'):'';}
   /* Kiht 4 — turubaas (suunav, hooldatav ühes kohas; AntiHallu: pole baasi -> pole väidet) */
@@ -1249,13 +1248,13 @@ function stateFull(v){
     el.innerHTML=head+'<div id="mailList">'+listHtml+'</div>';MAIL_MEM=el.innerHTML;}
   /* ========== UUENDUSED — muudatuste märkmed ========== */
   var CHANGELOG=[
-    {d:'9. juuli 2026 (õhtu)',t:'Töövoog korda, dokumendid, kalender, omaniku-portaal',items:['Töövoog — vali kelle objekte näidata: Minu · Meeskond · Kõik. Võõra objekti kaardil omaniku-täht (nt R = Raul). Sildid korrastatud (Uus, Kontaktis).','Kõne-tulemuse nupud (sh "Anna üle") ainult varases faasis — soojal objektil peidus, et objekti kogemata minema ei saaks anda.','Dokumendid — objektil uus Dokumendid-tab: üleandmis-vastuvõtuakt + ülevaatusakt, täidetud objekti andmetest, prindi/PDF.','Kalender — järelkontakti juures "Lisa kalendrisse" (.ics), töötab Outlookis ja igal seadmel.','Omaniku jagatud lehel saab omanik nüüd küsida oma objekti kohta — aus vastus objekti ja turu põhjal.','Hääl-sisend ✦ Mell vestlusesse (🎤); objektil "✦ Küsi selle kohta".'],try:{label:'Ava Müügitoru',view:'toru'}},
+    {d:'9. juuli 2026 (õhtu)',t:'Töövoog korda, dokumendid, kalender, omaniku-portaal',items:['Töövoog — vali kelle objekte näidata: Minu · Meeskond · Kõik. Võõra objekti kaardil omaniku-täht (nt R = Raul). Sildid korrastatud (Uus, Kontaktis).','Kõne-tulemuse nupud (sh "Anna üle") ainult varases faasis — soojal objektil peidus, et objekti kogemata minema ei saaks anda.','Dokumendid — objektil uus Dokumendid-tab: üleandmis-vastuvõtuakt + ülevaatusakt, täidetud objekti andmetest, prindi/PDF.','Kalender — järelkontakti juures "Lisa kalendrisse" (.ics), töötab Outlookis ja igal seadmel.','Omaniku jagatud lehel saab omanik nüüd küsida oma objekti kohta — aus vastus objekti ja turu põhjal.','Hääl-sisend ✦ Mell vestlusesse (🎤); objektil "✦ Küsi selle kohta".'],try:{label:'Ava Töövoog',view:'toru'}},
     {d:'9. juuli 2026',t:'Iseseisev süsteem — login, import, kiirmärkmed, tehniline checklist',items:['Sisse/välja logimine — oma login-ekraan ja logout (all vasakul ⏻). Enam ei pea vana lehe kaudu sisse.','Kuulutuse import — Uus objekt: kleebi portaali link (kv.ee/kinnisvara24/city24) → "✦ Loe kuulutus" → AI täidab väljad.','Arhiveeri / kustuta objekt — objekti Muuda-sektsioonis, kinnitusega (arhiveeri hoiab andmed).','Kiirmärkmed — uus vaade: üks-tapp märge/todo, salvestub kohe, sünkroonis kõigil seadmetel.','Vaatamise tehniline checklist — objekti Ülevaatus-tabis Mell koostab maja vanuse/tüübi järgi, mida kohapeal kontrollida (elekter, ventilatsioon, niiskus, vundament).','Turg täna näitab live Maa-ameti mediaani (kui piirkondade andmeid piisavalt), muidu suunav baas.'],try:{label:'Ava Kiirmärkmed',view:'notes'}},
     {d:'8. juuli 2026',t:'Elav esmakasutus, kaasavad uuendused, laiem juriidika',items:['Esmakasutus on nüüd elav — tervitus nimega, edenemisriba, personaalne seadistus (nimi/telefon kohe sinu järgi), lõpus kohe-proovi hüpped. Sulge igal hetkel (✕), ava uuesti Seadetest.','Uuendused näitavad UUS-märgistust ja menüü-täppi; iga uuenduse juures "proovi kohe".','✦ Küsi Mellilt: pildi peale selgitab, mida näeb — elektrikilp, ventilatsioon, küte, seisukord.','Juriidiline abi laienes — lisaks kinnisvaraõigusele ka kohtusüsteem, rollid (kohtunik, prokurör, advokaat/kaitsja, notar, kohtutäitur), institutsioonid ja kontrollikohad. AntiHallu: ei leiuta paragrahve ega lahendeid, suunab ametlikku allikasse.','Iga kasutaja näeb kohe oma nime — süsteem on toode, mitte ühe inimese oma.'],try:{label:'Proovi Fookust',view:'fookus'}},
-    {d:'6. juuli 2026',t:'Next-gen: rahulikum, mobiilne, vestlus',items:['Rahulikum ilme — pehmem palett silmamugavuseks, sujuv liikumine, skeleton-laadimine.','Telefon — täisekraan, alumine tab-riba (Fookus · Toru · Ostjad · Küsi · Rohkem), külgriba libiseb; iOS + Android.','Müügitoru — arvutis veerud, mobiilis virnastub; leadi saab ←/→ nupuga etapi edasi/tagasi.','✦ M on nüüd päris vestlus — jätkatav, kontekstiteadlik (teab avatud objekti), vestluse saab objektile lisada.','Tehniline abi — Mell vastab ka ehitus/tehnika küsimustele (elekter, ventilatsioon, küte); pildi peale selgitab, mida näeb.','Turuhind näitab usaldusvahemikku (vähem tehinguid = laiem vahemik).','Külgriba kokkuklapp arvutis; ülariba mahub igale ekraanile.'],try:{label:'Ava Müügitoru',view:'toru'}},
+    {d:'6. juuli 2026',t:'Next-gen: rahulikum, mobiilne, vestlus',items:['Rahulikum ilme — pehmem palett silmamugavuseks, sujuv liikumine, skeleton-laadimine.','Telefon — täisekraan, alumine tab-riba (Fookus · Toru · Ostjad · Küsi · Rohkem), külgriba libiseb; iOS + Android.','Töövoog — arvutis veerud, mobiilis virnastub; leadi saab ←/→ nupuga etapi edasi/tagasi.','✦ M on nüüd päris vestlus — jätkatav, kontekstiteadlik (teab avatud objekti), vestluse saab objektile lisada.','Tehniline abi — Mell vastab ka ehitus/tehnika küsimustele (elekter, ventilatsioon, küte); pildi peale selgitab, mida näeb.','Turuhind näitab usaldusvahemikku (vähem tehinguid = laiem vahemik).','Külgriba kokkuklapp arvutis; ülariba mahub igale ekraanile.'],try:{label:'Ava Töövoog',view:'toru'}},
     {d:'4. juuli 2026',t:'Ostjad ja veebis kokkuvõte',items:['Ostjate sobitamine — uus "Ostjad" vaade: salvesta soovid (eelarve, tüüp, piirkond), Mell näitab sobivad objektid ja objektil rohelise ribana "N ostjat sobib".','Kõnede ajalugu objektil — iga salvestatud kõne on näha ja laiendatav.','Koostööpakkumise HTML-eksport ("⬇ Veeb") — sama sisu ja stiil mis PDF.','Refresh hoiab sind samal vaatel/objektil (enam ei viska Fookusesse).','See "Uuendused" vaade — näed, mis on muutunud.']},
     {d:'3. juuli 2026',t:'Kõneabi, statistika, iseparandus',items:['Kõneabi — kõne ajal tugi: avalöök + vastuväited, inimtüüp vihjetega, 57-valikuline andmekorje, AI väljundid (kokkuvõte, kuulutuse tagasiside, kiri kliendile), salvesta kõne.','Statistika — kõneandmed pildiks: miks omanikud ise müüvad, mis takistab, konversioon, müügitulemused, AI turuanalüüs.','Mell märkab viga ise — hoiatab, kui pind, €/m², ehitusaasta või tüüp on ebaloogiline.','Teavituste kell menüüribal — tänased ja hilinenud järelkõned.','Interaktiivne esmatutvustus uuele kasutajale.','PWA — Mell telefoni koduekraanile.','Koostööpakkumine — sektsioonid lisa/eemalda/nihuta.','Foto-AI — hindab pilte (pea-pilt, järjekord, kvaliteet).','Auto-täida (EHR) — aadressist ehitusaasta, pind, katastritunnus, energiamärgis.','Meeskond — lisa liikmeid ja näe tulemusi; nädalaraport; omaniku-link.']},
-    {d:'2. juuli 2026',t:'Lipulaev app.html + Studio ilme',items:['Ühtne rakendus — Fookus, Müügitoru, objekti töölaud (kokkuvõte / kuulutus / koostööpakkumine PDF).','Mell räägib (Neurokõne hääl), turg täna Maa-ameti andmetel, ostja kulud + müüja neto, kõne-tulemuse ring.','Termini-seletused (ⓘ), juriidika allikaviitega, Määrad ühes kohas, kalkulaatorid (laen, üüritootlus).','Failide üleslaadimine + Mell loeb pildid (vision) → kuulutuse tekst. Objekti ülevaatuse vorm. Kakskeelne ET/EN.']}
+    {d:'2. juuli 2026',t:'Lipulaev app.html + Studio ilme',items:['Ühtne rakendus — Fookus, Töövoog, objekti töölaud (kokkuvõte / kuulutus / koostööpakkumine PDF).','Mell räägib (Neurokõne hääl), turg täna Maa-ameti andmetel, ostja kulud + müüja neto, kõne-tulemuse ring.','Termini-seletused (ⓘ), juriidika allikaviitega, Määrad ühes kohas, kalkulaatorid (laen, üüritootlus).','Failide üleslaadimine + Mell loeb pildid (vision) → kuulutuse tekst. Objekti ülevaatuse vorm. Kakskeelne ET/EN.']}
   ];
   function updatesSeen(){try{return JSON.parse(localStorage.getItem('mell_upd_seen')||'[]');}catch(e){return [];}}
   function updatesUnseen(){var seen=updatesSeen();return CHANGELOG.filter(function(g){return seen.indexOf(g.d)<0;}).length;}
@@ -1275,7 +1274,7 @@ function stateFull(v){
   /* ========== ONBOARDING — esmatutvustus ========== */
   var OB_TOUR=[
     {emoji:'◎',title:'Fookus',text:'Mida teen nüüd — Mell reastab objektid tähtsuse järgi. Alusta päeva siit: kellele täna helistada, mis vajab tegevust.'},
-    {emoji:'▥',title:'Müügitoru',text:'Objektid liiguvad etappide kaupa. Lohista kaarte või ava objekt, et näha kokkuvõtet, kuulutust ja koostööpakkumist.'},
+    {emoji:'▥',title:'Töövoog',text:'Objektid liiguvad etappide kaupa. Lohista kaarte või ava objekt, et näha kokkuvõtet, kuulutust ja koostööpakkumist.'},
     {emoji:'📞',title:'Kõneabi',text:'Ava objekt → Kokkuvõte → Kõneabi. Kõne ajal tugi: avalöök, inimtüüp, andmekorje klõpsuga ja AI väljundid (kokkuvõte, kiri kliendile).'},
     {emoji:'✦',title:'Küsi Mellilt',text:'Paremal all ✦ — päris vestlus. Mell teab õigust, protsessi, turgu ja tehnikat, ka avatud objekti konteksti. Pildi peale selgitab, mida näeb.'},
     {emoji:'📊',title:'Statistika',text:'Kogutud kõned muutuvad pildiks: miks omanikud ise müüvad, mis takistab, mis viib edasi. Mida rohkem kõnesid salvestad, seda täpsem.'},
@@ -1296,7 +1295,7 @@ function stateFull(v){
     if(obStep===0){var fn=obFirst();emoji.textContent='👋';title.textContent=fn?('Tere, '+fn):'Tere tulemast';text.textContent='Mell on su müügi töölaud. Näitan põhiosad minutiga ja seame selle sinu järgi. Alati Seadetest uuesti avatav.';actions.innerHTML='<button class="ob-btn" onclick="obDecline()">Ei, aitäh</button><button class="ob-btn primary" onclick="obStart()">Alustame</button>';return;}
     var s=OB_TOUR[obStep-1];emoji.textContent=s.emoji;title.textContent=s.title;text.textContent=s.text;
     if(s.setup){extra.innerHTML='<div class="obf"><label>Sinu nimi</label><input id="obName" value="'+esc(SETTINGS.name||'')+'" placeholder="Ees- ja perekonnanimi"></div><div class="obf"><label>Telefon</label><input id="obPhone" value="'+esc(SETTINGS.phone||'')+'" placeholder="+372 ..."></div>';actions.innerHTML='<button class="ob-btn" onclick="obNext()">Jäta vahele</button><button class="ob-btn primary" onclick="obSaveSetup()">Salvesta ja edasi</button>';return;}
-    if(s.finish){extra.innerHTML='<div class="ob-jumps"><button class="ob-jump" onclick="obJump(\'fookus\')"><span class="oji">◎</span>Ava Fookus — mida teen täna</button><button class="ob-jump" onclick="obJump(\'toru\')"><span class="oji">▥</span>Vaata müügitoru</button><button class="ob-jump" onclick="obAsk()"><span class="oji">✦</span>Küsi Mellilt midagi</button></div>';actions.innerHTML='<button class="ob-btn primary" onclick="obFinish()">Valmis</button>';return;}
+    if(s.finish){extra.innerHTML='<div class="ob-jumps"><button class="ob-jump" onclick="obJump(\'fookus\')"><span class="oji">◎</span>Ava Fookus — mida teen täna</button><button class="ob-jump" onclick="obJump(\'toru\')"><span class="oji">▥</span>Vaata töövoogu</button><button class="ob-jump" onclick="obAsk()"><span class="oji">✦</span>Küsi Mellilt midagi</button></div>';actions.innerHTML='<button class="ob-btn primary" onclick="obFinish()">Valmis</button>';return;}
     actions.innerHTML='<button class="ob-btn" onclick="obDecline()">Jäta vahele</button><button class="ob-btn primary" onclick="obNext()">Edasi</button>';}
   function obSaveSetup(){var n=document.getElementById('obName'),p=document.getElementById('obPhone');if(n&&n.value.trim())SETTINGS.name=n.value.trim();if(p)SETTINGS.phone=p.value.trim();try{localStorage.setItem('mell_settings',JSON.stringify(SETTINGS));}catch(e){}try{fillSettings();}catch(e){}obNext();}
   function obJump(v){obDecline();try{go(v);}catch(e){}}
