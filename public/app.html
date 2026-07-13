@@ -791,6 +791,14 @@
           </div>
           <div class="section" style="padding:12px"><div id="docEl"></div></div>
           <div class="row"><button class="btn go" onclick="exportDoc('pdf')">⬇ PDF</button><button class="btn gh" onclick="exportDoc('png')">⬇ PNG</button><button class="btn gh" onclick="exportDocHtml()">⬇ Veeb (HTML)</button><button class="btn gh" onclick="createShare()">🔗 Jaga omanikuga</button><span class="msg" id="pMsg"></span></div>
+          <div class="section"><h3>Saada e-postiga<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Saadab koostööpakkumise PDF-ina sinu enda Outlooki kaudu — kiri läheb sinu aadressilt ja jääb sinu Saadetud kausta. Vajab Outlooki ühendust (Postkast).</span></i></h3>
+            <div class="grid2">
+              <div><div class="flabel">Saaja e-post</div><input class="inp" id="sendTo" onfocus="prefillSend()" placeholder="klient@email.ee"></div>
+              <div><div class="flabel">Teema</div><input class="inp" id="sendSubj" onfocus="prefillSend()"></div>
+            </div>
+            <div style="margin-top:8px"><div class="flabel">Kirja tekst</div><textarea class="ta" id="sendBody" style="min-height:80px" onfocus="prefillSend()" placeholder="Klõpsa — täidan kaaskirjast."></textarea></div>
+            <div class="row" style="margin-top:8px"><button class="btn go" onclick="sendDocEmail()">✉ Saada PDF e-postiga</button><span class="msg" id="sendMsg"></span></div>
+          </div>
         </div>
 
         <div class="oview" id="o-yle">
@@ -1137,6 +1145,32 @@ function stateFull(v){
     var cb=document.getElementById('calBtn');if(cb)cb.style.display='inline-flex';
     try{renderFookus();renderBell();}catch(e){}
   }
+  function prefillSend(){try{var t=document.getElementById('sendTo'),su=document.getElementById('sendSubj'),b=document.getElementById('sendBody');if(t&&!t.value&&O&&O.email)t.value=O.email;if(su&&!su.value&&O)su.value='Koostööpakkumine — '+(O.property_address||'');if(b&&!b.value){var c=document.getElementById('coverTa');b.value=(c&&c.value.trim())||('Tere!\n\nSaadan koostööpakkumise — leiate selle manusest (PDF).\n\nParimate soovidega\n'+(SETTINGS.name||''));}}catch(e){}}
+  async function sendDocEmail(){
+    if(!O)return;var m=document.getElementById('sendMsg');
+    var to=(document.getElementById('sendTo').value||'').trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)){m.style.color='#e0715f';m.textContent='Kontrolli saaja aadressi.';return;}
+    prefillSend();
+    var subj=(document.getElementById('sendSubj').value||'').trim()||('Koostööpakkumine — '+(O.property_address||''));
+    var body=(document.getElementById('sendBody').value||'').trim();
+    m.style.color='#a3b4aa';m.textContent='Valmistan PDF-i…';
+    try{
+      renderDoc();
+      var el=document.getElementById('docEl');
+      var canvas=await html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true});
+      var img=canvas.toDataURL('image/jpeg',0.92);
+      var pdf=new jspdf.jsPDF('p','mm','a4');var w=210,h=canvas.height*w/canvas.width;pdf.addImage(img,'JPEG',0,0,w,h);
+      var b64=pdf.output('datauristring');b64=b64.slice(b64.indexOf(',')+1);
+      if(b64.length>2600000){m.style.color='#e0715f';m.textContent='PDF liiga suur e-kirjaks — laadi alla ja saada käsitsi.';return;}
+      m.textContent='Saadan…';
+      var s=await sb.auth.getSession();var tok=s.data&&s.data.session&&s.data.session.access_token;
+      var name=(O.property_address||'koostoopakkumine').replace(/[^a-z0-9]+/gi,'_').slice(0,40)+'.pdf';
+      var r=await fetch('/api/outlook/send',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+tok},body:JSON.stringify({to:to,subject:subj,text:body,attachments:[{name:name,contentType:'application/pdf',contentBytes:b64}]})});
+      var j=await r.json();
+      if(!j.ok){if(j.connected===false){m.style.color='#e0715f';m.textContent='Outlook pole ühendatud — ava Postkast ja ühenda (uus luba: saatmine).';}else{m.style.color='#e0715f';m.textContent='Viga: '+(j.error||'saatmine ebaõnnestus');}return;}
+      m.style.color='#48c281';m.textContent='✓ Saadetud: '+to+' — kiri on sinu Saadetud kaustas.';
+    }catch(e){m.style.color='#e0715f';m.textContent='Saatmine ebaõnnestus: '+(e&&e.message||'viga');}
+  }
   function icsEsc(s){return String(s==null?'':s).replace(/([,;\\])/g,'\\$1').replace(/\r?\n/g,'\\n');}
   function icsDownload(title,dateStr,desc,loc){if(!dateStr)return;var dt=String(dateStr).slice(0,10).replace(/-/g,'');var uid=Date.now()+'@mell';var body=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Mell//ET','BEGIN:VEVENT','UID:'+uid,'DTSTART;VALUE=DATE:'+dt,'SUMMARY:'+icsEsc(title),'DESCRIPTION:'+icsEsc(desc||''),'LOCATION:'+icsEsc(loc||''),'END:VEVENT','END:VCALENDAR'].join('\r\n');var blob=new Blob([body],{type:'text/calendar;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mell-jarelkontakt.ics';document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(a.href);},100);}
   function addFollowToCal(){if(!O||!O.next_action_at){toast('Pole järelkontakti kuupäeva');return;}var nm=O.contact_name||O.property_type||'Objekt';var loc=O.property_address||'';var desc='Järelkontakt · '+(O.phone?('tel '+O.phone):'')+(loc?(' · '+loc):'');icsDownload('Järelkontakt — '+nm,O.next_action_at,desc,loc);toast('📅 Kalendrifail alla laetud — ava, et lisada Outlooki');}
@@ -1377,7 +1411,7 @@ function stateFull(v){
     el.innerHTML=head+'<div id="mailList">'+listHtml+'</div>';MAIL_MEM=el.innerHTML;}
   /* ========== UUENDUSED — muudatuste märkmed ========== */
   var CHANGELOG=[
-    {d:'13. juuli 2026',t:'Sinu tööjaam: 10 päris etappi, etapiriba, värviteemad, selgem menüü',items:['Töövoog = sinu 10 päris etappi: Uus → Kontakt → Kohtumine/hindamine → Leping → Ettevalmistus → Müük/Näitamised → Ostja/pakkumine → Tehingu ettevalmistus → Tehing/notar → Üleandmine. "Kontakt" koondab vanad vahestaatused (Ühendust võetud, Järelkontakt, Potentsiaalne).','Etapiriba — klõpsa ülal etapil, all on ainult selle objektid. Ei mingit külgkerimist. "Ei soovi" on riba lõpus kiibina.','Menüü koondatud: Juriidiline abi ja Dokumendid leiad Tööriistadest, Meeskonna ja "Mis on uut" Seadetest.','Seaded → Välimus: 5 värviteemat (Roheline, Öösinine, Burgundia, Grafiit, Hele) + tihedus. Sinu ekraani valik — kliendile minevad dokumendid jäävad alati Melli rohelisse.','Seaded → Andmed: ekspordi objektid CSV-failina, impordi kuulutus ja andmeallikate seis ühe klõpsuga.','Telefoni kiirnupud — Seaded → Välimus: vali ise, millised 3 vaadet on telefoni alaribal.','Kõne järel „Järgmine samm ühe tapiga“ — Homme / +3 päeva / +1 nädal otse tulemuse alt.','Fotode järjekord — galeriis saab pilte ◀ ▶ nuppudega liigutada (esimene = pea-pilt, sama järjekord PDF-is).','Uus M-logo. Vana süsteem kannab nüüd nime "Vana versioon" ja lingib siia.'],try:{label:'Ava Töövoog',view:'toru'}},
+    {d:'13. juuli 2026',t:'Sinu tööjaam: 10 päris etappi, etapiriba, värviteemad, selgem menüü',items:['Töövoog = sinu 10 päris etappi: Uus → Kontakt → Kohtumine/hindamine → Leping → Ettevalmistus → Müük/Näitamised → Ostja/pakkumine → Tehingu ettevalmistus → Tehing/notar → Üleandmine. "Kontakt" koondab vanad vahestaatused (Ühendust võetud, Järelkontakt, Potentsiaalne).','Etapiriba — klõpsa ülal etapil, all on ainult selle objektid. Ei mingit külgkerimist. "Ei soovi" on riba lõpus kiibina.','Menüü koondatud: Juriidiline abi ja Dokumendid leiad Tööriistadest, Meeskonna ja "Mis on uut" Seadetest.','Seaded → Välimus: 5 värviteemat (Roheline, Öösinine, Burgundia, Grafiit, Hele) + tihedus. Sinu ekraani valik — kliendile minevad dokumendid jäävad alati Melli rohelisse.','Seaded → Andmed: ekspordi objektid CSV-failina, impordi kuulutus ja andmeallikate seis ühe klõpsuga.','Telefoni kiirnupud — Seaded → Välimus: vali ise, millised 3 vaadet on telefoni alaribal.','Kõne järel „Järgmine samm ühe tapiga“ — Homme / +3 päeva / +1 nädal otse tulemuse alt.','Fotode järjekord — galeriis saab pilte ◀ ▶ nuppudega liigutada (esimene = pea-pilt, sama järjekord PDF-is).','Saada e-postiga — koostööpakkumine läheb PDF-ina otse sinu Outlookist kliendile (objekti Koostööpakkumise all; vajab Outlooki taasühendamist Postkastis).','Uus M-logo. Vana süsteem kannab nüüd nime "Vana versioon" ja lingib siia.'],try:{label:'Ava Töövoog',view:'toru'}},
     {d:'9. juuli 2026 (õhtu)',t:'Töövoog korda, dokumendid, kalender, omaniku-portaal',items:['Töövoog — vali kelle objekte näidata: Minu · Meeskond · Kõik. Võõra objekti kaardil omaniku-täht (nt R = Raul). Sildid korrastatud (Uus, Kontaktis).','Kõne-tulemuse nupud (sh "Anna üle") ainult varases faasis — soojal objektil peidus, et objekti kogemata minema ei saaks anda.','Dokumendid — objektil uus Dokumendid-tab: üleandmis-vastuvõtuakt + ülevaatusakt, täidetud objekti andmetest, prindi/PDF.','Kalender — järelkontakti juures "Lisa kalendrisse" (.ics), töötab Outlookis ja igal seadmel.','Omaniku jagatud lehel saab omanik nüüd küsida oma objekti kohta — aus vastus objekti ja turu põhjal.','Hääl-sisend ✦ Mell vestlusesse (🎤); objektil "✦ Küsi selle kohta".'],try:{label:'Ava Töövoog',view:'toru'}},
     {d:'9. juuli 2026',t:'Iseseisev süsteem — login, import, kiirmärkmed, tehniline checklist',items:['Sisse/välja logimine — oma login-ekraan ja logout (all vasakul ⏻). Enam ei pea vana lehe kaudu sisse.','Kuulutuse import — Uus objekt: kleebi portaali link (kv.ee/kinnisvara24/city24) → "✦ Loe kuulutus" → AI täidab väljad.','Arhiveeri / kustuta objekt — objekti Muuda-sektsioonis, kinnitusega (arhiveeri hoiab andmed).','Kiirmärkmed — uus vaade: üks-tapp märge/todo, salvestub kohe, sünkroonis kõigil seadmetel.','Vaatamise tehniline checklist — objekti Ülevaatus-tabis Mell koostab maja vanuse/tüübi järgi, mida kohapeal kontrollida (elekter, ventilatsioon, niiskus, vundament).','Turg täna näitab live Maa-ameti mediaani (kui piirkondade andmeid piisavalt), muidu suunav baas.'],try:{label:'Ava Kiirmärkmed',view:'notes'}},
     {d:'8. juuli 2026',t:'Elav esmakasutus, kaasavad uuendused, laiem juriidika',items:['Esmakasutus on nüüd elav — tervitus nimega, edenemisriba, personaalne seadistus (nimi/telefon kohe sinu järgi), lõpus kohe-proovi hüpped. Sulge igal hetkel (✕), ava uuesti Seadetest.','Uuendused näitavad UUS-märgistust ja menüü-täppi; iga uuenduse juures "proovi kohe".','✦ Küsi Mellilt: pildi peale selgitab, mida näeb — elektrikilp, ventilatsioon, küte, seisukord.','Juriidiline abi laienes — lisaks kinnisvaraõigusele ka kohtusüsteem, rollid (kohtunik, prokurör, advokaat/kaitsja, notar, kohtutäitur), institutsioonid ja kontrollikohad. AntiHallu: ei leiuta paragrahve ega lahendeid, suunab ametlikku allikasse.','Iga kasutaja näeb kohe oma nime — süsteem on toode, mitte ühe inimese oma.'],try:{label:'Proovi Fookust',view:'fookus'}},
