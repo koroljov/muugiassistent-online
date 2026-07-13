@@ -3,6 +3,7 @@
 // Kategooriad: kool, lasteaed, pood, peatus, veekogu. Tagastab nimega + kaugusega, kategooria kaupa.
 // Avalik + IP-rate-limit + Eesti-koordinaatide piir. Overpass on jagatud ressurss → hoia mahud väiksed.
 import { rateLimit } from "@/lib/rate-limit";
+import { reportHealth } from "@/lib/source-health";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -63,7 +64,10 @@ export async function GET(request: Request) {
       body: "data=" + encodeURIComponent(q),
       signal: AbortSignal.timeout(25000),
     });
-    if (!r.ok) return Response.json({ error: "Kaardiandmed ei vastanud (" + r.status + ")" }, { status: 502 });
+    if (!r.ok) {
+      await reportHealth("nearby", "degraded", "Overpass vastas " + r.status);
+      return Response.json({ error: "Kaardiandmed ei vastanud (" + r.status + ")" }, { status: 502 });
+    }
     const j: any = await r.json();
     const seen = new Set<string>();
     const pois: any[] = [];
@@ -91,8 +95,10 @@ export async function GET(request: Request) {
       if (byCat[p.cat].length < 3) byCat[p.cat].push(p);
     }
     const out = Object.values(byCat).flat();
+    await reportHealth("nearby", "ok");
     return Response.json({ pois: out, count: out.length });
   } catch (e: any) {
+    await reportHealth("nearby", "degraded", e?.message || "Overpass timeout/viga");
     return Response.json({ error: "Lähedal-otsing ebaõnnestus (aegus?)" }, { status: 502 });
   }
 }
