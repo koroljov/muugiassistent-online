@@ -692,6 +692,12 @@
               <button class="btn gh" onclick="callOutcome('vajab järelkõnet',7)">+1 nädal</button>
               <button class="btn gh" onclick="callOutcome('vajab järelkõnet',14)">+2 nädalat</button>
             </div>
+            <div class="callrow" id="nextRow" style="display:none;margin-top:8px">
+              <span class="flabel" style="margin:0;align-self:center">Järgmine samm ühe tapiga:</span>
+              <button class="btn gh" onclick="setNextTap(1)">Homme</button>
+              <button class="btn gh" onclick="setNextTap(3)">+3 päeva</button>
+              <button class="btn gh" onclick="setNextTap(7)">+1 nädal</button>
+            </div>
             <span class="msg" id="callMsg"></span>
             <button id="calBtn" class="btn gh" style="display:none;margin-left:8px;font-size:11px;padding:5px 10px" onclick="addFollowToCal()">📅 Lisa kalendrisse</button>
             <div id="callHist" style="margin-top:10px"></div>
@@ -1114,11 +1120,22 @@ function stateFull(v){
     try{await sb.from('stage_events').insert({lead_id:O.id,user_id:(ME&&ME.id)||null,from_status:from,to_status:newKey});}catch(e){}
     Object.assign(O,patch);var i=LEADS.findIndex(function(l){return l.id===O.id;});if(i>=0)Object.assign(LEADS[i],patch);
     document.getElementById('oKick').textContent=(_statusLabel[newKey]||newKey)+(O.contact_name?' · '+O.contact_name:'');
-    document.getElementById('followRow').style.display='none';
+    document.getElementById('followRow').style.display='none';var _nr=document.getElementById('nextRow');if(_nr)_nr.style.display=(newKey==='vestlus toimus')?'flex':'none';
     var extra=patch.next_action_at?(' · järelkontakt '+new Date(patch.next_action_at).toLocaleDateString('et-EE',{day:'numeric',month:'short'})):'';
     msg.style.color='#48c281';msg.textContent='✓ '+(_statusLabel[newKey]||newKey)+extra+'. Fookus uuendatud.';
     var cb=document.getElementById('calBtn');if(cb)cb.style.display=patch.next_action_at?'inline-flex':'none';setPhaseRow();
     countUp('sFcast',forecast(),' €');renderFookus();renderKanban();renderLeak();renderBell();
+  }
+  async function setNextTap(days){
+    if(!O)return;var d=new Date();d.setDate(d.getDate()+days);var iso=d.toISOString().slice(0,10);
+    var msg=document.getElementById('callMsg');if(msg){msg.style.color='#a3b4aa';msg.textContent='Salvestan…';}
+    var up=await sb.from('leads').update({next_action_at:iso}).eq('id',O.id);
+    if(up.error){if(msg){msg.style.color='#e0715f';msg.textContent='Viga: '+up.error.message;}return;}
+    O.next_action_at=iso;var i=LEADS.findIndex(function(l){return l.id===O.id;});if(i>=0)LEADS[i].next_action_at=iso;
+    var nr=document.getElementById('nextRow');if(nr)nr.style.display='none';
+    if(msg){msg.style.color='#48c281';msg.textContent='✓ Järgmine samm '+d.toLocaleDateString('et-EE',{day:'numeric',month:'short'})+'. Fookus uuendatud.';}
+    var cb=document.getElementById('calBtn');if(cb)cb.style.display='inline-flex';
+    try{renderFookus();renderBell();}catch(e){}
   }
   function icsEsc(s){return String(s==null?'':s).replace(/([,;\\])/g,'\\$1').replace(/\r?\n/g,'\\n');}
   function icsDownload(title,dateStr,desc,loc){if(!dateStr)return;var dt=String(dateStr).slice(0,10).replace(/-/g,'');var uid=Date.now()+'@mell';var body=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Mell//ET','BEGIN:VEVENT','UID:'+uid,'DTSTART;VALUE=DATE:'+dt,'SUMMARY:'+icsEsc(title),'DESCRIPTION:'+icsEsc(desc||''),'LOCATION:'+icsEsc(loc||''),'END:VEVENT','END:VCALENDAR'].join('\r\n');var blob=new Blob([body],{type:'text/calendar;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mell-jarelkontakt.ics';document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(a.href);},100);}
@@ -1359,7 +1376,7 @@ function stateFull(v){
     el.innerHTML=head+'<div id="mailList">'+listHtml+'</div>';MAIL_MEM=el.innerHTML;}
   /* ========== UUENDUSED — muudatuste märkmed ========== */
   var CHANGELOG=[
-    {d:'13. juuli 2026',t:'Sinu tööjaam: 10 päris etappi, etapiriba, värviteemad, selgem menüü',items:['Töövoog = sinu 10 päris etappi: Uus → Kontakt → Kohtumine/hindamine → Leping → Ettevalmistus → Müük/Näitamised → Ostja/pakkumine → Tehingu ettevalmistus → Tehing/notar → Üleandmine. "Kontakt" koondab vanad vahestaatused (Ühendust võetud, Järelkontakt, Potentsiaalne).','Etapiriba — klõpsa ülal etapil, all on ainult selle objektid. Ei mingit külgkerimist. "Ei soovi" on riba lõpus kiibina.','Menüü koondatud: Juriidiline abi ja Dokumendid leiad Tööriistadest, Meeskonna ja "Mis on uut" Seadetest.','Seaded → Välimus: 5 värviteemat (Roheline, Öösinine, Burgundia, Grafiit, Hele) + tihedus. Sinu ekraani valik — kliendile minevad dokumendid jäävad alati Melli rohelisse.','Seaded → Andmed: ekspordi objektid CSV-failina, impordi kuulutus ja andmeallikate seis ühe klõpsuga.','Uus M-logo. Vana süsteem kannab nüüd nime "Vana versioon" ja lingib siia.'],try:{label:'Ava Töövoog',view:'toru'}},
+    {d:'13. juuli 2026',t:'Sinu tööjaam: 10 päris etappi, etapiriba, värviteemad, selgem menüü',items:['Töövoog = sinu 10 päris etappi: Uus → Kontakt → Kohtumine/hindamine → Leping → Ettevalmistus → Müük/Näitamised → Ostja/pakkumine → Tehingu ettevalmistus → Tehing/notar → Üleandmine. "Kontakt" koondab vanad vahestaatused (Ühendust võetud, Järelkontakt, Potentsiaalne).','Etapiriba — klõpsa ülal etapil, all on ainult selle objektid. Ei mingit külgkerimist. "Ei soovi" on riba lõpus kiibina.','Menüü koondatud: Juriidiline abi ja Dokumendid leiad Tööriistadest, Meeskonna ja "Mis on uut" Seadetest.','Seaded → Välimus: 5 värviteemat (Roheline, Öösinine, Burgundia, Grafiit, Hele) + tihedus. Sinu ekraani valik — kliendile minevad dokumendid jäävad alati Melli rohelisse.','Seaded → Andmed: ekspordi objektid CSV-failina, impordi kuulutus ja andmeallikate seis ühe klõpsuga.','Telefoni kiirnupud — Seaded → Välimus: vali ise, millised 3 vaadet on telefoni alaribal.','Kõne järel „Järgmine samm ühe tapiga“ — Homme / +3 päeva / +1 nädal otse tulemuse alt.','Uus M-logo. Vana süsteem kannab nüüd nime "Vana versioon" ja lingib siia.'],try:{label:'Ava Töövoog',view:'toru'}},
     {d:'9. juuli 2026 (õhtu)',t:'Töövoog korda, dokumendid, kalender, omaniku-portaal',items:['Töövoog — vali kelle objekte näidata: Minu · Meeskond · Kõik. Võõra objekti kaardil omaniku-täht (nt R = Raul). Sildid korrastatud (Uus, Kontaktis).','Kõne-tulemuse nupud (sh "Anna üle") ainult varases faasis — soojal objektil peidus, et objekti kogemata minema ei saaks anda.','Dokumendid — objektil uus Dokumendid-tab: üleandmis-vastuvõtuakt + ülevaatusakt, täidetud objekti andmetest, prindi/PDF.','Kalender — järelkontakti juures "Lisa kalendrisse" (.ics), töötab Outlookis ja igal seadmel.','Omaniku jagatud lehel saab omanik nüüd küsida oma objekti kohta — aus vastus objekti ja turu põhjal.','Hääl-sisend ✦ Mell vestlusesse (🎤); objektil "✦ Küsi selle kohta".'],try:{label:'Ava Töövoog',view:'toru'}},
     {d:'9. juuli 2026',t:'Iseseisev süsteem — login, import, kiirmärkmed, tehniline checklist',items:['Sisse/välja logimine — oma login-ekraan ja logout (all vasakul ⏻). Enam ei pea vana lehe kaudu sisse.','Kuulutuse import — Uus objekt: kleebi portaali link (kv.ee/kinnisvara24/city24) → "✦ Loe kuulutus" → AI täidab väljad.','Arhiveeri / kustuta objekt — objekti Muuda-sektsioonis, kinnitusega (arhiveeri hoiab andmed).','Kiirmärkmed — uus vaade: üks-tapp märge/todo, salvestub kohe, sünkroonis kõigil seadmetel.','Vaatamise tehniline checklist — objekti Ülevaatus-tabis Mell koostab maja vanuse/tüübi järgi, mida kohapeal kontrollida (elekter, ventilatsioon, niiskus, vundament).','Turg täna näitab live Maa-ameti mediaani (kui piirkondade andmeid piisavalt), muidu suunav baas.'],try:{label:'Ava Kiirmärkmed',view:'notes'}},
     {d:'8. juuli 2026',t:'Elav esmakasutus, kaasavad uuendused, laiem juriidika',items:['Esmakasutus on nüüd elav — tervitus nimega, edenemisriba, personaalne seadistus (nimi/telefon kohe sinu järgi), lõpus kohe-proovi hüpped. Sulge igal hetkel (✕), ava uuesti Seadetest.','Uuendused näitavad UUS-märgistust ja menüü-täppi; iga uuenduse juures "proovi kohe".','✦ Küsi Mellilt: pildi peale selgitab, mida näeb — elektrikilp, ventilatsioon, küte, seisukord.','Juriidiline abi laienes — lisaks kinnisvaraõigusele ka kohtusüsteem, rollid (kohtunik, prokurör, advokaat/kaitsja, notar, kohtutäitur), institutsioonid ja kontrollikohad. AntiHallu: ei leiuta paragrahve ega lahendeid, suunab ametlikku allikasse.','Iga kasutaja näeb kohe oma nime — süsteem on toode, mitte ühe inimese oma.'],try:{label:'Proovi Fookust',view:'fookus'}},
