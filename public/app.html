@@ -95,6 +95,7 @@
   .cmvs{display:flex;gap:6px;margin-top:9px}
   .col{flex:0 0 230px;display:flex;flex-direction:column;gap:9px} .colh{display:flex;align-items:center;gap:8px;padding:2px 4px;font-size:12px;font-weight:700} .colh .d{width:8px;height:8px;border-radius:50%} .colh .c{margin-left:auto;font-size:11px;color:var(--ink3)} .colsum{font-size:11px;color:var(--ink2);padding:0 4px;margin-top:-3px}
   .boardwrap{margin-top:10px} .bsech{display:flex;align-items:center;gap:10px;margin-top:20px;font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3)} .bsech .sum{font-weight:600;letter-spacing:0;text-transform:none;font-size:11.5px;color:var(--ink2)} .deadbtn{margin-left:auto;font:inherit;letter-spacing:0;text-transform:none;font-size:11.5px;font-weight:600;color:var(--ink2);background:var(--cd);border:1px solid var(--line2);border-radius:999px;padding:4px 11px;cursor:pointer} .deadbtn.on{border-color:var(--gr);color:var(--ink)} .bempty{margin-top:8px;font-size:11.5px;color:var(--ink3)} .board.bsub{margin-top:10px} .bsech.clk{cursor:pointer;-webkit-user-select:none;user-select:none} .bsech.clk:hover .chev{color:var(--gr)} .bsech .chev{width:13px;display:inline-block;color:var(--ink3);font-size:10px}
+  .srail{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px;align-items:center} .schip{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;border:1px solid var(--line2);background:var(--cd);color:var(--ink2);font:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s} .schip:hover{border-color:var(--gr)} .schip.on{border-color:var(--gr);background:var(--grsoft);color:var(--ink)} .schip .d{width:8px;height:8px;border-radius:50%} .schip .n{font-size:11px;color:var(--ink3)} .schip.on .n{color:var(--ink2)} .schip.zero{opacity:.55} .sdiv{width:1px;height:22px;background:var(--line2);margin:0 3px} .stghead{display:flex;align-items:center;gap:9px;margin-top:20px;font-size:13.5px;font-weight:700} .stghead .d{width:9px;height:9px;border-radius:50%} .stghead .sum{color:var(--ink2);font-weight:600;font-size:12px} .stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:12px}
   .card{position:relative;background:linear-gradient(180deg,var(--cd),var(--sf));border:1px solid var(--line);border-radius:15px;overflow:hidden;cursor:pointer;box-shadow:var(--sh);transition:transform .16s,border-color .16s} .card:hover{transform:translateY(-2px);border-color:var(--line2)}
   .card .glow{position:absolute;top:-24px;right:-24px;width:84px;height:84px;border-radius:50%;filter:blur(22px);opacity:.45;transition:.2s} .card:hover .glow{opacity:.8}
   .ph{height:90px;background:linear-gradient(135deg,#2b3a30,#1c2620);background-size:cover;background-position:center;position:relative} .ph.e{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink3)}
@@ -425,7 +426,7 @@
       <div class="view" id="v-toru">
         <div class="hello">Müük</div>
         <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">töövoog</span>.</div>
-        <div class="coach">Kaks faasi: kontaktifaas (uued ja kõned) ning müügifaas (soojad kuni tehinguni). Liiguta kaardil ←/→. Vali, kelle objekte näidata.</div>
+        <div class="coach">Vali ülevalt etapp — all on selle objektid. Liiguta kaardil ←/→. Vali, kelle objekte näidata.</div>
         <div class="toruscope" id="toruScope">
           <button class="tsc on" data-s="minu" onclick="setToruScope('minu')">Minu</button>
           <button class="tsc" data-s="meeskond" onclick="setToruScope('meeskond')">Meeskond</button>
@@ -992,22 +993,27 @@ function stateFull(v){
    {k:'k_tehing',l:'Tehing / notar',c:'#48c281',m:['k_tehing']},
    {k:'yleandmine',l:'Üleandmine',c:'#7dd3a8',m:['yleandmine']}
   ];
+  var DEADCOL={k:'ei soovi abi',l:'Ei soovi',c:'#6b7280',m:['ei soovi abi']};
   function colIdxOf(st){for(var i=0;i<KCOLS.length;i++)if(KCOLS[i].m.indexOf(st)>=0)return i;return -1;}
-  var SEC1K=['uus','k_kontakt'];var SEC2K=['kohtumine','leping','ettevalmistus','myygis','ostja','t_ettevalmistus','k_tehing','yleandmine'];
-  var SEC_CLOSED={};try{SEC_CLOSED=JSON.parse(localStorage.getItem('mell_sec_closed')||'{}')||{};}catch(e){}
-  function toggleSec(id){SEC_CLOSED[id]=!SEC_CLOSED[id];try{localStorage.setItem('mell_sec_closed',JSON.stringify(SEC_CLOSED));}catch(e){}renderKanban();}
-  var SHOW_DEAD=false;try{SHOW_DEAD=localStorage.getItem('mell_show_dead')==='1';}catch(e){}
-  function toggleDead(){SHOW_DEAD=!SHOW_DEAD;try{localStorage.setItem('mell_show_dead',SHOW_DEAD?'1':'0');}catch(e){}renderKanban();}
+  var KF_KEYS=['uus','k_kontakt'];var MF_KEYS=['kohtumine','leping','ettevalmistus','myygis','ostja','t_ettevalmistus','k_tehing','yleandmine'];
+  var TORU_SEL='';try{TORU_SEL=localStorage.getItem('mell_toru_sel')||'';}catch(e){}
+  function selStage(k){TORU_SEL=k;try{localStorage.setItem('mell_toru_sel',k);}catch(e){}renderKanban();}
+  function stageCards(c,ls){var h='';ls.forEach(function(l){var u=urg(l),idx=colIdxOf(l.status);var mv='<div class="cmvs">'+(idx>0?'<button class="pmv" onclick="event.stopPropagation();moveStage(\''+l.id+'\',-1)" title="Etapp tagasi">←</button>':'')+((idx>=0&&idx<KCOLS.length-1)?'<button class="pmv" onclick="event.stopPropagation();moveStage(\''+l.id+'\',1)" title="Etapp edasi">→</button>':'')+'</div>';var ph=l.img_url?('<div class="ph" style="background-image:url(\''+esc(l.img_url)+'\')"><span class="sdot" style="background:'+c.c+'"></span></div>'):('<div class="ph e"><span class="sdot" style="background:'+c.c+'"></span>'+esc(initials(l.contact_name))+'</div>');var bc=buyerCount(l),bch=bc?('<div style="margin-top:6px;display:inline-block;font-size:10px;color:var(--gr);border:1px solid var(--gr);border-radius:10px;padding:1px 7px">◇ '+bc+' ostjat</div>'):'';h+='<div class="card" onclick="openObj(\''+l.id+'\')"><div class="glow" style="background:'+c.c+'"></div>'+ph+'<div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+ownerBadge(l)+'</div><div class="addr">'+esc(l.property_address||l.asum||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+(u.txt?('<div class="next '+u.cls+'">'+esc(u.txt)+'</div>'):'')+bch+mv+'</div></div>';});return h;}
   function renderKanban(){var b=document.getElementById('board');if(!b)return;b.className='boardwrap';var SC=LEADS.filter(scopeMatch);
-  function colHtml(c,ls){var sum=ls.reduce(function(a,l){return a+(Number(l.price)||0);},0);var h='<div class="col"><div class="colh"><span class="d" style="background:'+c.c+'"></span>'+esc(c.l)+'<span class="c">'+ls.length+'</span></div><div class="colsum">'+eur(sum)+' €</div>';ls.forEach(function(l){var u=urg(l),idx=colIdxOf(l.status);var mv='<div class="cmvs">'+(idx>0?'<button class="pmv" onclick="event.stopPropagation();moveStage(\''+l.id+'\',-1)" title="Etapp tagasi">←</button>':'')+((idx>=0&&idx<KCOLS.length-1)?'<button class="pmv" onclick="event.stopPropagation();moveStage(\''+l.id+'\',1)" title="Etapp edasi">→</button>':'')+'</div>';var ph=l.img_url?('<div class="ph" style="background-image:url(\''+esc(l.img_url)+'\')"><span class="sdot" style="background:'+c.c+'"></span></div>'):('<div class="ph e"><span class="sdot" style="background:'+c.c+'"></span>'+esc(initials(l.contact_name))+'</div>');var bc=buyerCount(l),bch=bc?('<div style="margin-top:6px;display:inline-block;font-size:10px;color:var(--gr);border:1px solid var(--gr);border-radius:10px;padding:1px 7px">◇ '+bc+' ostjat</div>'):'';h+='<div class="card" onclick="openObj(\''+l.id+'\')"><div class="glow" style="background:'+c.c+'"></div>'+ph+'<div class="cb"><div class="nm">'+esc(l.contact_name||'(nimeta)')+ownerBadge(l)+'</div><div class="addr">'+esc(l.property_address||l.asum||'')+'</div>'+(l.price!=null?('<div class="price">'+eur(l.price)+' €</div>'):'')+(u.txt?('<div class="next '+u.cls+'">'+esc(u.txt)+'</div>'):'')+bch+mv+'</div></div>';});h+='</div>';return h;}
-  function secHtml(id,title,keys,extra){var closed=!!SEC_CLOSED[id];var cols='',empty=[],n=0,sum=0;keys.forEach(function(k){var c=null;for(var i=0;i<KCOLS.length;i++)if(KCOLS[i].k===k)c=KCOLS[i];if(!c)return;var ls=SC.filter(function(l){return c.m.indexOf(l.status)>=0;});if(!ls.length){empty.push(c.l);return;}n+=ls.length;sum+=ls.reduce(function(a,l){return a+(Number(l.price)||0);},0);cols+=colHtml(c,ls);});var head='<div class="bsech clk" onclick="toggleSec(\''+id+'\')"><span class="chev">'+(closed?'▸':'▾')+'</span>'+title+'<span class="sum">'+(n?(n+' obj · '+eur(sum)+' €'):'')+'</span>'+(extra||'')+'</div>';if(closed)return head;return head+(cols?('<div class="board bsub">'+cols+'</div>'):'<div class="bempty">Etapid ootel: '+empty.join(' · ')+'</div>')+((empty.length&&cols)?('<div class="bempty">Tühjad etapid: '+empty.join(' · ')+'</div>'):'');}
-  var dead=SC.filter(function(l){return l.status===DEAD_ST;});
-  var deadBtn=dead.length?('<button class="deadbtn'+(SHOW_DEAD?' on':'')+'" onclick="event.stopPropagation();toggleDead()">'+(SHOW_DEAD?'Peida':'Näita')+' · Ei soovi '+dead.length+'</button>'):'';
-  var h=secHtml('kf','Kontaktifaas',SEC1K,deadBtn);
-  if(SHOW_DEAD&&dead.length&&!SEC_CLOSED.kf){h+='<div class="board bsub">'+colHtml({k:DEAD_ST,l:'Ei soovi',c:'#6b7280',m:[DEAD_ST]},dead)+'</div>';}
-  h+=secHtml('mf','Müügifaas',SEC2K,'');
-  if(!SC.length)h='<div class="empty">Objekte veel pole.</div>';
-  b.innerHTML=h;}
+  function getCol(k){if(DEADCOL.k===k)return DEADCOL;for(var i=0;i<KCOLS.length;i++)if(KCOLS[i].k===k)return KCOLS[i];return null;}
+  function objsOf(c){return SC.filter(function(l){return c.m.indexOf(l.status)>=0;});}
+  var selCol=getCol(TORU_SEL);
+  if(!selCol){for(var j=0;j<KCOLS.length;j++){if(objsOf(KCOLS[j]).length){selCol=KCOLS[j];break;}}if(!selCol)selCol=KCOLS[0];}
+  function chip(c){var n=objsOf(c).length;return '<button class="schip'+(selCol.k===c.k?' on':'')+(n?'':' zero')+'" onclick="selStage(\''+c.k+'\')"><span class="d" style="background:'+c.c+'"></span>'+esc(c.l)+'<span class="n">'+n+'</span></button>';}
+  var rail='<div class="srail">';
+  for(var a=0;a<KF_KEYS.length;a++)rail+=chip(getCol(KF_KEYS[a]));
+  rail+='<span class="sdiv"></span>';
+  for(var d=0;d<MF_KEYS.length;d++)rail+=chip(getCol(MF_KEYS[d]));
+  rail+='<span class="sdiv"></span>'+chip(DEADCOL)+'</div>';
+  var ls=objsOf(selCol);var sum=ls.reduce(function(a,l){return a+(Number(l.price)||0);},0);
+  var head='<div class="stghead"><span class="d" style="background:'+selCol.c+'"></span>'+esc(selCol.l)+'<span class="sum">'+(ls.length?(ls.length+' obj · '+eur(sum)+' €'):'')+'</span></div>';
+  var body=ls.length?('<div class="stgrid">'+stageCards(selCol,ls)+'</div>'):'<div class="bempty">Selles etapis pole praegu ühtegi objekti.</div>';
+  b.innerHTML=rail+head+body;}
   async function moveStage(id,dir){var l=LEADS.find(function(x){return x.id===id;});if(!l)return;var idx=colIdxOf(l.status);if(idx<0)idx=(dir>0?-1:KCOLS.length);var ni=Math.max(0,Math.min(KCOLS.length-1,idx+dir));if(ni===idx)return;var from=l.status,to=KCOLS[ni].k;var mp={status:to};if(!leadOwner(l)){mp.assigned_to=(ME&&ME.id)||null;}var up=await sb.from('leads').update(mp).eq('id',id);if(up.error){toast('Ei õnnestunud liigutada — proovi uuesti');return;}l.status=to;if(mp.assigned_to)l.assigned_to=mp.assigned_to;if(O&&O.id===id){O.status=to;if(mp.assigned_to)O.assigned_to=mp.assigned_to;}try{await sb.from('stage_events').insert({lead_id:id,user_id:(ME&&ME.id)||null,from_status:from,to_status:to});}catch(e){}renderKanban();try{renderFookus();}catch(e){}try{renderBell();}catch(e){}}
 
   /* object workspace */
