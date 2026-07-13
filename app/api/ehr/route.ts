@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { rateLimit } from "@/lib/rate-limit";
+import { reportHealth } from "@/lib/source-health";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ function ehrAddrCandidates(raw: string): string[] {
 // NB: korteri in-ADS tunnus on kujul "HOONEKOOD-OSAKOOD" (nt 101014781-2297480) → hoonekood + osakood (korteri täpne sobitus).
 async function resolveEhrCode(addressRaw: string): Promise<{ ehrCode: string; aptNr: string; aptCode: string; address: string } | null> {
   async function look(q: string): Promise<any[]> {
-    try { const r = await fetch("https://inaadress.maaamet.ee/inaadress/gazetteer?address=" + encodeURIComponent(q) + "&results=5", { signal: AbortSignal.timeout(8000) }); const j = await r.json(); return j.addresses || []; } catch { return []; }
+    try { const r = await fetch("https://inaadress.maaamet.ee/inaadress/gazetteer?address=" + encodeURIComponent(q) + "&results=5", { signal: AbortSignal.timeout(8000) }); const j = await r.json(); return j.addresses || []; } catch { await reportHealth("inads", "degraded", "in-ADS ei vastanud (timeout/viga)"); return []; }
   }
   for (const cand of ehrAddrCandidates(addressRaw)) {
     const list = await look(cand);
@@ -43,6 +44,7 @@ async function resolveEhrCode(addressRaw: string): Promise<{ ehrCode: string; ap
     const rawTunnus = String(hit?.tunnus || "");
     if (!rawTunnus) continue; // see kandidaat ei andnud EHR-koodi → proovi järgmist (üldisemat)
     const p = rawTunnus.split("-");
+    await reportHealth("inads", "ok");
     return { ehrCode: p[0], aptCode: p[1] || "", aptNr: hit?.kort_nr || "", address: hit?.ipikkaadress || hit?.taisaadress || addressRaw };
   }
   return null;
@@ -114,6 +116,7 @@ export async function POST(request: Request) {
     try {
       const r = await fetch(EHR_BASE + "/v3/buildingData?ehr_code=" + encodeURIComponent(ehrCode), { headers: { accept: "application/json" }, signal: AbortSignal.timeout(15000) });
       if (!r.ok) {
+        await reportHealth("ehr", "degraded", "EHR vastas " + r.status);
         if (cached) building = cached; // vana cache parem kui mitte midagi
         else return NextResponse.json({ found: false, message: "Ehitisregister ei vastanud (kood " + ehrCode + ").", status: r.status });
       } else {
@@ -127,9 +130,11 @@ export async function POST(request: Request) {
           apts: parsed.apts, raw: null, fetched_at: new Date().toISOString(),
         };
         await admin.from("ehr_buildings").upsert(row, { onConflict: "ehr_code" });
+        await reportHealth("ehr", "ok");
         building = row;
       }
     } catch (e: any) {
+      await reportHealth("ehr", "degraded", e?.message || "EHR päring ebaõnnestus");
       if (cached) building = cached;
       else return NextResponse.json({ found: false, message: "Ehitisregistri päring ebaõnnestus: " + (e?.message || "viga") });
     }
