@@ -158,3 +158,5 @@ export async function fetchMessages(token: string, top = 25): Promise<MailMsg[]>
     webLink: m.webLink || "",
   }));
 }
+
+// redeploy: MS_CLIENT env aktiveerimine
