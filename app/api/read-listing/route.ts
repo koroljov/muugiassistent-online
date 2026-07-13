@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-server";
 import { rateLimit } from "@/lib/rate-limit";
+import { reportHealth } from "@/lib/source-health";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -46,8 +47,10 @@ export async function POST(request: Request) {
     const r = await fetch("https://api.scrapfly.io/scrape?" + params.toString(), { signal: AbortSignal.timeout(55000) });
     const j = await r.json();
     html = j?.result?.content || "";
+    if (!html) await reportHealth("portaalid", "degraded", "Scrapfly ei tagastanud sisu");
     if (!html) return NextResponse.json({ error: "Scrapfly ei tagastanud sisu: " + JSON.stringify(j?.result?.error || {}).slice(0, 200) }, { status: 502 });
   } catch (e: any) {
+    await reportHealth("portaalid", "degraded", e?.message || "Scrapfly viga");
     return NextResponse.json({ error: e?.message || "Kuulutuse lugemine ebaõnnestus" }, { status: 502 });
   }
 
@@ -65,6 +68,7 @@ export async function POST(request: Request) {
   const telM = text.match(/(\+372[\s-]?)?[5][0-9][0-9\s-]{5,8}/);
   const emailM = text.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
 
+  await reportHealth("portaalid", "ok");
   return NextResponse.json({
     ogTitle, ogDesc, text,
     tel: telM ? telM[0].trim() : "",
