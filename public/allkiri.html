@@ -84,6 +84,10 @@
               <button data-tone="duo">Sinine</button>
             </div>
             <button class="mini" id="dlPhoto" disabled>Laadi alla foto (.jpg)</button>
+            <div style="display:flex;gap:8px;">
+              <button class="mini" id="changePhoto" style="margin-bottom:0;">Vaheta foto</button>
+              <button class="mini" id="removePhoto" style="margin-bottom:0;">Eemalda</button>
+            </div>
           </div>
         </div>
         <input type="file" id="photoFile" accept="image/*" style="display:none">
@@ -122,6 +126,7 @@
         <input type="file" id="logoFile" accept="image/*" style="display:none">
         <label>…või logo URL</label>
         <input type="text" id="logoUrl" placeholder="https://…/uusmaa-mark.png">
+        <button class="mini" id="removeLogo">Eemalda logo (tagasi vaikelogole)</button>
         <p class="hint">Tekst „UUS MAA | Arena" jääb alati alles. Logo pilt on valikuline — ilma selleta näidatakse ainult teksti.</p>
       </div>
 
@@ -340,7 +345,21 @@
   logoDrop.addEventListener("dragover",function(e){e.preventDefault();});
   logoDrop.addEventListener("drop",function(e){e.preventDefault();if(e.dataTransfer.files[0])handleLogo(e.dataTransfer.files[0]);});
   logoInput.addEventListener("change",function(e){handleLogo(e.target.files[0]);});
-  function handleLogo(f){ if(!f||!/^image\//.test(f.type))return; var r=new FileReader(); r.onload=function(ev){logoData=ev.target.result; logoDrop.querySelector("b").textContent="Logo laetud ✓"; render();}; r.readAsDataURL(f); }
+  function handleLogo(f){ if(!f||!/^image\//.test(f.type))return; var r=new FileReader(); r.onload=function(ev){logoData=ev.target.result; logoDrop.querySelector("b").textContent="Logo laetud ✓ (klõpsa vahetamiseks)"; render();}; r.readAsDataURL(f); }
+
+  // vaheta / eemalda foto + logo
+  document.getElementById("changePhoto").addEventListener("click",function(){ fileInput.click(); });
+  document.getElementById("removePhoto").addEventListener("click",function(){
+    rawImage=null; processedPhoto=""; zoom=1;
+    var z=document.getElementById("zoom"); z.value=1; z.disabled=true;
+    document.getElementById("photoUrl").value="";
+    var fr=document.getElementById("frame"); fr.innerHTML="Klõpsa või lohista foto siia"; fr.classList.add("empty");
+    document.getElementById("dlPhoto").disabled=true; render();
+  });
+  document.getElementById("removeLogo").addEventListener("click",function(){
+    logoData=""; document.getElementById("logoUrl").value="";
+    logoDrop.querySelector("b").textContent="Lae UM logo"; render();
+  });
 
   function toast(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},1600);}
   document.getElementById("dlPhoto").addEventListener("click",function(){if(!processedPhoto)return;var a=document.createElement("a");a.href=processedPhoto;a.download="meelis-foto.jpg";document.body.appendChild(a);a.click();document.body.removeChild(a);toast("Foto salvestatud ✓");});
