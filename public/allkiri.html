@@ -8,12 +8,12 @@
   :root{--navy:#14235c;--blue:#1b4a9c;--gold:#e3b23c;--ink:#0f1626;--panel2:#1c2745;--line:#2a375c;--muted:#8fa0c4;--field:#0f1730;}
   *{box-sizing:border-box;}
   body{margin:0;background:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#eef2fb;}
-  header{display:flex;align-items:center;gap:12px;padding:16px 26px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#182446,#111a30);}
+  header{display:flex;align-items:center;gap:12px;padding:16px 26px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#182446,#111a30);position:sticky;top:0;z-index:20;}
   .brandmark{width:16px;height:16px;background:var(--gold);border-radius:3px;}
   header h1{font-size:15px;font-weight:700;letter-spacing:.5px;margin:0;}
   header h1 span{color:var(--muted);font-weight:500;}
   main{display:grid;grid-template-columns:minmax(340px,440px) 1fr;min-height:calc(100vh - 58px);}
-  .editor{padding:22px 24px;border-right:1px solid var(--line);overflow-y:auto;}
+  .editor{padding:22px 24px;border-right:1px solid var(--line);}
   .group{margin-bottom:22px;}
   .group h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);margin:0 0 12px;font-weight:600;}
   label{display:block;font-size:12px;color:#c3ccdf;margin:0 0 5px;}
@@ -49,7 +49,7 @@
   .slider:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:2px;background:#8fa0c4;border-radius:50%;transition:.15s;}
   .switch input:checked + .slider{background:var(--blue);border-color:var(--blue);}
   .switch input:checked + .slider:before{transform:translateX(18px);background:#fff;}
-  .preview-pane{padding:34px 30px;background:#0b1120;display:flex;flex-direction:column;align-items:center;gap:22px;}
+  .preview-pane{padding:34px 30px;background:#0b1120;display:flex;flex-direction:column;align-items:center;gap:22px;position:sticky;top:58px;align-self:start;max-height:calc(100vh - 58px);overflow-y:auto;}
   .canvas-label{align-self:flex-start;font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);}
   .canvas{background:#f0f2f6;border-radius:16px;padding:30px 32px;box-shadow:0 20px 60px rgba(0,0,0,.45);width:100%;max-width:620px;}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;width:100%;max-width:620px;}
@@ -63,7 +63,7 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .foot{align-self:flex-start;font-size:11.5px;color:var(--muted);line-height:1.6;max-width:620px;}
   .foot code{background:#182446;padding:1px 6px;border-radius:5px;color:#cfe;}
-  @media (max-width:900px){main{grid-template-columns:1fr;}.editor{border-right:none;border-bottom:1px solid var(--line);}}
+  @media (max-width:900px){main{grid-template-columns:1fr;}.editor{border-right:none;border-bottom:1px solid var(--line);}.preview-pane{position:static;max-height:none;overflow:visible;}}
 </style>
 </head>
 <body>
@@ -174,6 +174,7 @@
       <div class="canvas"><div id="sig"></div></div>
       <div class="toolbar">
         <button class="act primary" id="copyBtn">Kopeeri allkiri</button>
+        <button class="act ghost" id="saveBtn">Salvesta süsteemi</button>
         <button class="act ghost" id="copyHtmlBtn">Kopeeri HTML-kood</button>
         <button class="act ghost" id="downloadBtn">Laadi alla .html</button>
       </div>
@@ -294,7 +295,7 @@
   function buildSignature(){
     var m=dens, b=bgColor(), pad=Math.round(24*m);
     if(bgStyle==="none") return inner(m);
-    return '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="background:'+b.bg+';border:1px solid '+b.bd+';border-radius:12px;padding:'+pad+'px '+Math.round(pad*1.2)+'px;">'+inner(m)+'</td></tr></table>';
+    return '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="background:'+b.bg+';border-radius:12px;padding:'+pad+'px '+Math.round(pad*1.2)+'px;">'+inner(m)+'</td></tr></table>';
   }
 
   function render(){document.getElementById("sig").innerHTML=buildSignature();}
@@ -375,6 +376,19 @@
   document.getElementById("copyHtmlBtn").addEventListener("click",function(){var h=buildSignature();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(h).then(function(){toast("HTML-kood kopeeritud ✓");});}else{var ta=document.createElement("textarea");ta.value=h;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);toast("HTML-kood kopeeritud ✓");}});
   document.getElementById("downloadBtn").addEventListener("click",function(){var doc='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>'+buildSignature()+'</body></html>';var blob=new Blob([doc],{type:"text/html"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="meelis-allkiri.html";document.body.appendChild(a);a.click();document.body.removeChild(a);toast("Fail salvestatud ✓");});
 
+  function setSegOn(id,attr,value){document.querySelectorAll("#"+id+" button").forEach(function(b){b.classList.toggle("on",b.getAttribute(attr)===value);});}
+  function currentConfig(){return {name:val("name"),title:val("title"),phone:val("phone"),email:val("email"),facebook:val("facebook"),instagram:val("instagram"),linkedin:val("linkedin"),tiktok:val("tiktok"),youtube:val("youtube"),photoUrl:val("photoUrl"),logoUrl:val("logoUrl"),ctaLabel:val("ctaLabel"),ctaUrl:val("ctaUrl"),tTitle:chk("tTitle"),tSocial:chk("tSocial"),tBrand:chk("tBrand"),tCta:chk("tCta"),tone:tone,shape:shape,side:side,accent:accent,dens:dens,bgStyle:bgStyle,photoW:photoW,aspect:aspect,logoScale:logoScale,logoAlign:logoAlign,processedPhoto:processedPhoto,logoData:logoData};}
+  document.getElementById("saveBtn").addEventListener("click",function(){try{localStorage.setItem("mell_signature_config",JSON.stringify(currentConfig()));localStorage.setItem("mell_signature_html",buildSignature());toast("Allkiri salvestatud süsteemi ✓");}catch(e){toast("Salvestamine ebaõnnestus");}});
+  function loadSig(){var raw;try{raw=localStorage.getItem("mell_signature_config");}catch(e){return;}if(!raw)return;var c;try{c=JSON.parse(raw);}catch(e){return;}
+    ["name","title","phone","email","facebook","instagram","linkedin","tiktok","youtube","photoUrl","logoUrl","ctaLabel","ctaUrl"].forEach(function(id){if(c[id]!=null)document.getElementById(id).value=c[id];});
+    ["tTitle","tSocial","tBrand","tCta"].forEach(function(id){if(typeof c[id]==="boolean")document.getElementById(id).checked=c[id];});
+    if(c.tone)tone=c.tone;if(c.shape)shape=c.shape;if(c.side)side=c.side;if(c.accent)accent=c.accent;if(c.dens)dens=c.dens;if(c.bgStyle)bgStyle=c.bgStyle;if(c.photoW)photoW=c.photoW;if(c.aspect)aspect=c.aspect;if(c.logoScale)logoScale=c.logoScale;if(c.logoAlign)logoAlign=c.logoAlign;processedPhoto=c.processedPhoto||"";logoData=c.logoData||"";
+    setSegOn("toneSeg","data-tone",tone);setSegOn("shapeSeg","data-shape",shape);setSegOn("sideSeg","data-side",side);setSegOn("accentSeg","data-accent",accent);setSegOn("bgSeg","data-bg",bgStyle);setSegOn("densSeg","data-dens",String(dens));setSegOn("aspSeg","data-asp",String(aspect));setSegOn("logoSizeSeg","data-ls",String(logoScale));setSegOn("logoAlignSeg","data-la",logoAlign);
+    document.getElementById("psize").value=photoW;document.getElementById("psizeVal").textContent=Math.round(photoW)+" px";
+    if(processedPhoto){var fr=document.getElementById("frame");fr.classList.remove("empty");fr.innerHTML='<img src="'+processedPhoto+'" style="width:100%;height:100%;object-fit:cover;display:block;">';document.getElementById("dlPhoto").disabled=false;}
+    render();
+  }
+  loadSig();
   render();
 </script>
 </body>
