@@ -108,8 +108,8 @@
         <label>Foto pool</label>
         <div class="seg" id="sideSeg"><button data-side="left" class="on">Vasak</button><button data-side="right">Parem</button></div>
         <label>Taust</label>
-        <div class="seg" id="bgSeg"><button data-bg="cream">Kreem</button><button data-bg="white">Valge</button><button data-bg="navytint">Navy</button><button data-bg="none" class="on">Läbipaistev</button></div>
-        <p class="hint">Tume-režiimis toimib kõige kindlamalt „Läbipaistev". Värviline taust võib tumedas e-postis kaduda.</p>
+        <div class="seg" id="bgSeg"><button data-bg="card" class="on">Kaart</button><button data-bg="cream">Kreem</button><button data-bg="white">Valge</button></div>
+        <p class="hint">„Kaart“ on tahke hele-kreem kaart pehmete nurkadega — töötab nii heledas kui tumedas postkastis, sest kannab oma tausta kaasas. Soovitatud valik e-kirjale.</p>
         <label>Aktsentriba</label>
         <div class="seg" id="accentSeg"><button data-accent="gold" class="on">Kuld</button><button data-accent="blue">Sinine</button><button data-accent="none">Ei ole</button></div>
         <label>Tihedus</label>
@@ -190,7 +190,7 @@
 
 <script>
   var rawImage=null, processedPhoto="", tone="orig", shape="14";
-  var side="left", accent="gold", dens=1, bgStyle="none", logoScale=1, logoAlign="left";
+  var side="left", accent="gold", dens=1, bgStyle="card", logoScale=1, logoAlign="left";
   var zoom=1, offX=0, offY=0, photoW=112, aspect=1, logoData="";
   var ec=document.createElement("canvas"); ec.width=360; ec.height=360;
 
@@ -201,7 +201,7 @@
   function bgColor(){
     if(bgStyle==="cream")   return {bg:"#f6f2e9",bd:"#eadfc9",rule:"#e7ddc8",role:"#6b6355"};
     if(bgStyle==="white")   return {bg:"#ffffff",bd:"#e6e9f0",rule:"#eceff4",role:"#5a5a5a"};
-    if(bgStyle==="navytint")return {bg:"#eef1f7",bd:"#dfe4ee",rule:"#dde3ee",role:"#5a5a5a"};
+    if(bgStyle==="card")    return {bg:"#fbf6ea",bd:"#ece4cf",rule:"#ece2cc",role:"#6b6355"};
     return {bg:"",bd:"",rule:"#e2e2e2",role:"#5a5a5a"};
   }
 
@@ -295,7 +295,9 @@
   function buildSignature(){
     var m=dens, b=bgColor(), pad=Math.round(24*m);
     if(bgStyle==="none") return inner(m);
-    return '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="background:'+b.bg+';border-radius:12px;padding:'+pad+'px '+Math.round(pad*1.2)+'px;">'+inner(m)+'</td></tr></table>';
+    var rad=12, extra="";
+    if(bgStyle==="card"){ rad=16; extra="border:1px solid "+b.bd+";box-shadow:0 10px 30px -12px rgba(20,35,92,.28);"; }
+    return '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td bgcolor="'+b.bg+'" style="background:'+b.bg+';border-radius:'+rad+'px;padding:'+pad+'px '+Math.round(pad*1.2)+'px;'+extra+'">'+inner(m)+'</td></tr></table>';
   }
 
   function render(){document.getElementById("sig").innerHTML=buildSignature();}
@@ -382,7 +384,7 @@
   function loadSig(){var raw;try{raw=localStorage.getItem("mell_signature_config");}catch(e){return;}if(!raw)return;var c;try{c=JSON.parse(raw);}catch(e){return;}
     ["name","title","phone","email","facebook","instagram","linkedin","tiktok","youtube","photoUrl","logoUrl","ctaLabel","ctaUrl"].forEach(function(id){if(c[id]!=null)document.getElementById(id).value=c[id];});
     ["tTitle","tSocial","tBrand","tCta"].forEach(function(id){if(typeof c[id]==="boolean")document.getElementById(id).checked=c[id];});
-    if(c.tone)tone=c.tone;if(c.shape)shape=c.shape;if(c.side)side=c.side;if(c.accent)accent=c.accent;if(c.dens)dens=c.dens;if(c.bgStyle)bgStyle=c.bgStyle;if(c.photoW)photoW=c.photoW;if(c.aspect)aspect=c.aspect;if(c.logoScale)logoScale=c.logoScale;if(c.logoAlign)logoAlign=c.logoAlign;processedPhoto=c.processedPhoto||"";logoData=c.logoData||"";
+    if(c.tone)tone=c.tone;if(c.shape)shape=c.shape;if(c.side)side=c.side;if(c.accent)accent=c.accent;if(c.dens)dens=c.dens;if(c.bgStyle)bgStyle=c.bgStyle;if(bgStyle!=="cream"&&bgStyle!=="white"&&bgStyle!=="card")bgStyle="card";if(c.photoW)photoW=c.photoW;if(c.aspect)aspect=c.aspect;if(c.logoScale)logoScale=c.logoScale;if(c.logoAlign)logoAlign=c.logoAlign;processedPhoto=c.processedPhoto||"";logoData=c.logoData||"";
     setSegOn("toneSeg","data-tone",tone);setSegOn("shapeSeg","data-shape",shape);setSegOn("sideSeg","data-side",side);setSegOn("accentSeg","data-accent",accent);setSegOn("bgSeg","data-bg",bgStyle);setSegOn("densSeg","data-dens",String(dens));setSegOn("aspSeg","data-asp",String(aspect));setSegOn("logoSizeSeg","data-ls",String(logoScale));setSegOn("logoAlignSeg","data-la",logoAlign);
     document.getElementById("psize").value=photoW;document.getElementById("psizeVal").textContent=Math.round(photoW)+" px";
     if(processedPhoto){var fr=document.getElementById("frame");fr.classList.remove("empty");fr.innerHTML='<img src="'+processedPhoto+'" style="width:100%;height:100%;object-fit:cover;display:block;">';document.getElementById("dlPhoto").disabled=false;}
