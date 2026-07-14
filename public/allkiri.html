@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uus Maa · Allkirja generaator</title>
+<style>
+  :root{--navy:#14235c;--blue:#1b4a9c;--gold:#e3b23c;--ink:#0f1626;--panel2:#1c2745;--line:#2a375c;--muted:#8fa0c4;--field:#0f1730;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#eef2fb;}
+  header{display:flex;align-items:center;gap:12px;padding:16px 26px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#182446,#111a30);}
+  .brandmark{width:16px;height:16px;background:var(--gold);border-radius:3px;}
+  header h1{font-size:15px;font-weight:700;letter-spacing:.5px;margin:0;}
+  header h1 span{color:var(--muted);font-weight:500;}
+  main{display:grid;grid-template-columns:minmax(340px,440px) 1fr;min-height:calc(100vh - 58px);}
+  .editor{padding:22px 24px;border-right:1px solid var(--line);overflow-y:auto;}
+  .group{margin-bottom:22px;}
+  .group h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);margin:0 0 12px;font-weight:600;}
+  label{display:block;font-size:12px;color:#c3ccdf;margin:0 0 5px;}
+  input[type=text]{width:100%;padding:10px 12px;margin-bottom:12px;background:var(--field);border:1px solid var(--line);border-radius:9px;color:#eef2fb;font-size:13px;outline:none;transition:border .15s;}
+  input[type=text]:focus{border-color:var(--blue);}
+  input::placeholder{color:#586688;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row2 > div{min-width:0;}
+  .peditor{display:flex;gap:16px;align-items:flex-start;margin-bottom:12px;}
+  .frame{width:150px;height:150px;flex:0 0 150px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0a1024;position:relative;cursor:grab;}
+  .frame.empty{display:flex;align-items:center;justify-content:center;color:#4a5a80;font-size:12px;text-align:center;padding:10px;cursor:pointer;}
+  .frame canvas{width:100%;height:100%;display:block;}
+  .frame:active{cursor:grabbing;}
+  .pctrl{flex:1;min-width:0;}
+  .pctrl small{display:block;color:var(--muted);font-size:11px;margin:0 0 8px;line-height:1.4;}
+  input[type=range]{width:100%;accent-color:var(--blue);margin:2px 0 10px;}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:10px;}
+  .seg button{flex:1;background:var(--field);color:#c3ccdf;border:none;padding:8px 6px;font-size:12px;cursor:pointer;transition:.15s;}
+  .seg button.on{background:var(--blue);color:#fff;font-weight:600;}
+  .mini{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:#dbe4f7;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;margin-bottom:8px;}
+  .mini:hover{background:#243258;}
+  .mini:disabled{opacity:.4;cursor:not-allowed;}
+  .logodrop{border:1.5px dashed var(--line);border-radius:11px;padding:14px;text-align:center;cursor:pointer;transition:.15s;background:var(--field);margin-bottom:10px;}
+  .logodrop:hover{border-color:var(--blue);background:#111c3a;}
+  .logodrop b{color:#dbe4f7;font-size:12.5px;}
+  .logodrop small{display:block;color:var(--muted);margin-top:4px;font-size:11px;}
+  .hint{font-size:11px;color:var(--muted);line-height:1.5;margin:2px 0 0;}
+  .divider{height:1px;background:var(--line);margin:18px 0;}
+  .toggle{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:#c3ccdf;padding:7px 0;}
+  .switch{position:relative;width:40px;height:22px;flex:0 0 40px;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:var(--field);border:1px solid var(--line);border-radius:22px;transition:.15s;cursor:pointer;}
+  .slider:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:2px;background:#8fa0c4;border-radius:50%;transition:.15s;}
+  .switch input:checked + .slider{background:var(--blue);border-color:var(--blue);}
+  .switch input:checked + .slider:before{transform:translateX(18px);background:#fff;}
+  .preview-pane{padding:34px 30px;background:#0b1120;display:flex;flex-direction:column;align-items:center;gap:22px;}
+  .canvas-label{align-self:flex-start;font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);}
+  .canvas{background:#f0f2f6;border-radius:16px;padding:30px 32px;box-shadow:0 20px 60px rgba(0,0,0,.45);width:100%;max-width:620px;}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;width:100%;max-width:620px;}
+  button.act{flex:1;min-width:150px;padding:12px 16px;border:none;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;transition:transform .08s,filter .15s;}
+  button.act:active{transform:translateY(1px);}
+  .primary{background:var(--gold);color:#241f00;}
+  .primary:hover{filter:brightness(1.05);}
+  .ghost{background:var(--panel2);color:#dbe4f7;border:1px solid var(--line);}
+  .ghost:hover{background:#243258;}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--gold);color:#241f00;padding:11px 20px;border-radius:10px;font-weight:600;font-size:13px;opacity:0;pointer-events:none;transition:.25s;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .foot{align-self:flex-start;font-size:11.5px;color:var(--muted);line-height:1.6;max-width:620px;}
+  .foot code{background:#182446;padding:1px 6px;border-radius:5px;color:#cfe;}
+  @media (max-width:900px){main{grid-template-columns:1fr;}.editor{border-right:none;border-bottom:1px solid var(--line);}}
+</style>
+</head>
+<body>
+  <header><span class="brandmark"></span><h1>Uus Maa · Allkirja generaator <span>— next gen</span></h1></header>
+
+  <main>
+    <section class="editor">
+
+      <div class="group">
+        <h2>Foto — kadreeri</h2>
+        <div class="peditor">
+          <div class="frame empty" id="frame">Klõpsa või lohista foto siia</div>
+          <div class="pctrl">
+            <small>Lohista pildil, et paika sättida. Suum:</small>
+            <input type="range" id="zoom" min="1" max="3" step="0.01" value="1" disabled>
+            <div class="seg" id="toneSeg">
+              <button data-tone="orig" class="on">Originaal</button>
+              <button data-tone="duo">Sinine</button>
+            </div>
+            <button class="mini" id="dlPhoto" disabled>Laadi alla foto (.jpg)</button>
+          </div>
+        </div>
+        <input type="file" id="photoFile" accept="image/*" style="display:none">
+        <label>Kuvasuhe</label>
+        <div class="seg" id="aspSeg"><button data-asp="1" class="on">Ruut</button><button data-asp="0.8">Portree</button></div>
+        <label>Foto suurus <span id="psizeVal" style="color:var(--muted);">112 px</span></label>
+        <input type="range" id="psize" min="72" max="200" step="1" value="112">
+        <label>Foto kuju</label>
+        <div class="seg" id="shapeSeg"><button data-shape="8">Ruut</button><button data-shape="14" class="on">Ümar</button><button data-shape="50">Ring</button></div>
+        <label>…või kleebi hostitud foto URL</label>
+        <input type="text" id="photoUrl" placeholder="https://…/meelis.jpg">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <h2>Paigutus</h2>
+        <label>Foto pool</label>
+        <div class="seg" id="sideSeg"><button data-side="left" class="on">Vasak</button><button data-side="right">Parem</button></div>
+        <label>Taust</label>
+        <div class="seg" id="bgSeg"><button data-bg="cream" class="on">Kreem</button><button data-bg="white">Valge</button><button data-bg="navytint">Navy</button><button data-bg="none">Ei ole</button></div>
+        <label>Aktsentriba</label>
+        <div class="seg" id="accentSeg"><button data-accent="gold" class="on">Kuld</button><button data-accent="blue">Sinine</button><button data-accent="none">Ei ole</button></div>
+        <label>Tihedus</label>
+        <div class="seg" id="densSeg"><button data-dens="0.92">Väike</button><button data-dens="1" class="on">Keskmine</button><button data-dens="1.12">Suur</button></div>
+        <div class="toggle"><span>Näita ametinimetust</span><label class="switch"><input type="checkbox" id="tTitle" checked><span class="slider"></span></label></div>
+        <div class="toggle"><span>Näita sotsiaalmeediat</span><label class="switch"><input type="checkbox" id="tSocial" checked><span class="slider"></span></label></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <h2>Logo (Uus Maa)</h2>
+        <div class="toggle"><span>Näita logo + „Uus Maa Arena"</span><label class="switch"><input type="checkbox" id="tBrand" checked><span class="slider"></span></label></div>
+        <div class="logodrop" id="logoDrop"><b>Lae UM logo</b><small>läbipaistev PNG · jääb „UUS MAA | Arena" teksti ette</small></div>
+        <input type="file" id="logoFile" accept="image/*" style="display:none">
+        <label>…või logo URL</label>
+        <input type="text" id="logoUrl" placeholder="https://…/uusmaa-mark.png">
+        <p class="hint">Tekst „UUS MAA | Arena" jääb alati alles. Logo pilt on valikuline — ilma selleta näidatakse ainult teksti.</p>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <h2>Andmed</h2>
+        <label>Nimi</label><input type="text" id="name" value="Meelis Koroljov">
+        <div class="row2">
+          <div><label>Ametinimetus</label><input type="text" id="title" value="Kinnisvara müügispetsialist"></div>
+          <div><label>Telefon</label><input type="text" id="phone" value="+372 53 441 365"></div>
+        </div>
+        <label>E-post</label><input type="text" id="email" value="meelis.koroljov@uusmaa.ee">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <h2>Sotsiaalmeedia (tühjad jäetakse välja)</h2>
+        <label>Facebook</label><input type="text" id="facebook" value="https://www.facebook.com/korolj/">
+        <label>Instagram</label><input type="text" id="instagram" value="">
+        <label>LinkedIn</label><input type="text" id="linkedin" value="">
+        <label>TikTok</label><input type="text" id="tiktok" value="https://www.tiktok.com/@meeliskoroljov">
+        <label>YouTube</label><input type="text" id="youtube" value="">
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="group">
+        <h2>Tegevusnupp (CTA)</h2>
+        <div class="toggle"><span>Näita nuppu</span><label class="switch"><input type="checkbox" id="tCta" checked><span class="slider"></span></label></div>
+        <label>Nupu tekst</label><input type="text" id="ctaLabel" value="Räägime su kinnisvarast">
+        <label>Nupu link</label><input type="text" id="ctaUrl" placeholder="https://… , mailto: või tel:">
+        <p class="hint">Tühi link = avab su e-posti.</p>
+      </div>
+    </section>
+
+    <section class="preview-pane">
+      <span class="canvas-label">Eelvaade</span>
+      <div class="canvas"><div id="sig"></div></div>
+      <div class="toolbar">
+        <button class="act primary" id="copyBtn">Kopeeri allkiri</button>
+        <button class="act ghost" id="copyHtmlBtn">Kopeeri HTML-kood</button>
+        <button class="act ghost" id="downloadBtn">Laadi alla .html</button>
+      </div>
+      <p class="foot">
+        <b>Gmail:</b> „Kopeeri allkiri" → Seaded (⚙) → Signature → kleebi.<br>
+        <b>Outlook:</b> „Laadi alla .html", lisa Signatures alla, või kleebi kopeeritud allkiri.<br>
+        E-kirjas kõige kindlam: lae foto alla, host see ja pane <code>foto URL</code> väljale.
+      </p>
+    </section>
+  </main>
+
+  <div class="toast" id="toast">Kopeeritud ✓</div>
+
+<script>
+  var rawImage=null, processedPhoto="", tone="orig", shape="14";
+  var side="left", accent="gold", dens=1, bgStyle="cream";
+  var zoom=1, offX=0, offY=0, photoW=112, aspect=1, logoData="";
+  var ec=document.createElement("canvas"); ec.width=360; ec.height=360;
+
+  function val(id){return document.getElementById(id).value.trim();}
+  function chk(id){return document.getElementById(id).checked;}
+  function esc(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+  function bgColor(){
+    if(bgStyle==="cream")   return {bg:"#f6f2e9",bd:"#eadfc9",rule:"#e7ddc8",role:"#6b6355"};
+    if(bgStyle==="white")   return {bg:"#ffffff",bd:"#e6e9f0",rule:"#eceff4",role:"#5a5a5a"};
+    if(bgStyle==="navytint")return {bg:"#eef1f7",bd:"#dfe4ee",rule:"#dde3ee",role:"#5a5a5a"};
+    return {bg:"",bd:"",rule:"#e2e2e2",role:"#5a5a5a"};
+  }
+
+  function duotone(ctx,W,H){
+    var d=ctx.getImageData(0,0,W,H), p=d.data, dk=[20,35,92], lt=[236,242,252];
+    for(var i=0;i<p.length;i+=4){var l=(0.299*p[i]+0.587*p[i+1]+0.114*p[i+2])/255;p[i]=Math.round(dk[0]+(lt[0]-dk[0])*l);p[i+1]=Math.round(dk[1]+(lt[1]-dk[1])*l);p[i+2]=Math.round(dk[2]+(lt[2]-dk[2])*l);}
+    ctx.putImageData(d,0,0);
+  }
+
+  function redrawEditor(){
+    var frame=document.getElementById("frame");
+    if(!rawImage){ processedPhoto=""; document.getElementById("dlPhoto").disabled=true; render(); return; }
+    var EW=ec.width, EH=ec.height, ctx=ec.getContext("2d");
+    ctx.clearRect(0,0,EW,EH);
+    var iw=rawImage.width, ih=rawImage.height, scale=Math.max(EW/iw,EH/ih)*zoom, dw=iw*scale, dh=ih*scale;
+    offX=Math.min(0,Math.max(EW-dw, offX)); offY=Math.min(0,Math.max(EH-dh, offY));
+    ctx.drawImage(rawImage,0,0,iw,ih, offX,offY,dw,dh);
+    if(tone==="duo") duotone(ctx,EW,EH);
+    processedPhoto=ec.toDataURL("image/jpeg",0.92);
+    if(!frame.querySelector("canvas")){ frame.classList.remove("empty"); frame.innerHTML=""; frame.appendChild(document.createElement("canvas")); }
+    var disp=frame.querySelector("canvas"); disp.width=EW; disp.height=EH; disp.getContext("2d").drawImage(ec,0,0);
+    document.getElementById("dlPhoto").disabled=false;
+    render();
+  }
+
+  function socialLinks(m){
+    if(!chk("tSocial")) return "";
+    var items=[["Facebook",val("facebook")],["Instagram",val("instagram")],["LinkedIn",val("linkedin")],["TikTok",val("tiktok")],["YouTube",val("youtube")]].filter(function(x){return x[1];});
+    if(!items.length) return "";
+    var sep='<span style="color:#c9bfa8;">&nbsp;·&nbsp;</span>';
+    return '<div style="font-size:'+(12*m)+'px;padding-top:8px;">'+items.map(function(x){return '<a href="'+esc(x[1])+'" style="color:#1b4a9c;text-decoration:none;">'+x[0]+'</a>';}).join(sep)+'</div>';
+  }
+
+  function ctaBtn(m){
+    if(!chk("tCta")) return "";
+    var url=val("ctaUrl")||("mailto:"+val("email")), lbl=val("ctaLabel")||"Võta ühendust";
+    return '<div style="padding-top:14px;"><a href="'+esc(url)+'" style="display:inline-block;background:#14235c;color:#ffffff;text-decoration:none;font-size:'+(12*m)+'px;font-weight:bold;letter-spacing:.2px;padding:'+Math.round(10*m)+'px '+Math.round(20*m)+'px;border-radius:8px;">'+esc(lbl)+'</a></div>';
+  }
+
+  var UM_MARK='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M18 20 H82 V43 C58 45 37 56 25 75 L18 75 Z" fill="#F4C11A"/><path d="M30 80 C44 59 61 54 82 56 V80 Z" fill="#13285E"/></svg>';
+  function brandLock(m){
+    if(!chk("tBrand")) return "";
+    var src=val("logoUrl")||logoData;
+    if(src) return '<div style="padding-top:15px;"><img src="'+esc(src)+'" height="'+Math.round(30*m)+'" style="height:'+Math.round(30*m)+'px;display:block;"></div>';
+    var mk=Math.round(30*m);
+    var mark='<img src="data:image/svg+xml,'+encodeURIComponent(UM_MARK)+'" width="'+mk+'" height="'+mk+'" style="vertical-align:middle;margin-right:10px;">';
+    var txt='<span style="display:inline-block;vertical-align:middle;line-height:1.02;">'+
+      '<span style="font-size:'+(14*m)+'px;font-weight:bold;letter-spacing:1.6px;color:#14235c;">UUS MAA</span><br>'+
+      '<span style="font-size:'+(10.5*m)+'px;font-weight:bold;letter-spacing:1px;color:#14235c;">Arena</span></span>';
+    return '<div style="padding-top:15px;">'+mark+txt+'</div>';
+  }
+
+  function photoCell(m){
+    var w=Math.round(photoW), h=Math.round(photoW/aspect), rad=(shape==="50")?(aspect===1?"50%":"26px"):(shape+"px");
+    var src=val("photoUrl")||processedPhoto;
+    if(src) return '<img src="'+esc(src)+'" alt="'+esc(val("name"))+'" width="'+w+'" height="'+h+'" style="display:block;width:'+w+'px;height:'+h+'px;border-radius:'+rad+';object-fit:cover;">';
+    var ini=(val("name")||"MK").split(/\s+/).map(function(x){return x[0];}).join("").slice(0,2).toUpperCase();
+    return '<div style="width:'+w+'px;height:'+h+'px;border-radius:'+rad+';background:linear-gradient(135deg,#22336e,#14235c);color:#fff;font-size:'+Math.round(w*0.32)+'px;font-weight:bold;text-align:center;line-height:'+h+'px;">'+ini+'</div>';
+  }
+
+  function textCell(m){
+    var b=bgColor();
+    var title=(chk("tTitle")&&val("title"))?'<div style="font-size:'+(12.5*m)+'px;color:'+b.role+';padding-top:3px;">'+esc(val("title"))+'</div>':'';
+    return '<div style="font-size:'+(19*m)+'px;font-weight:bold;color:#14235c;letter-spacing:.2px;line-height:1.2;">'+esc(val("name"))+'</div>'+title+
+      '<div style="border-top:1px solid '+b.rule+';margin:10px 0 8px;width:'+Math.round(255*m)+'px;"></div>'+
+      '<div style="font-size:'+(13*m)+'px;color:#2a2a2a;line-height:1.65;">'+
+        '<a href="tel:'+esc(val("phone").replace(/\s/g,""))+'" style="color:#2a2a2a;text-decoration:none;">'+esc(val("phone"))+'</a><br>'+
+        '<a href="mailto:'+esc(val("email"))+'" style="color:#1b4a9c;text-decoration:none;">'+esc(val("email"))+'</a>'+
+      '</div>'+socialLinks(m)+ctaBtn(m)+brandLock(m);
+  }
+
+  function barCell(){
+    if(accent==="none") return "";
+    var col=(accent==="blue")?"#1b4a9c":"#e3b23c";
+    return '<td style="width:2px;background:'+col+';padding:0;">&nbsp;</td>';
+  }
+
+  function inner(m){
+    var pad=Math.round(20*m);
+    var photo='<td style="vertical-align:middle;padding-right:'+pad+'px;">'+photoCell(m)+'</td>';
+    var text='<td style="vertical-align:middle;padding-left:'+(accent==="none"?0:pad)+'px;">'+textCell(m)+'</td>';
+    if(side==="right"){
+      photo='<td style="vertical-align:middle;padding-left:'+pad+'px;">'+photoCell(m)+'</td>';
+      text='<td style="vertical-align:middle;padding-right:'+(accent==="none"?0:pad)+'px;">'+textCell(m)+'</td>';
+      return '<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;border-collapse:collapse;"><tr>'+text+barCell()+photo+'</tr></table>';
+    }
+    return '<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;border-collapse:collapse;"><tr>'+photo+barCell()+text+'</tr></table>';
+  }
+
+  function buildSignature(){
+    var m=dens, b=bgColor(), pad=Math.round(24*m);
+    if(bgStyle==="none") return inner(m);
+    return '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="background:'+b.bg+';border:1px solid '+b.bd+';border-radius:12px;padding:'+pad+'px '+Math.round(pad*1.2)+'px;">'+inner(m)+'</td></tr></table>';
+  }
+
+  function render(){document.getElementById("sig").innerHTML=buildSignature();}
+
+  ["name","title","phone","email","facebook","instagram","linkedin","tiktok","youtube","photoUrl","logoUrl","ctaLabel","ctaUrl"].forEach(function(id){document.getElementById(id).addEventListener("input",render);});
+  ["tTitle","tSocial","tBrand","tCta"].forEach(function(id){document.getElementById(id).addEventListener("change",render);});
+
+  function seg(id,cb){document.querySelectorAll("#"+id+" button").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#"+id+" button").forEach(function(x){x.classList.remove("on");});b.classList.add("on");cb(b);});});}
+  seg("toneSeg",function(b){tone=b.getAttribute("data-tone");redrawEditor();});
+  seg("shapeSeg",function(b){shape=b.getAttribute("data-shape");render();});
+  seg("sideSeg",function(b){side=b.getAttribute("data-side");render();});
+  seg("accentSeg",function(b){accent=b.getAttribute("data-accent");render();});
+  seg("bgSeg",function(b){bgStyle=b.getAttribute("data-bg");render();});
+  seg("densSeg",function(b){dens=parseFloat(b.getAttribute("data-dens"));render();});
+  seg("aspSeg",function(b){aspect=parseFloat(b.getAttribute("data-asp"));applyAspect();});
+  document.getElementById("psize").addEventListener("input",function(e){photoW=parseFloat(e.target.value);document.getElementById("psizeVal").textContent=Math.round(photoW)+" px";render();});
+  document.getElementById("zoom").addEventListener("input",function(e){zoom=parseFloat(e.target.value);redrawEditor();});
+
+  function applyAspect(){
+    var frame=document.getElementById("frame");
+    if(aspect===1){ec.width=360;ec.height=360;frame.style.width="150px";frame.style.height="150px";}
+    else{ec.width=360;ec.height=Math.round(360/aspect);frame.style.width=Math.round(150*aspect)+"px";frame.style.height="150px";}
+    if(rawImage){var iw=rawImage.width,ih=rawImage.height,sc=Math.max(ec.width/iw,ec.height/ih)*zoom,dw=iw*sc,dh=ih*sc;offX=(ec.width-dw)/2;offY=0;}
+    redrawEditor();
+  }
+
+  // photo load + drag
+  var frame=document.getElementById("frame"), fileInput=document.getElementById("photoFile");
+  frame.addEventListener("click",function(){ if(!rawImage) fileInput.click(); });
+  fileInput.addEventListener("change",function(e){handlePhoto(e.target.files[0]);});
+  frame.addEventListener("dragover",function(e){e.preventDefault();});
+  frame.addEventListener("drop",function(e){e.preventDefault();if(e.dataTransfer.files[0])handlePhoto(e.dataTransfer.files[0]);});
+  function handlePhoto(f){
+    if(!f||!/^image\//.test(f.type)) return;
+    var r=new FileReader();
+    r.onload=function(ev){var img=new Image();img.onload=function(){
+      rawImage=img; zoom=1; document.getElementById("zoom").disabled=false; document.getElementById("zoom").value=1;
+      var EW=ec.width,EH=ec.height,iw=img.width,ih=img.height,scale=Math.max(EW/iw,EH/ih),dw=iw*scale,dh=ih*scale;
+      offX=(EW-dw)/2; offY=0; redrawEditor();
+    };img.src=ev.target.result;};
+    r.readAsDataURL(f);
+  }
+  var dragging=false,lastX=0,lastY=0;
+  frame.addEventListener("mousedown",function(e){if(!rawImage)return;dragging=true;lastX=e.clientX;lastY=e.clientY;e.preventDefault();});
+  window.addEventListener("mousemove",function(e){if(!dragging)return;var r=frame.getBoundingClientRect(),sx=ec.width/r.width,sy=ec.height/r.height;offX+=(e.clientX-lastX)*sx;offY+=(e.clientY-lastY)*sy;lastX=e.clientX;lastY=e.clientY;redrawEditor();});
+  window.addEventListener("mouseup",function(){dragging=false;});
+  frame.addEventListener("touchstart",function(e){if(!rawImage)return;dragging=true;lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;},{passive:true});
+  frame.addEventListener("touchmove",function(e){if(!dragging)return;var r=frame.getBoundingClientRect(),sx=ec.width/r.width,sy=ec.height/r.height;offX+=(e.touches[0].clientX-lastX)*sx;offY+=(e.touches[0].clientY-lastY)*sy;lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;redrawEditor();},{passive:true});
+  frame.addEventListener("touchend",function(){dragging=false;});
+
+  // logo load
+  var logoDrop=document.getElementById("logoDrop"), logoInput=document.getElementById("logoFile");
+  logoDrop.addEventListener("click",function(){logoInput.click();});
+  logoDrop.addEventListener("dragover",function(e){e.preventDefault();});
+  logoDrop.addEventListener("drop",function(e){e.preventDefault();if(e.dataTransfer.files[0])handleLogo(e.dataTransfer.files[0]);});
+  logoInput.addEventListener("change",function(e){handleLogo(e.target.files[0]);});
+  function handleLogo(f){ if(!f||!/^image\//.test(f.type))return; var r=new FileReader(); r.onload=function(ev){logoData=ev.target.result; logoDrop.querySelector("b").textContent="Logo laetud ✓"; render();}; r.readAsDataURL(f); }
+
+  function toast(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},1600);}
+  document.getElementById("dlPhoto").addEventListener("click",function(){if(!processedPhoto)return;var a=document.createElement("a");a.href=processedPhoto;a.download="meelis-foto.jpg";document.body.appendChild(a);a.click();document.body.removeChild(a);toast("Foto salvestatud ✓");});
+  document.getElementById("copyBtn").addEventListener("click",function(){var n=document.getElementById("sig"),rg=document.createRange();rg.selectNode(n);var s=window.getSelection();s.removeAllRanges();s.addRange(rg);try{document.execCommand("copy");toast("Allkiri kopeeritud ✓");}catch(e){toast("Kopeerimine ebaõnnestus");}s.removeAllRanges();});
+  document.getElementById("copyHtmlBtn").addEventListener("click",function(){var h=buildSignature();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(h).then(function(){toast("HTML-kood kopeeritud ✓");});}else{var ta=document.createElement("textarea");ta.value=h;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);toast("HTML-kood kopeeritud ✓");}});
+  document.getElementById("downloadBtn").addEventListener("click",function(){var doc='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>'+buildSignature()+'</body></html>';var blob=new Blob([doc],{type:"text/html"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="meelis-allkiri.html";document.body.appendChild(a);a.click();document.body.removeChild(a);toast("Fail salvestatud ✓");});
+
+  render();
+</script>
+</body>
+</html>
