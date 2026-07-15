@@ -1584,5 +1584,36 @@ function stateFull(v){
     <button class="btn go" id="kabiSaveBtn" onclick="saveKabiCall()" style="width:100%;justify-content:center">Salvesta kõne</button>
   </div>
 </div>
+
+<script>
+/* === Turuhinnad iseseisvaks: app.html taidab ise market_prices, ei soltu crm.html-ist === */
+(function(){
+  if(window.__mktSelf) return; window.__mktSelf=true;
+  if(typeof openObj!=='function') return;
+  var _openObj = openObj;
+  openObj = function(id){
+    var r = _openObj.apply(this, arguments);
+    Promise.resolve().then(function(){ return mktSelf(id); }).catch(function(){});
+    return r;
+  };
+  try{ window.openObj = openObj; }catch(e){}
+  var done = {};
+  async function mktSelf(id){
+    try{
+      var arr = (typeof LEADS!=='undefined' && LEADS) || [];
+      var l = arr.find(function(x){ return String(x.id)===String(id); });
+      if(!l) return;
+      if(!l.asum && !l.district && !l.county) return;
+      var key = [l.county,l.district,l.asum,l.property_type,l.use_purpose].join('|');
+      if(done[key]) return; done[key]=1;
+      var s = await sb.auth.getSession();
+      var tok = s && s.data && s.data.session && s.data.session.access_token;
+      if(!tok) return;
+      var res = await fetch('/api/market-price', { method:'POST', headers:{'content-type':'application/json','Authorization':'Bearer '+tok}, body: JSON.stringify({ region:l.county, district:l.district, asum:l.asum, property_type:l.property_type, use_purpose:l.use_purpose }) });
+      if(res && res.ok){ try{ await loadMktMap(); }catch(e){} try{ renderMkt(); }catch(e){} }
+    }catch(e){}
+  }
+})();
+</script>
 </body>
 </html>
