@@ -417,7 +417,7 @@
           <div class="panel"><div class="lbl" style="margin-bottom:6px">Kus lekib<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Kus toru kaotab kõige rohkem — arvutatud kõne-tulemustest (stage_events). Kasvab, mida rohkem kõne-ringi kasutad.</span></i></div>
             <div id="leakOut" style="font-size:12px;color:var(--ink2);line-height:1.5">Analüüsin…</div>
           </div>
-          <div class="panel"><div class="lbl" style="margin-bottom:6px">Sinu nädal<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Su viimase 7 päeva tegevus kõne-ringist — Mell õpib sind. Koguneb kasutamisega.</span></i></div>
+          <div class="panel"><div class="lbl" style="margin-bottom:6px">Sinu nädal<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Su viimase 7 päeva tegevus kõne-ringist — õpib sind ajas. Koguneb kasutamisega.</span></i></div>
             <div id="weekBox" style="font-size:12px;color:var(--ink2);line-height:1.5">—</div>
           </div>
         </div>
@@ -469,7 +469,7 @@
         <button class="askx" onclick="closeHealth()" aria-label="Sulge">×</button>
         <div class="hello">Andmeallikate seis</div>
         <div class="h1 serif" style="margin-top:5px;font-size:22px">Mis <span class="g">töötab</span>, mis vajab pilku.</div>
-        <div class="coach">Roheline = korras. Kollane = allikas vastas veaga (Mell näitab teate, mitte valet numbrit). Hall = seire tulekul.</div>
+        <div class="coach">Roheline = korras. Kollane = allikas vastas veaga (näitab teate, mitte valet numbrit). Hall = seire tulekul.</div>
         <div id="healthList" style="margin-top:6px"></div>
         <div style="font-size:11px;color:var(--ink3);margin-top:14px">Süsteem hoiatab sind ise — sa ei pea allikaid käsitsi kontrollima.</div>
        </div>
@@ -535,10 +535,10 @@
       <div class="view" id="v-settings">
         <div class="hello">Pindala — keskne aju</div>
         <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">seaded</span>.</div>
-        <div class="coach">Mell on aus (AntiHallu), räägib sinu häälega ja töötab su päris andmetega. Siin seadistad, kes sa oled ja mida Mell su nimel kirjutab.</div>
+        <div class="coach">Mell on aus (AntiHallu), räägib sinu häälega ja töötab su päris andmetega. Siin seadistad, kes sa oled ja mida su nimel kirjutab.</div>
         <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn gh" id="navTeam" style="display:none" onclick="go('team')">⧉ Meeskond</button><button class="btn gh" onclick="go('updates')">✨ Mis on uut</button></div>
         <div class="section"><h3>Välimus</h3>
-          <div class="flabel" style="margin-bottom:7px">Värviteema — muudab sinu töövoogu; kliendile minevad dokumendid jäävad alati Melli rohelisse</div>
+          <div class="flabel" style="margin-bottom:7px">Värviteema — muudab sinu töövoogu; kliendile minevad dokumendid jäävad alati rohelisse</div>
           <div class="row" style="gap:8px;flex-wrap:wrap">
             <button class="thsw on" data-th="" onclick="setTheme('')"><span class="dot" style="background:#48c281"></span>Roheline</button>
             <button class="thsw" data-th="sinine" onclick="setTheme('sinine')"><span class="dot" style="background:#5f9fd8"></span>Öösinine</button>
@@ -561,7 +561,7 @@
             <div><div class="flabel">Eksport — objektid CSV-failina (avaneb Excelis)</div><button class="btn gh" onclick="exportLeadsCSV()">⬇ Ekspordi objektid (CSV)</button></div>
             <div><div class="flabel">Import — portaali link, AI täidab väljad</div><button class="btn gh" onclick="location.href='/uus.html'">＋ Impordi kuulutus</button></div>
           </div>
-          <div class="flabel" style="margin:13px 0 7px">Teavitused — allika tõrke korral hoiatab Mell ise ülaribal; seisu näed alati siit</div>
+          <div class="flabel" style="margin:13px 0 7px">Teavitused — allika tõrke korral hoiatab süsteem ise ülaribal; seisu näed alati siit</div>
           <div class="row" style="gap:8px"><button class="btn gh" onclick="openHealth()">● Andmeallikate seis</button><span class="msg" id="dataMsg"></span></div>
         </div>
         <div class="fgrid">
@@ -577,7 +577,7 @@
               <div style="margin-top:10px"><div class="flabel">Vaikimisi vahendustasu · eluruum (€, ilma km)</div><input class="inp" id="set_feeEluruum" placeholder="5000"></div>
               <div style="margin-top:10px"><div class="flabel">AI hääl · Neurokõne (eesti)</div><select class="sel" id="set_voice"><option>Mari</option><option>Liivika</option><option>Külli</option><option>Vesta</option><option>Tambet</option><option>Kalev</option><option>Meelis</option><option>Albert</option><option>Indrek</option><option>Peeter</option></select></div>
             </div>
-            <div class="section"><h3>Mällu<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Püsivad märkmed, mida Mell sinu jaoks hoiab (selles brauseris). Nt lepingu-eelistused, koostööpartnerid.</span></i></h3>
+            <div class="section"><h3>Mällu<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Püsivad märkmed, mida süsteem sinu jaoks hoiab (selles brauseris). Nt lepingu-eelistused, koostööpartnerid.</span></i></h3>
               <textarea class="ta" id="set_notes" style="min-height:90px" placeholder="Nt: eelistan ainuõiguslikke lepinguid; äripindadel koostöö Werbungiga 1,5%; ..."></textarea>
             </div>
             <div class="row"><button class="btn go" onclick="saveSettings()">Salvesta seaded</button><button class="btn gh" onclick="showOnboardingFromSettings()">Näita tutvustust uuesti</button><span class="msg" id="setMsg"></span></div>
@@ -612,14 +612,14 @@
       <div class="view" id="v-mail">
         <div class="hello">Postkast</div>
         <div class="h1 serif" style="margin-top:5px">Su <span class="g">Outlook</span> siin.</div>
-        <div class="coach">Näed viimased kirjad siin. Mell tunneb saatja ära, kui see on su ostjate nimekirjas. Kirjad avanevad Outlookis.</div>
+        <div class="coach">Näed viimased kirjad siin. Tunneb saatja ära, kui see on su ostjate nimekirjas. Kirjad avanevad Outlookis.</div>
         <div class="section"><div id="mailBox"><div class="skel skc"></div><div class="skel skc"></div></div></div>
       </div>
 
       <div class="view" id="v-updates">
         <div class="hello">Uuendused</div>
         <div class="h1 serif" style="margin-top:5px">Mis on <span class="g">uut</span>.</div>
-        <div class="coach">Mell areneb pidevalt. Siin on olulisemad muudatused — uusimad üleval.</div>
+        <div class="coach">Pindala areneb pidevalt. Siin on olulisemad muudatused — uusimad üleval.</div>
         <div class="section"><div id="updatesBox"></div></div>
       </div>
 
@@ -646,7 +646,7 @@
       <div class="view" id="v-buyers">
         <div class="hello">Ostjad</div>
         <div class="h1 serif" style="margin-top:5px">Ostja<span class="g">soovid</span> ja sobivus.</div>
-        <div class="coach">Salvesta ostja soovid (eelarve, piirkond, tüüp). Mell näitab, millised sinu objektid neile sobivad — ja objektil, kellele see sobib. Nii ei jää ükski sobitus märkamata.</div>
+        <div class="coach">Salvesta ostja soovid (eelarve, piirkond, tüüp). Näitab, millised sinu objektid neile sobivad — ja objektil, kellele see sobib. Nii ei jää ükski sobitus märkamata.</div>
         <div class="section"><h3>Lisa ostja<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Täida ainult teadaolev. Tühjad väljad ei piira sobitust. Piirkonnad komaga: nt Kesklinn, Kristiine. Eelarve ülempiir lubab 5% läbirääkimisruumi.</span></i></h3>
           <div class="grid3">
             <div><div class="flabel">Nimi</div><input class="inp" id="by_name" placeholder="Ostja nimi"></div>
@@ -922,7 +922,7 @@ function stateFull(v){
   return STATE_FULL[STATE_FULL.length-1][1];
 }
   function feeNum(){var p=O&&O.price!=null?Number(O.price):0;if(!p)return 0;if(O.property_type==="Äripind")return Math.round(p*0.015*1.24);return Math.round((Number(SETTINGS.feeEluruum)||5000)*1.24);}
-  function renderAri(){var el=document.getElementById('ariBox');if(!el)return;if(!O||!/äri/i.test(O.property_type||'')){el.innerHTML='';return;}var p=Number(O.price)||0,a=Number(O.area)||0,rent=Number(O.rent_current)||0;var m2=(p&&a)?Math.round(p/a):0;var yld=(rent&&p)?(rent*12/p*100):0;var vat=(O.vat_applies===true)?'Jah (+24%)':(O.vat_applies===false?'Ei':'—');var rows=[['Hind €/m²',m2?eur(m2)+' €/m²':'—'],['Bruto üüritootlus',yld?(yld.toFixed(1)+' % / a'):'—'],['Praegune üür',rent?eur(rent)+' €/kuu':'—'],['Käibemaks lisandub',vat]];if(O.registry_parts)rows.push(['Registriosad',esc(O.registry_parts)]);if(O.use_purpose)rows.push(['Sobib kasutuseks',esc(O.use_purpose)]);el.innerHTML='<div class="section"><h3>Äripind — analüüs</h3><div class="facts">'+rows.map(function(r){return '<div class="fact"><div class="v">'+r[1]+'</div><div class="k">'+r[0]+'</div></div>';}).join('')+'</div>'+(yld?('<div class="coach" style="margin-top:10px">Bruto tootlus '+yld.toFixed(1)+'% aastas. Neto arvuta kuludega (haldus, tühjus, maamaks). Võrdle piirkonna ootusega.</div>'):(rent?'':'<div class="coach" style="margin-top:10px">Lisa "Praegune üür", et Mell arvutaks üüritootluse.</div>'))+'</div>';}
+  function renderAri(){var el=document.getElementById('ariBox');if(!el)return;if(!O||!/äri/i.test(O.property_type||'')){el.innerHTML='';return;}var p=Number(O.price)||0,a=Number(O.area)||0,rent=Number(O.rent_current)||0;var m2=(p&&a)?Math.round(p/a):0;var yld=(rent&&p)?(rent*12/p*100):0;var vat=(O.vat_applies===true)?'Jah (+24%)':(O.vat_applies===false?'Ei':'—');var rows=[['Hind €/m²',m2?eur(m2)+' €/m²':'—'],['Bruto üüritootlus',yld?(yld.toFixed(1)+' % / a'):'—'],['Praegune üür',rent?eur(rent)+' €/kuu':'—'],['Käibemaks lisandub',vat]];if(O.registry_parts)rows.push(['Registriosad',esc(O.registry_parts)]);if(O.use_purpose)rows.push(['Sobib kasutuseks',esc(O.use_purpose)]);el.innerHTML='<div class="section"><h3>Äripind — analüüs</h3><div class="facts">'+rows.map(function(r){return '<div class="fact"><div class="v">'+r[1]+'</div><div class="k">'+r[0]+'</div></div>';}).join('')+'</div>'+(yld?('<div class="coach" style="margin-top:10px">Bruto tootlus '+yld.toFixed(1)+'% aastas. Neto arvuta kuludega (haldus, tühjus, maamaks). Võrdle piirkonna ootusega.</div>'):(rent?'':'<div class="coach" style="margin-top:10px">Lisa "Praegune üür", et arvutada üüritootlust.</div>'))+'</div>';}
   function renderKulud(){if(!O)return;var kb=document.getElementById("kBuyer"),ks=document.getElementById("kSeller"),brk=document.getElementById("kBreak");if(!kb)return;var H=Number(O.price)||0;if(!H){kb.textContent="—";ks.textContent="—";brk.textContent="Lisa hind, et näha kulusid.";return;}var notNet=2*notaryFull(H),km=notNet*MAARAD.km,riigil=stateFull(H),buyer=notNet+km+riigil;var fee=feeNum(),seller=H-fee;kb.textContent=eur(Math.round(buyer))+" €";ks.textContent=eur(Math.round(seller))+" €";brk.innerHTML="Ostja: notar "+eur(Math.round(notNet))+" € + km "+eur(Math.round(km))+" € + riigilõiv "+eur(Math.round(riigil))+" €. Müüja: vahendustasu −"+eur(fee)+" €. Ligikaudne · "+MAARAD.allikas+" "+MAARAD.paev+".";}
 
   function eur(n){return Math.round(n).toLocaleString('et-EE');}
@@ -1388,7 +1388,7 @@ function stateFull(v){
   function buyerMatches(b){return LEADS.filter(function(l){return buyerMatch(b,l).ok;});}
   function buyerCount(l){if(!BUYERS||!BUYERS.length)return 0;return BUYERS.filter(function(b){return buyerMatch(b,l).ok;}).length;}
   function buyerCrit(b){var c=[];if(b.budget_min||b.budget_max)c.push('eelarve '+(b.budget_min?eur(b.budget_min):'')+(b.budget_min&&b.budget_max?'–':'')+(b.budget_max?eur(b.budget_max)+' €':(b.budget_min?'+ €':'')));if(b.property_type)c.push(b.property_type);if(b.districts)c.push(b.districts);if(b.area_min)c.push('≥'+b.area_min+' m²');if(b.rooms_min)c.push('≥'+b.rooms_min+' tuba');return c.join(' · ')||'kriteeriumeid pole — sobib kõigile';}
-  function renderBuyers(){var el=document.getElementById('buyersBox');if(!el)return;if(!BUYERS.length){el.innerHTML='<div class="empty">Ostjaid pole veel. Lisa esimene ülal.</div>';return;}el.innerHTML=BUYERS.map(function(b){var ms=buyerMatches(b);var head='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div style="font-weight:600;font-size:14px">'+esc(b.name||'(nimeta ostja)')+'</div><div style="font-size:11px;color:var(--ink2)">'+esc([b.phone,b.email].filter(Boolean).join(' · '))+'</div></div><div style="text-align:right"><div style="font-weight:700;color:'+(ms.length?'var(--gr)':'var(--ink3)')+'">'+ms.length+'</div><div style="font-size:10px;color:var(--ink3)">sobib</div></div></div>';var crit='<div style="font-size:11.5px;color:var(--ink2);margin-top:6px">'+esc(buyerCrit(b))+'</div>';var note=b.note?'<div style="font-size:11px;color:var(--ink3);margin-top:4px;font-style:italic">'+esc(b.note)+'</div>':'';var list=ms.length?('<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">'+ms.slice(0,8).map(function(l){var mm=buyerMatch(b,l);return '<div onclick="openObj(\''+l.id+'\')" style="cursor:pointer;display:flex;justify-content:space-between;gap:8px;background:var(--cd);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px"><span>'+esc((l.property_type||'Objekt')+(l.asum?(' — '+l.asum):''))+'</span><span style="color:var(--ink3);white-space:nowrap">'+(l.price!=null?eur(l.price)+' € ':'')+'<span style="color:var(--gr)">✓ '+esc(mm.reasons.join(', '))+'</span></span></div>';}).join('')+'</div>'):'<div style="font-size:11px;color:var(--ink3);margin-top:6px">Praegu ei sobi ükski aktiivne objekt. Mell märkab kohe, kui lisad sobiva.</div>';return '<div style="background:var(--sf);border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:10px">'+head+crit+note+list+'<div style="margin-top:8px"><button class="btn gh" style="font-size:11px;padding:4px 10px" onclick="archiveBuyer(\''+b.id+'\')">Arhiveeri ostja</button></div></div>';}).join('');}
+  function renderBuyers(){var el=document.getElementById('buyersBox');if(!el)return;if(!BUYERS.length){el.innerHTML='<div class="empty">Ostjaid pole veel. Lisa esimene ülal.</div>';return;}el.innerHTML=BUYERS.map(function(b){var ms=buyerMatches(b);var head='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div style="font-weight:600;font-size:14px">'+esc(b.name||'(nimeta ostja)')+'</div><div style="font-size:11px;color:var(--ink2)">'+esc([b.phone,b.email].filter(Boolean).join(' · '))+'</div></div><div style="text-align:right"><div style="font-weight:700;color:'+(ms.length?'var(--gr)':'var(--ink3)')+'">'+ms.length+'</div><div style="font-size:10px;color:var(--ink3)">sobib</div></div></div>';var crit='<div style="font-size:11.5px;color:var(--ink2);margin-top:6px">'+esc(buyerCrit(b))+'</div>';var note=b.note?'<div style="font-size:11px;color:var(--ink3);margin-top:4px;font-style:italic">'+esc(b.note)+'</div>':'';var list=ms.length?('<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">'+ms.slice(0,8).map(function(l){var mm=buyerMatch(b,l);return '<div onclick="openObj(\''+l.id+'\')" style="cursor:pointer;display:flex;justify-content:space-between;gap:8px;background:var(--cd);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px"><span>'+esc((l.property_type||'Objekt')+(l.asum?(' — '+l.asum):''))+'</span><span style="color:var(--ink3);white-space:nowrap">'+(l.price!=null?eur(l.price)+' € ':'')+'<span style="color:var(--gr)">✓ '+esc(mm.reasons.join(', '))+'</span></span></div>';}).join('')+'</div>'):'<div style="font-size:11px;color:var(--ink3);margin-top:6px">Praegu ei sobi ükski aktiivne objekt. Märkab kohe, kui lisad sobiva.</div>';return '<div style="background:var(--sf);border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:10px">'+head+crit+note+list+'<div style="margin-top:8px"><button class="btn gh" style="font-size:11px;padding:4px 10px" onclick="archiveBuyer(\''+b.id+'\')">Arhiveeri ostja</button></div></div>';}).join('');}
   async function saveBuyer(){var g=function(id){var v=(document.getElementById(id).value||'').trim();return v===''?null:v;};var n=function(id){var v=(document.getElementById(id).value||'').trim().replace(/\s/g,'').replace(',','.');if(v==='')return null;var f=parseFloat(v);return isNaN(f)?null:f;};var name=g('by_name');var m=document.getElementById('byMsg');if(!name){m.style.color='#e0715f';m.textContent='Lisa vähemalt nimi.';return;}m.style.color='#a3b4aa';m.textContent='Salvestan…';var rec={created_by:(ME&&ME.id)||null,org_id:window._MYORG||null,name:name,phone:g('by_phone'),email:g('by_email'),budget_min:n('by_bmin'),budget_max:n('by_bmax'),area_min:n('by_area'),rooms_min:(n('by_rooms')!=null?Math.round(n('by_rooms')):null),districts:g('by_distr'),property_type:document.getElementById('by_type').value||null,note:g('by_note')};var res=await sb.from('buyers').insert(rec).select().single();if(res.error){m.style.color='#e0715f';m.textContent='Viga: '+res.error.message;return;}BUYERS.unshift(res.data);['by_name','by_phone','by_email','by_bmin','by_bmax','by_area','by_rooms','by_distr','by_note'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('by_type').value='';m.style.color='#48c281';m.textContent='✓ Ostja lisatud';renderBuyers();try{renderFookus();renderKanban();}catch(e){}}
   async function archiveBuyer(id){var b=BUYERS.find(function(x){return x.id===id;});if(!b)return;if(!confirm('Arhiveeri ostja "'+(b.name||'')+'"?'))return;await sb.from('buyers').update({archived_at:new Date().toISOString()}).eq('id',id);BUYERS=BUYERS.filter(function(x){return x.id!==id;});renderBuyers();if(O)renderObjBuyers();}
   function objLabel(){return (O&&(O.property_type||'Objekt'))+((O&&O.property_address)?(' — '+O.property_address):'');}
