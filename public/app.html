@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Mell</title>
+<title>Pindala</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#131b16">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mell">
+<meta name="apple-mobile-web-app-title" content="Pindala">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -533,8 +533,8 @@
       </div>
 
       <div class="view" id="v-settings">
-        <div class="hello">Mell — keskne aju</div>
-        <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">Mell</span>, sinu seaded.</div>
+        <div class="hello">Pindala — keskne aju</div>
+        <div class="h1 serif" style="margin-top:5px">Sinu <span class="g">seaded</span>.</div>
         <div class="coach">Mell on aus (AntiHallu), räägib sinu häälega ja töötab su päris andmetega. Siin seadistad, kes sa oled ja mida Mell su nimel kirjutab.</div>
         <div class="row" style="gap:8px;margin:12px 0 2px"><button class="btn gh" id="navTeam" style="display:none" onclick="go('team')">⧉ Meeskond</button><button class="btn gh" onclick="go('updates')">✨ Mis on uut</button></div>
         <div class="section"><h3>Välimus</h3>
@@ -575,15 +575,15 @@
               </div>
               <div style="margin-top:12px"><a href="/allkiri.html" target="_blank" rel="noopener" style="display:inline-block;background:#14235c;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;">Ava HTML-allkirja generaator →</a></div>
               <div style="margin-top:10px"><div class="flabel">Vaikimisi vahendustasu · eluruum (€, ilma km)</div><input class="inp" id="set_feeEluruum" placeholder="5000"></div>
-              <div style="margin-top:10px"><div class="flabel">Mell'i hääl · Neurokõne (eesti)</div><select class="sel" id="set_voice"><option>Mari</option><option>Liivika</option><option>Külli</option><option>Vesta</option><option>Tambet</option><option>Kalev</option><option>Meelis</option><option>Albert</option><option>Indrek</option><option>Peeter</option></select></div>
+              <div style="margin-top:10px"><div class="flabel">AI hääl · Neurokõne (eesti)</div><select class="sel" id="set_voice"><option>Mari</option><option>Liivika</option><option>Külli</option><option>Vesta</option><option>Tambet</option><option>Kalev</option><option>Meelis</option><option>Albert</option><option>Indrek</option><option>Peeter</option></select></div>
             </div>
-            <div class="section"><h3>Mell mällu<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Püsivad märkmed, mida Mell sinu jaoks hoiab (selles brauseris). Nt lepingu-eelistused, koostööpartnerid.</span></i></h3>
+            <div class="section"><h3>Mällu<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Püsivad märkmed, mida Mell sinu jaoks hoiab (selles brauseris). Nt lepingu-eelistused, koostööpartnerid.</span></i></h3>
               <textarea class="ta" id="set_notes" style="min-height:90px" placeholder="Nt: eelistan ainuõiguslikke lepinguid; äripindadel koostöö Werbungiga 1,5%; ..."></textarea>
             </div>
             <div class="row"><button class="btn go" onclick="saveSettings()">Salvesta seaded</button><button class="btn gh" onclick="showOnboardingFromSettings()">Näita tutvustust uuesti</button><span class="msg" id="setMsg"></span></div>
           </div>
           <div class="rail">
-            <div class="panel"><div class="lbl" style="margin-bottom:6px">Mell tuum</div>
+            <div class="panel"><div class="lbl" style="margin-bottom:6px">Pindala tuum</div>
               <div style="font-size:12px;color:var(--ink2);line-height:1.7">✓ Aus — ainult päris andmed, allikaviide<br>✓ Sinu häälega — kuiv, otsekohene<br>✓ Ei leiuta numbreid ega seadust<br>✓ Üks süsteem — Maa-amet, EHR, kinnistusraamat</div>
             </div>
             <div class="panel" style="margin-top:12px"><div class="lbl" style="margin-bottom:6px">Kehtib kohe</div>
@@ -611,7 +611,7 @@
 
       <div class="view" id="v-mail">
         <div class="hello">Postkast</div>
-        <div class="h1 serif" style="margin-top:5px">Su <span class="g">Outlook</span> Mell'is.</div>
+        <div class="h1 serif" style="margin-top:5px">Su <span class="g">Outlook</span> siin.</div>
         <div class="coach">Näed viimased kirjad siin. Mell tunneb saatja ära, kui see on su ostjate nimekirjas. Kirjad avanevad Outlookis.</div>
         <div class="section"><div id="mailBox"><div class="skel skc"></div><div class="skel skc"></div></div></div>
       </div>
