@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>360 m² · Virtuaaltuuri ehitaja</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%2314171C'/%3E%3Ctext x='10' y='47' font-family='Arial,Helvetica,sans-serif' font-weight='bold' font-size='42' fill='%2316A34A'%3Em%3C/text%3E%3Ctext x='40' y='29' font-family='Arial,Helvetica,sans-serif' font-weight='bold' font-size='22' fill='%2316A34A'%3E2%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--panel2:#1f232c;--line:#2a2f3a;--text:#e8eaed;
+    --muted:#9aa3af;--accent:#16A34A;--accent2:#2563eb;--ok:#22c55e}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  #app{display:flex;flex-direction:column;height:100vh}
+  header{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--panel);
+    border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header .logo{color:#e8eaed;font-weight:800;letter-spacing:-.3px;font-size:18px}
+  header .logo .s{color:var(--accent);font-size:.62em;vertical-align:super;font-weight:800}
+  header .title-input{background:transparent;border:none;color:var(--text);font-size:15px;font-weight:600;
+    min-width:200px;outline:none;border-bottom:1px dashed transparent}
+  header .title-input:focus{border-bottom:1px dashed var(--muted)}
+  .spacer{flex:1}
+  .btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:7px 12px;
+    border-radius:7px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .btn:hover{border-color:#3a4250}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.blue{background:var(--accent2);border-color:var(--accent2);color:#fff}
+  .btn.ghost{background:transparent}
+  .btn:disabled{opacity:.4;cursor:default}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:transparent;color:var(--muted);border:none;padding:7px 14px;font-size:13px;cursor:pointer}
+  .seg button.on{background:var(--accent);color:#fff}
+  main{flex:1;display:flex;min-height:0}
+  #side{width:300px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  #side.hidden{display:none}
+  .side-head{padding:12px 14px 8px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+  .scene-list{overflow:auto;flex:1;padding:0 10px 10px}
+  .scene-card{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px;margin-bottom:8px;
+    cursor:pointer;display:flex;gap:9px;align-items:center}
+  .scene-card.active{border-color:var(--accent)}
+  .scene-card img{width:56px;height:40px;object-fit:cover;border-radius:5px;background:#000;flex:none}
+  .scene-card .nm{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .scene-card .sub{font-size:11px;color:var(--muted)}
+  .scene-card .num{flex:none;width:20px;height:20px;border-radius:50%;background:var(--panel);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
+  .scene-card .edit,.scene-card .del{color:var(--muted);font-size:14px;padding:2px 5px}
+  .scene-card .edit:hover{color:var(--accent2)} .scene-card .del:hover{color:var(--accent)}
+  .side-foot{padding:10px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+  .tip{font-size:12px;color:var(--muted);line-height:1.5}
+  #stage{flex:1;position:relative;min-width:0}
+  #pano{width:100%;height:100%}
+  .empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--muted);gap:14px;text-align:center;padding:20px}
+  .empty h2{color:var(--text);font-weight:600;margin:0}
+  #plan{position:absolute;right:14px;bottom:14px;width:230px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:20;user-select:none}
+  #plan.hidden{display:none}
+  #plan .ph{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;font-size:11px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.5px}
+  #plan .ph b{color:var(--text);text-transform:none;font-size:12px}
+  #planWrap{position:relative;line-height:0}
+  #planImg{width:100%;display:block}
+  .dot{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--accent);
+    border:2px solid #fff;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+  .dot.here{background:var(--accent2);transform:scale(1.15)}
+  #hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:30;background:rgba(20,22,28,.95);
+    border:1px solid var(--line);color:var(--text);padding:9px 14px;border-radius:9px;font-size:13px;display:none;
+    gap:10px;align-items:center;max-width:80%}
+  #hint.show{display:flex}
+  #hint .x{cursor:pointer;color:var(--muted);font-weight:700}
+  .mbg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+  .mbg.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:380px;max-width:94vw;padding:18px}
+  .modal h3{margin:0 0 12px;font-size:15px}
+  .modal label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+  .modal input,.modal select,.modal textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:7px;padding:9px;font-size:13px;outline:none;font-family:inherit}
+  .modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+  .hidden-file{display:none}
+  a.link{color:#7ab0ff;word-break:break-all}
+  .grp-head{display:flex;align-items:center;gap:7px;padding:9px 6px 5px;cursor:pointer;color:var(--muted);font-size:12px;
+    font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+  .grp-head:hover{color:var(--text)}
+  .grp-ct{background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:1px 8px;font-size:11px;color:var(--muted)}
+  /* overlay */
+  #busy{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px}
+  #busy.show{display:flex}
+  #busy .sp{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #busyMsg{font-size:14px;color:var(--text)}
+  /* login */
+  #login{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px}
+  #login.hidden{display:none}
+  .lcard{width:340px;max-width:94vw;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px}
+  .lcard .logo{color:#e8eaed;font-weight:800;font-size:26px;letter-spacing:-.3px}
+  .lcard .logo .s{color:var(--accent);font-size:.6em;vertical-align:super;font-weight:800}
+  .lcard label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}
+  .lcard input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font-size:14px;outline:none}
+  .lerr{color:#ff6b6b;font-size:13px;margin-top:10px;min-height:18px}
+  .badge{font-size:11px;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:2px 9px;color:var(--muted)}
+  .linkbox{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:8px;align-items:center;margin-top:6px}
+  .linkbox input{flex:1;background:transparent;border:none;color:#7ab0ff;font-size:13px;outline:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <span class="logo">360<span class="s">m²</span></span>
+    <input id="tourTitle" class="title-input" placeholder="Objekti nimi (nt Tartu mnt 12)">
+    <span class="badge" id="statusBadge">salvestamata</span>
+    <span class="spacer"></span>
+    <div class="seg" id="modeSeg">
+      <button data-mode="edit" class="on">Muuda</button>
+      <button data-mode="view">Vaata</button>
+    </div>
+    <button class="btn" id="btnMyTours">Minu tuurid</button>
+    <button class="btn" id="btnAgent">Kontakt</button>
+    <button class="btn" id="btnPlanUpload">Plaani pilt</button>
+    <button class="btn primary" id="btnSave">Salvesta</button>
+    <button class="btn blue" id="btnShare" disabled>Jaga link</button>
+  </header>
+  <main>
+    <aside id="side">
+      <div class="side-head">Ruumid / vaated</div>
+      <div class="scene-list" id="sceneList"></div>
+      <div class="side-foot">
+        <button class="btn primary" id="btnAddScene">+ Lisa fotod (mitu korraga)</button>
+        <button class="btn" id="btnAddHotspot" disabled>+ Lisa üleminek</button>
+        <button class="btn" id="btnPlacePlan" disabled>Aseta plaanile</button>
+        <label class="tip" style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <input type="checkbox" id="chkRotate" style="width:auto"> Automaatne pööramine vaaturis
+        </label>
+        <div class="tip">DJI 360 equirectangular JPG sobib otse. Fotod surutakse üleslaadimisel kokku.</div>
+      </div>
+    </aside>
+    <section id="stage">
+      <div id="pano"></div>
+      <div class="empty" id="empty">
+        <h2>Alusta esimesest ruumist</h2>
+        <div class="tip" style="max-width:340px">Vajuta <b>„+ Lisa fotod"</b> ja vali DJI 360 panoraamfotod.
+          Lisa ruumid, seo üleminekutega, laadi korruseplaan ja salvesta — saad jagatava lingi.</div>
+        <button class="btn primary" id="btnAddScene2">+ Lisa fotod</button>
+      </div>
+      <div id="hint"><span id="hintText"></span><span class="x" id="hintCancel">✕</span></div>
+      <div id="plan" class="hidden">
+        <div class="ph"><b>Korruseplaan</b><span id="planClose" style="cursor:pointer">–</span></div>
+        <div id="planWrap"><img id="planImg" alt=""></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<input type="file" id="fileScene" accept="image/*" multiple class="hidden-file">
+<input type="file" id="filePlan" accept="image/*" class="hidden-file">
+
+<!-- scene edit modal -->
+<div class="mbg" id="mScene"><div class="modal">
+  <h3>Muuda ruumi</h3>
+  <label>Grupp / korrus</label><input id="mSceneGroup" placeholder="nt 1. korrus">
+  <label>Ruumi nimi</label><input id="mSceneName" placeholder="nt Elutuba">
+  <div class="row"><button class="btn ghost" data-close>Tühista</button><button class="btn primary" id="mSceneSave">Salvesta</button></div>
+</div></div>
+
+<!-- hotspot modal -->
+<div class="mbg" id="mHot"><div class="modal">
+  <h3>Kuhu see üleminek viib?</h3>
+  <label>Sihtruum</label><select id="mHotTarget"></select>
+  <label>Silt (valikuline)</label><input id="mHotText" placeholder="nt Mine kööki">
+  <div class="row"><button class="btn ghost" data-close>Tühista</button><button class="btn primary" id="mHotSave">Lisa</button></div>
+</div></div>
+
+<!-- agent modal -->
+<div class="mbg" id="mAgent"><div class="modal">
+  <h3>Kontaktandmed (näidatakse vaaturis)</h3>
+  <label>Nimi</label><input id="aName" placeholder="Meelis Koroljov">
+  <label>Telefon</label><input id="aPhone" placeholder="+372 ...">
+  <label>E-post</label><input id="aEmail" placeholder="nimi@email.ee">
+  <div class="row"><button class="btn ghost" data-close>Tühista</button><button class="btn primary" id="aSave">Salvesta</button></div>
+</div></div>
+
+<!-- my tours modal -->
+<div class="mbg" id="mTours"><div class="modal">
+  <h3>Minu tuurid</h3>
+  <div id="toursList" style="max-height:50vh;overflow:auto"></div>
+  <div class="row"><button class="btn ghost" data-close>Sulge</button><button class="btn primary" id="btnNewTour">+ Uus tuur</button></div>
+</div></div>
+
+<!-- share modal -->
+<div class="mbg" id="mShare"><div class="modal">
+  <h3>Jagatav link</h3>
+  <div class="tip">Kleebi see link kv.ee / city24 virtuaaltuuri välja või saada kliendile.</div>
+  <div class="linkbox"><input id="shareUrl" readonly><button class="btn primary" id="btnCopy">Kopeeri</button></div>
+  <div class="row"><button class="btn ghost" data-close>Sulge</button><button class="btn blue" id="btnOpenView">Ava vaatur</button></div>
+</div></div>
+
+<!-- busy overlay -->
+<div id="busy"><div class="sp"></div><div id="busyMsg">Töötan…</div></div>
+
+<!-- login -->
+<div id="login"><div class="lcard">
+  <div class="logo">360<span class="s">m²</span></div>
+  <div class="tip" style="margin-top:6px">Logi sisse sama kontoga, mida kasutad CRM-is.</div>
+  <label>E-post</label><input id="liEmail" type="email" autocomplete="username">
+  <label>Parool</label><input id="liPass" type="password" autocomplete="current-password">
+  <div class="lerr" id="liErr"></div>
+  <button class="btn primary" id="liBtn" style="width:100%;justify-content:center;margin-top:12px">Logi sisse</button>
+</div></div>
+
+<script>
+"use strict";
+const SB_URL="https://iawvsfylguajkoikbdaf.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c";
+const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+const $=s=>document.querySelector(s);
+const uid=()=>"s"+Math.random().toString(36).slice(2,8);
+
+let tour={ id:null, slug:null, title:"", config:{ scenes:[], floorplan:null, agent:{}, autoRotate:false, firstScene:null } };
+let currentId=null, mode="edit", viewer=null, editingId=null, action=null, dirty=false;
+let collapsed=new Set();
+
+/* ---------- auth ---------- */
+async function initAuth(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ $("#login").classList.add("hidden"); resetStage(); }
+  else $("#login").classList.remove("hidden");
+}
+$("#liBtn").addEventListener("click",async ()=>{
+  $("#liErr").textContent="";
+  const email=$("#liEmail").value.trim(), password=$("#liPass").value;
+  if(!email||!password){ $("#liErr").textContent="Sisesta e-post ja parool."; return; }
+  $("#liBtn").disabled=true;
+  const { error }=await sb.auth.signInWithPassword({ email, password });
+  $("#liBtn").disabled=false;
+  if(error){ $("#liErr").textContent="Sisselogimine ebaõnnestus. Kontrolli andmeid."; return; }
+  $("#login").classList.add("hidden"); resetStage();
+});
+$("#liPass").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#liBtn").click(); });
+
+/* ---------- pildi kokkusurumine ---------- */
+function readFile(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+function loadImg(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src; }); }
+async function compress(file, maxW, quality){
+  const dataUrl=await readFile(file);
+  const im=await loadImg(dataUrl);
+  let w=im.naturalWidth, h=im.naturalHeight;
+  if(w>maxW){ h=Math.round(h*maxW/w); w=maxW; }
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  c.getContext("2d").drawImage(im,0,0,w,h);
+  return await new Promise(r=>c.toBlob(r,"image/jpeg",quality));
+}
+function blobToDataURL(b){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(b); }); }
+
+/* ---------- failinimi -> grupp + nimi ---------- */
+function cap(s){ return s?s.charAt(0).toUpperCase()+s.slice(1):s; }
+function parseName(fn){
+  let n=fn.replace(/\.[^.]+$/,"").replace(/_/g," ").replace(/\s+/g," ").trim();
+  const seps=[" - "," – "," — "," / ","/"," | ","|"];
+  for(const s of seps){ const i=n.indexOf(s); if(i>0) return { group:n.slice(0,i).trim(), name:(n.slice(i+s.length).trim()||n) }; }
+  let m=n.match(/^(\d+)\s*[.\-:]?\s*(korrus\w*|floor)?\s+(.+)$/i);
+  if(m) return { group:cap((m[1]+" "+(m[2]||"korrus")).trim()), name:m[3].trim() };
+  m=n.match(/^(.+?)[\s-]+(\d+)$/);
+  if(m&&m[1].trim().length>1) return { group:m[1].trim(), name:n };
+  return { group:"Määramata", name:n };
+}
+function slugify(s){
+  const map={ä:"a",ö:"o",õ:"o",ü:"u",š:"s",ž:"z"};
+  return (s||"objekt").toLowerCase().replace(/[äöõüšž]/g,c=>map[c]||c)
+    .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)||"objekt";
+}
+
+/* ---------- vaatur ---------- */
+function loadScene(id){
+  const sc=tour.config.scenes.find(s=>s.id===id); if(!sc) return;
+  currentId=id; $("#empty").style.display="none";
+  const hotSpots=sc.hotspots.map(h=>({ pitch:h.pitch, yaw:h.yaw, type:"scene", text:h.text||nameOf(h.target),
+    clickHandlerFunc:()=>{ if(mode==="view") loadScene(h.target); } }));
+  if(viewer){ try{viewer.destroy();}catch(e){} viewer=null; }
+  viewer=pannellum.viewer("pano",{ type:"equirectangular", panorama: sc.image.local||sc.image.url,
+    autoLoad:true, showControls:true, hotSpots, compass:false, hfov:110 });
+  viewer.on("mousedown",onDown); viewer.on("mouseup",onUp);
+  renderScenes(); renderPlan(); updateButtons();
+}
+function nameOf(id){ const s=tour.config.scenes.find(x=>x.id===id); return s?s.name:"Ruum"; }
+let downPt=null;
+function onDown(e){ if(mode==="edit"&&action==="hotspot") downPt={x:e.clientX,y:e.clientY}; }
+function onUp(e){
+  if(!(mode==="edit"&&action==="hotspot")||!downPt) return;
+  const dx=e.clientX-downPt.x, dy=e.clientY-downPt.y; downPt=null;
+  if(Math.hypot(dx,dy)>6) return;
+  const c=viewer.mouseEventToCoords(e); pendingHot={ pitch:c[0], yaw:c[1] }; openHotModal();
+}
+
+/* ---------- sidebar ---------- */
+function renderScenes(){
+  const list=$("#sceneList"); list.innerHTML="";
+  const order=[], map={};
+  tour.config.scenes.forEach((s,idx)=>{ const g=s.group||"Määramata"; if(!(g in map)){map[g]=[];order.push(g);} map[g].push({s,idx}); });
+  order.forEach(g=>{
+    const isC=collapsed.has(g);
+    const head=document.createElement("div"); head.className="grp-head";
+    head.innerHTML=`<span style="width:12px">${isC?"▸":"▾"}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g)}</span><span class="grp-ct">${map[g].length}</span>`;
+    head.addEventListener("click",()=>{ isC?collapsed.delete(g):collapsed.add(g); renderScenes(); });
+    list.appendChild(head);
+    if(isC) return;
+    map[g].forEach(({s,idx})=>{
+      const card=document.createElement("div"); card.className="scene-card"+(s.id===currentId?" active":"");
+      const thumb=s.thumb||s.image.local||s.image.url;
+      card.innerHTML=`<span class="num">${idx+1}</span><img src="${thumb}" alt="">
+        <div style="min-width:0"><div class="nm">${esc(s.name)}</div>
+        <div class="sub">${s.hotspots.length} üleminekut${s.plan?" · plaanil":""}${s.image.url?"":" · laadimata"}</div></div>
+        <span class="edit" title="Muuda">✎</span><span class="del" title="Kustuta">×</span>`;
+      card.addEventListener("click",ev=>{
+        if(ev.target.classList.contains("del")){ if(confirm("Kustuta ruum „"+s.name+"\"?")) delScene(s.id); return; }
+        if(ev.target.classList.contains("edit")){ openEdit(s.id); return; }
+        loadScene(s.id);
+      });
+      list.appendChild(card);
+    });
+  });
+}
+function openEdit(id){ const s=tour.config.scenes.find(x=>x.id===id); if(!s) return; editingId=id;
+  $("#mSceneGroup").value=s.group||""; $("#mSceneName").value=s.name; $("#mScene").classList.add("show"); $("#mSceneName").focus(); }
+function delScene(id){
+  tour.config.scenes=tour.config.scenes.filter(s=>s.id!==id);
+  tour.config.scenes.forEach(s=>s.hotspots=s.hotspots.filter(h=>h.target!==id));
+  markDirty();
+  if(currentId===id){ currentId=tour.config.scenes[0]?.id||null; currentId?loadScene(currentId):resetStage(); }
+  else { renderScenes(); renderPlan(); }
+}
+function resetStage(){ if(viewer){ try{viewer.destroy();}catch(e){} viewer=null; } $("#pano").innerHTML="";
+  $("#empty").style.display="flex"; renderScenes(); renderPlan(); updateButtons(); }
+
+/* ---------- korruseplaan ---------- */
+function planUrl(){ const f=tour.config.floorplan; return f?(f.local||f.url):null; }
+function renderPlan(){
+  const plan=$("#plan"); if(!planUrl()){ plan.classList.add("hidden"); return; }
+  plan.classList.remove("hidden"); $("#planImg").src=planUrl();
+  const wrap=$("#planWrap"); wrap.querySelectorAll(".dot").forEach(d=>d.remove());
+  tour.config.scenes.forEach((s,i)=>{ if(!s.plan) return;
+    const d=document.createElement("div"); d.className="dot"+(s.id===currentId?" here":"");
+    d.style.left=(s.plan.x*100)+"%"; d.style.top=(s.plan.y*100)+"%"; d.textContent=i+1; d.title=s.name;
+    d.addEventListener("click",()=>{ if(mode!=="edit"||action!=="plan") loadScene(s.id); });
+    wrap.appendChild(d); });
+}
+$("#planWrap").addEventListener("click",e=>{
+  if(!(mode==="edit"&&action==="plan"&&currentId)) return;
+  if(e.target.id!=="planImg"&&!e.target.classList.contains("dot")) return;
+  const img=$("#planImg"), r=img.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height;
+  const sc=tour.config.scenes.find(s=>s.id===currentId);
+  sc.plan={x:Math.max(0,Math.min(1,x)),y:Math.max(0,Math.min(1,y))};
+  setAction(null); markDirty(); renderPlan(); renderScenes();
+});
+$("#planClose").addEventListener("click",()=>$("#plan").classList.toggle("hidden"));
+
+/* ---------- nupud / hint ---------- */
+function updateButtons(){
+  const has=!!currentId;
+  $("#btnAddHotspot").disabled=!has||mode!=="edit";
+  $("#btnPlacePlan").disabled=!has||mode!=="edit"||!planUrl();
+  $("#btnShare").disabled=!tour.slug;
+}
+function setAction(a){ action=a; const hint=$("#hint");
+  if(a==="hotspot"){ $("#hintText").innerHTML="Klõpsa panoraamil kohta, kuhu tuleb üleminekunupp"; hint.classList.add("show"); }
+  else if(a==="plan"){ $("#hintText").innerHTML="Klõpsa korruseplaanil selle ruumi asukohta"; hint.classList.add("show"); }
+  else hint.classList.remove("show");
+}
+$("#hintCancel").addEventListener("click",()=>setAction(null));
+
+/* ---------- hotspot ---------- */
+let pendingHot=null;
+function openHotModal(){
+  const sel=$("#mHotTarget"); sel.innerHTML="";
+  tour.config.scenes.filter(s=>s.id!==currentId).forEach(s=>{ const o=document.createElement("option");
+    o.value=s.id; o.textContent=(s.group&&s.group!=="Määramata"?s.group+" · ":"")+s.name; sel.appendChild(o); });
+  if(!sel.options.length){ alert("Lisa esmalt veel vähemalt üks ruum."); setAction(null); return; }
+  $("#mHotText").value=""; $("#mHot").classList.add("show");
+}
+$("#mHotSave").addEventListener("click",()=>{
+  const sc=tour.config.scenes.find(s=>s.id===currentId);
+  sc.hotspots.push({ pitch:pendingHot.pitch, yaw:pendingHot.yaw, target:$("#mHotTarget").value, text:$("#mHotText").value.trim() });
+  $("#mHot").classList.remove("show"); setAction(null); markDirty(); loadScene(currentId);
+});
+$("#mSceneSave").addEventListener("click",()=>{
+  const s=tour.config.scenes.find(x=>x.id===editingId); $("#mScene").classList.remove("show"); if(!s) return;
+  s.group=$("#mSceneGroup").value.trim()||"Määramata"; s.name=$("#mSceneName").value.trim()||s.name;
+  markDirty(); renderScenes(); renderPlan();
+});
+
+/* ---------- failinupud ---------- */
+$("#btnAddScene").addEventListener("click",()=>$("#fileScene").click());
+$("#btnAddScene2").addEventListener("click",()=>$("#fileScene").click());
+$("#fileScene").addEventListener("change",async e=>{
+  const files=[...e.target.files]; e.target.value=""; if(!files.length) return;
+  files.sort((a,b)=>a.name.localeCompare(b.name,"et",{numeric:true}));
+  let firstNew=null;
+  for(const f of files){
+    const local=await readFile(f);
+    const p=parseName(f.name); const id=uid();
+    tour.config.scenes.push({ id, name:p.name, group:p.group, image:{ file:f, local, url:null }, thumb:null, hotspots:[], plan:null });
+    if(!firstNew) firstNew=id;
+  }
+  markDirty(); renderScenes(); renderPlan(); if(firstNew) loadScene(firstNew);
+});
+$("#btnPlanUpload").addEventListener("click",()=>$("#filePlan").click());
+$("#filePlan").addEventListener("change",async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  tour.config.floorplan={ file:f, local:await readFile(f), url:null };
+  markDirty(); renderPlan(); updateButtons(); e.target.value="";
+});
+$("#btnAddHotspot").addEventListener("click",()=>setAction(action==="hotspot"?null:"hotspot"));
+$("#btnPlacePlan").addEventListener("click",()=>setAction(action==="plan"?null:"plan"));
+
+/* ---------- režiim ---------- */
+document.querySelectorAll("#modeSeg button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#modeSeg button").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+  mode=b.dataset.mode; setAction(null); $("#side").classList.toggle("hidden",mode==="view");
+  if(currentId) loadScene(currentId); updateButtons();
+}));
+$("#chkRotate").addEventListener("change",e=>{ tour.config.autoRotate=e.target.checked; markDirty(); });
+
+/* ---------- kontakt ---------- */
+$("#btnAgent").addEventListener("click",()=>{ const a=tour.config.agent||{};
+  $("#aName").value=a.name||""; $("#aPhone").value=a.phone||""; $("#aEmail").value=a.email||""; $("#mAgent").classList.add("show"); });
+$("#aSave").addEventListener("click",()=>{ tour.config.agent={ name:$("#aName").value.trim(), phone:$("#aPhone").value.trim(), email:$("#aEmail").value.trim() };
+  $("#mAgent").classList.remove("show"); markDirty(); });
+
+/* ---------- title / dirty ---------- */
+$("#tourTitle").addEventListener("input",e=>{ tour.title=e.target.value; markDirty(); });
+function markDirty(){ dirty=true; $("#statusBadge").textContent="salvestamata"; $("#statusBadge").style.color="#ffb454"; }
+function markSaved(){ dirty=false; $("#statusBadge").textContent="salvestatud"; $("#statusBadge").style.color="var(--ok)"; }
+
+/* ---------- SALVESTAMINE (upload + upsert) ---------- */
+function busy(on,msg){ $("#busy").classList.toggle("show",on); if(msg) $("#busyMsg").textContent=msg; }
+async function ensureSlug(){
+  if(tour.slug) return tour.slug;
+  let base=slugify(tour.title); let s=base+"-"+Math.random().toString(36).slice(2,6);
+  tour.slug=s; return s;
+}
+async function uploadBlob(path, blob){
+  const { error }=await sb.storage.from("tours").upload(path, blob, { upsert:true, contentType:"image/jpeg" });
+  if(error) throw error;
+  return sb.storage.from("tours").getPublicUrl(path).data.publicUrl;
+}
+$("#btnSave").addEventListener("click",async ()=>{
+  if(!tour.config.scenes.length){ alert("Lisa vähemalt üks ruum."); return; }
+  if(!tour.title.trim()){ alert("Anna objektile nimi."); $("#tourTitle").focus(); return; }
+  try{
+    busy(true,"Valmistan…"); const slug=await ensureSlug();
+    // fotod
+    let i=0;
+    for(const sc of tour.config.scenes){
+      i++;
+      if(!sc.image.url && sc.image.file){
+        busy(true,`Laen fotot ${i}/${tour.config.scenes.length}…`);
+        const full=await compress(sc.image.file, 6000, 0.82);
+        sc.image.url=await uploadBlob(`${slug}/${sc.id}.jpg`, full);
+        const th=await compress(sc.image.file, 320, 0.7);
+        sc.thumb=await uploadBlob(`${slug}/${sc.id}_t.jpg`, th);
+        sc.image.local=null; sc.image.file=null;
+      }
+    }
+    // korruseplaan
+    if(tour.config.floorplan && !tour.config.floorplan.url && tour.config.floorplan.file){
+      busy(true,"Laen korruseplaani…");
+      const fp=await compress(tour.config.floorplan.file, 1600, 0.85);
+      tour.config.floorplan.url=await uploadBlob(`${slug}/plan.jpg`, fp);
+      tour.config.floorplan.local=null; tour.config.floorplan.file=null;
+    }
+    tour.config.firstScene=tour.config.scenes[0].id;
+    // config puhtaks (ilma File/local väljadeta)
+    const cleanCfg=JSON.parse(JSON.stringify(tour.config, (k,v)=> (k==="file"||k==="local")?undefined:v ));
+    busy(true,"Salvestan…");
+    const row={ slug, title:tour.title.trim(), config:cleanCfg };
+    let res;
+    if(tour.id){ res=await sb.from("tours").update(row).eq("id",tour.id).select().single(); }
+    else { const { data:{ user } }=await sb.auth.getUser(); row.created_by=user?.id||null;
+      res=await sb.from("tours").insert(row).select().single(); }
+    if(res.error) throw res.error;
+    tour.id=res.data.id; busy(false); markSaved();
+    updateButtons(); showShare();
+  }catch(err){ busy(false); console.error(err); alert("Salvestamine ebaõnnestus: "+(err.message||err)); }
+});
+
+/* ---------- jagamine ---------- */
+function viewerUrl(){ return location.origin+"/t.html?id="+encodeURIComponent(tour.slug); }
+function showShare(){ $("#shareUrl").value=viewerUrl(); $("#mShare").classList.add("show"); }
+$("#btnShare").addEventListener("click",()=>{ if(tour.slug) showShare(); });
+$("#btnCopy").addEventListener("click",()=>{ $("#shareUrl").select(); document.execCommand("copy"); $("#btnCopy").textContent="Kopeeritud ✓"; setTimeout(()=>$("#btnCopy").textContent="Kopeeri",1500); });
+$("#btnOpenView").addEventListener("click",()=>window.open(viewerUrl(),"_blank"));
+
+/* ---------- minu tuurid ---------- */
+$("#btnMyTours").addEventListener("click",async ()=>{
+  $("#mTours").classList.add("show"); $("#toursList").innerHTML="<div class='tip'>Laen…</div>";
+  const { data, error }=await sb.from("tours").select("id,slug,title,views,updated_at").order("updated_at",{ascending:false});
+  if(error){ $("#toursList").innerHTML="<div class='tip'>Laadimine ebaõnnestus.</div>"; return; }
+  if(!data.length){ $("#toursList").innerHTML="<div class='tip'>Tuure veel pole.</div>"; return; }
+  $("#toursList").innerHTML="";
+  data.forEach(t=>{
+    const row=document.createElement("div"); row.className="scene-card"; row.style.cursor="pointer";
+    row.innerHTML=`<div style="flex:1;min-width:0"><div class="nm">${esc(t.title||t.slug)}</div>
+      <div class="sub">${t.views||0} vaatamist · ${esc(t.slug)}</div></div>
+      <span class="del" title="Kustuta">×</span>`;
+    row.addEventListener("click",ev=>{ if(ev.target.classList.contains("del")){ delTour(t); return; } openTour(t.slug); });
+    $("#toursList").appendChild(row);
+  });
+});
+async function openTour(slug){
+  busy(true,"Avan tuuri…");
+  const { data, error }=await sb.from("tours").select("id,slug,title,config").eq("slug",slug).single();
+  busy(false); $("#mTours").classList.remove("show");
+  if(error){ alert("Avamine ebaõnnestus."); return; }
+  tour={ id:data.id, slug:data.slug, title:data.title||"", config:Object.assign({ scenes:[], floorplan:null, agent:{}, autoRotate:false, firstScene:null }, data.config||{}) };
+  tour.config.scenes.forEach(s=>{ if(!s.image) s.image={url:null}; if(!s.hotspots) s.hotspots=[]; });
+  $("#tourTitle").value=tour.title; $("#chkRotate").checked=!!tour.config.autoRotate;
+  currentId=tour.config.scenes[0]?.id||null; markSaved();
+  currentId?loadScene(currentId):resetStage();
+}
+async function delTour(t){
+  if(!confirm("Kustuta tuur „"+(t.title||t.slug)+"\"? Seda ei saa tagasi võtta.")) return;
+  busy(true,"Kustutan…");
+  try{
+    const { data:list }=await sb.storage.from("tours").list(t.slug);
+    if(list&&list.length) await sb.storage.from("tours").remove(list.map(f=>t.slug+"/"+f.name));
+    await sb.from("tours").delete().eq("id",t.id);
+  }catch(e){ console.error(e); }
+  busy(false); $("#btnMyTours").click();
+  if(tour.id===t.id){ tour={ id:null, slug:null, title:"", config:{ scenes:[], floorplan:null, agent:{}, autoRotate:false, firstScene:null } }; $("#tourTitle").value=""; resetStage(); markDirty(); }
+}
+$("#btnNewTour").addEventListener("click",()=>{
+  if(dirty && !confirm("Salvestamata muudatused lähevad kaotsi. Jätkata?")) return;
+  tour={ id:null, slug:null, title:"", config:{ scenes:[], floorplan:null, agent:{}, autoRotate:false, firstScene:null } };
+  $("#tourTitle").value=""; $("#chkRotate").checked=false; currentId=null; $("#mTours").classList.remove("show"); resetStage(); markSaved();
+});
+
+/* ---------- util ---------- */
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>b.closest(".mbg").classList.remove("show")));
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+window.addEventListener("beforeunload",e=>{ if(dirty){ e.preventDefault(); e.returnValue=""; } });
+
+initAuth();
+</script>
+</body>
+</html>
