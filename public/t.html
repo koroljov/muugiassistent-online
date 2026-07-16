@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Virtuaaltuur · 360 m²</title>
+<meta property="og:title" content="360° virtuaaltuur">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%2314171C'/%3E%3Ctext x='10' y='47' font-family='Arial,Helvetica,sans-serif' font-weight='bold' font-size='42' fill='%2316A34A'%3Em%3C/text%3E%3Ctext x='40' y='29' font-family='Arial,Helvetica,sans-serif' font-weight='bold' font-size='22' fill='%2316A34A'%3E2%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0e1013; --panel:#171a21; --panel2:#1f232c; --line:#2a2f3a;
+    --text:#e8eaed; --muted:#9aa3af; --accent:#16A34A;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden}
+  #pano{position:fixed;inset:0}
+  /* top bar */
+  #top{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;gap:10px;
+    padding:12px 16px;pointer-events:none;
+    background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0))}
+  #top .ttl{font-size:16px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  #top .brand{margin-left:auto;font-size:13px;color:#e8eaed;background:rgba(18,21,26,.72);
+    border:1px solid rgba(255,255,255,.12);padding:5px 12px;border-radius:20px;pointer-events:auto;
+    font-weight:800;letter-spacing:.2px;backdrop-filter:blur(6px)}
+  #top .brand .s{color:var(--accent);font-size:.72em;vertical-align:super;font-weight:800}
+  /* room chips */
+  #rooms{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:8px;overflow-x:auto;
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom));scrollbar-width:none;
+    background:linear-gradient(0deg,rgba(0,0,0,.6),rgba(0,0,0,0))}
+  #rooms::-webkit-scrollbar{display:none}
+  .chip{flex:none;background:rgba(28,32,40,.9);border:1px solid var(--line);border-radius:10px;
+    padding:6px;display:flex;gap:8px;align-items:center;cursor:pointer;min-width:120px;
+    backdrop-filter:blur(6px)}
+  .chip.on{border-color:var(--accent);background:rgba(22,163,74,.20)}
+  .chip img{width:46px;height:34px;object-fit:cover;border-radius:5px;background:#000;flex:none}
+  .chip .nm{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+  .chip .gp{font-size:10px;color:var(--muted)}
+  /* floor plan */
+  #plan{position:fixed;right:14px;top:64px;width:210px;z-index:25;background:rgba(23,26,33,.94);
+    border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);
+    backdrop-filter:blur(8px)}
+  #plan.hidden{display:none}
+  #plan .ph{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;font-size:11px;
+    color:var(--muted);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none}
+  #plan.collapsed #planWrap{display:none}
+  #planWrap{position:relative;line-height:0}
+  #planImg{width:100%;display:block}
+  .dot{position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;
+    background:rgba(18,21,26,.88);border:2px solid var(--accent);color:#fff;font-size:10px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+  .dot.here{background:var(--accent);border-color:#fff;transform:scale(1.18);z-index:2}
+  /* buttons */
+  .fab{position:fixed;z-index:30;background:var(--accent);color:#fff;border:none;border-radius:30px;
+    padding:12px 18px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4);
+    display:inline-flex;align-items:center;gap:8px}
+  #cta{right:14px;bottom:88px}
+  /* modal */
+  .mbg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
+  .mbg.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:360px;max-width:94vw;padding:20px}
+  .modal h3{margin:0 0 4px;font-size:17px}
+  .modal p.sub{margin:0 0 14px;color:var(--muted);font-size:13px}
+  .modal label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+  .modal input,.modal textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:8px;padding:10px;font-size:14px;outline:none;font-family:inherit}
+  .modal textarea{min-height:64px;resize:vertical}
+  .modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+  .btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:9px 14px;
+    border-radius:9px;font-size:14px;cursor:pointer}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  .agent{font-size:13px;color:var(--muted);margin-top:6px;text-align:center}
+  .agent b{color:var(--text)}
+  .ok{text-align:center;padding:10px 0}
+  .ok .big{font-size:40px}
+  /* loading / error */
+  #splash{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:var(--bg);gap:14px;text-align:center;padding:24px}
+  #splash .sp{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;
+    animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #splash.hidden{display:none}
+  .muted{color:var(--muted);font-size:14px;max-width:340px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="pano"></div>
+
+<div id="top">
+  <div class="ttl" id="ttl"></div>
+  <div class="brand">360<span class="s">m²</span></div>
+</div>
+
+<div id="plan" class="hidden">
+  <div class="ph" id="planHead"><span>Korruseplaan</span><span id="planTw">–</span></div>
+  <div id="planWrap"><img id="planImg" alt="Korruseplaan"></div>
+</div>
+
+<button class="fab" id="cta" style="display:none">Tunnen huvi</button>
+
+<div id="rooms"></div>
+
+<!-- lead modal -->
+<div class="mbg" id="mLead">
+  <div class="modal" id="leadCard">
+    <h3>Jäta oma kontakt</h3>
+    <p class="sub">Maakler võtab sinuga ühendust ja lepib vaatamise kokku.</p>
+    <label>Nimi</label>
+    <input id="lName" placeholder="Sinu nimi">
+    <label>Telefon</label>
+    <input id="lPhone" placeholder="+372 ...">
+    <label>E-post (valikuline)</label>
+    <input id="lEmail" placeholder="nimi@email.ee">
+    <label>Sõnum (valikuline)</label>
+    <textarea id="lMsg" placeholder="nt Millal saaks vaatama tulla?"></textarea>
+    <div class="agent" id="agentBox"></div>
+    <div class="row">
+      <button class="btn" data-close>Sulge</button>
+      <button class="btn primary" id="lSend">Saada</button>
+    </div>
+  </div>
+</div>
+
+<div id="splash">
+  <div class="sp"></div>
+  <div class="muted" id="splashMsg">Laen virtuaaltuuri…</div>
+</div>
+
+<script>
+"use strict";
+const SB_URL = "https://iawvsfylguajkoikbdaf.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlhd3ZzZnlsZ3VhamtvaWtiZGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMTIzOTUsImV4cCI6MjA5NjU4ODM5NX0.VhrlOIHFb3Cne1OPBjrjnURaXxm-Gm23zlxA0cc3e6c";
+const sb = supabase.createClient(SB_URL, SB_KEY);
+const $ = s => document.querySelector(s);
+const params = new URLSearchParams(location.search);
+const slug = params.get("id") || params.get("t") || params.get("slug");
+
+let tour = null, viewer = null, current = null;
+
+function fail(msg){
+  $("#splash").classList.remove("hidden");
+  $("#splash").querySelector(".sp").style.display = "none";
+  $("#splashMsg").textContent = msg;
+}
+
+async function boot(){
+  if(!slug){ fail("Tuuri linki ei leitud. Lisa lingi lõppu ?id=objekti-kood"); return; }
+  const { data, error } = await sb.from("tours").select("slug,title,config").eq("slug", slug).maybeSingle();
+  if(error || !data){ fail("Seda tuuri ei leitud. Kontrolli linki."); return; }
+  tour = data;
+  const cfg = tour.config || {};
+  if(!cfg.scenes || !cfg.scenes.length){ fail("Sellel tuuril pole veel ruume."); return; }
+  document.title = (tour.title || "Virtuaaltuur") + " · 360 m²";
+  $("#ttl").textContent = tour.title || "";
+  buildViewer(cfg);
+  buildRooms(cfg);
+  buildPlan(cfg);
+  buildAgent(cfg);
+  $("#splash").classList.add("hidden");
+  // loenda vaatamine (üks kord)
+  try{ sb.rpc("increment_tour_views", { p_slug: slug }); }catch(e){}
+}
+
+function buildViewer(cfg){
+  const scenes = {};
+  cfg.scenes.forEach(s=>{
+    scenes[s.id] = {
+      type:"equirectangular",
+      panorama: s.image && s.image.url ? s.image.url : s.image,
+      hfov: 110,
+      hotSpots: (s.hotspots||[]).map(h=>({
+        pitch:h.pitch, yaw:h.yaw, type:"scene", sceneId:h.target,
+        text: h.text || nameOf(cfg, h.target)
+      })),
+      ...(typeof s.initYaw === "number" ? { yaw:s.initYaw } : {}),
+      ...(typeof s.initPitch === "number" ? { pitch:s.initPitch } : {})
+    };
+  });
+  const first = cfg.firstScene && scenes[cfg.firstScene] ? cfg.firstScene : cfg.scenes[0].id;
+  current = first;
+  viewer = pannellum.viewer("pano", {
+    default:{ firstScene:first, autoLoad:true, sceneFadeDuration:900, compass:false,
+      autoRotate: cfg.autoRotate ? -2 : 0, autoRotateInactivityDelay: cfg.autoRotate ? 8000 : -1 },
+    scenes: scenes
+  });
+  viewer.on("scenechange", id=>{ current = id; markActive(); });
+}
+function nameOf(cfg, id){ const s=(cfg.scenes||[]).find(x=>x.id===id); return s?s.name:"Edasi"; }
+
+function buildRooms(cfg){
+  const box = $("#rooms"); box.innerHTML="";
+  cfg.scenes.forEach(s=>{
+    const c=document.createElement("div");
+    c.className="chip"+(s.id===current?" on":"");
+    c.dataset.id=s.id;
+    const thumb = s.thumb || (s.image&&s.image.url) || s.image;
+    c.innerHTML=`<img src="${thumb}" alt="">`+
+      `<div><div class="nm">${esc(s.name)}</div>`+
+      (s.group&&s.group!=="Määramata"?`<div class="gp">${esc(s.group)}</div>`:``)+`</div>`;
+    c.addEventListener("click",()=>go(s.id));
+    box.appendChild(c);
+  });
+}
+function markActive(){
+  document.querySelectorAll("#rooms .chip").forEach(c=>c.classList.toggle("on",c.dataset.id===current));
+  document.querySelectorAll("#plan .dot").forEach(d=>d.classList.toggle("here",d.dataset.id===current));
+  const on = document.querySelector("#rooms .chip.on");
+  if(on) on.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+}
+function go(id){ if(viewer && id!==current){ viewer.loadScene(id); current=id; markActive(); } }
+
+function buildPlan(cfg){
+  const plan=$("#plan");
+  const fp = cfg.floorplan && (cfg.floorplan.url||cfg.floorplan);
+  const anyDot = (cfg.scenes||[]).some(s=>s.plan);
+  if(!fp || !anyDot){ plan.classList.add("hidden"); return; }
+  plan.classList.remove("hidden");
+  $("#planImg").src = fp;
+  const wrap=$("#planWrap");
+  wrap.querySelectorAll(".dot").forEach(d=>d.remove());
+  cfg.scenes.forEach((s,i)=>{
+    if(!s.plan) return;
+    const d=document.createElement("div");
+    d.className="dot"+(s.id===current?" here":"");
+    d.dataset.id=s.id;
+    d.style.left=(s.plan.x*100)+"%"; d.style.top=(s.plan.y*100)+"%";
+    d.textContent=i+1; d.title=s.name;
+    d.addEventListener("click",()=>go(s.id));
+    wrap.appendChild(d);
+  });
+}
+$("#planHead").addEventListener("click",()=>{
+  const p=$("#plan"); p.classList.toggle("collapsed");
+  $("#planTw").textContent = p.classList.contains("collapsed") ? "+" : "–";
+});
+
+function buildAgent(cfg){
+  const a = cfg.agent || {};
+  const hasContact = a.name || a.phone || a.email;
+  if(hasContact){
+    $("#cta").style.display="inline-flex";
+    let html="";
+    if(a.name) html+=`<b>${esc(a.name)}</b>`;
+    if(a.phone) html+=`<br>${esc(a.phone)}`;
+    if(a.email) html+=`<br>${esc(a.email)}`;
+    $("#agentBox").innerHTML=html;
+  }
+}
+$("#cta").addEventListener("click",()=>$("#mLead").classList.add("show"));
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>$("#mLead").classList.remove("show")));
+
+$("#lSend").addEventListener("click",async ()=>{
+  const name=$("#lName").value.trim(), phone=$("#lPhone").value.trim();
+  if(!name || !phone){ alert("Palun lisa vähemalt nimi ja telefon."); return; }
+  $("#lSend").disabled=true; $("#lSend").textContent="Saadan…";
+  const { error } = await sb.from("tour_leads").insert({
+    tour_slug: slug, name, phone,
+    email: $("#lEmail").value.trim() || null,
+    message: $("#lMsg").value.trim() || null
+  });
+  if(error){ $("#lSend").disabled=false; $("#lSend").textContent="Saada"; alert("Saatmine ebaõnnestus. Proovi uuesti."); return; }
+  $("#leadCard").innerHTML=`<div class="ok"><div class="big">✓</div>`+
+    `<h3>Aitäh!</h3><p class="sub">Võtame sinuga peagi ühendust.</p>`+
+    `<div class="row" style="justify-content:center"><button class="btn primary" data-close2>Sulge</button></div></div>`;
+  $("#leadCard").querySelector("[data-close2]").addEventListener("click",()=>$("#mLead").classList.remove("show"));
+});
+
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+boot();
+</script>
+</body>
+</html>
