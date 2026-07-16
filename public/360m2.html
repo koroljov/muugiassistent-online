@@ -219,14 +219,20 @@ const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefr
 const $=s=>document.querySelector(s);
 const uid=()=>"s"+Math.random().toString(36).slice(2,8);
 
-let tour={ id:null, slug:null, title:"", config:{ scenes:[], floorplan:null, agent:{}, autoRotate:false, firstScene:null } };
+let tour={ id:null, slug:null, title:"", lead_id:null, config:{ scenes:[], floorplan:null, agent:{}, autoRotate:false, firstScene:null } };
 let currentId=null, mode="edit", viewer=null, editingId=null, action=null, dirty=false;
 let collapsed=new Set();
 
 /* ---------- auth ---------- */
+function applyUrlParams(){
+  const P=new URLSearchParams(location.search);
+  const t=P.get("title"), l=P.get("lead");
+  if(l) tour.lead_id=l;
+  if(t && !tour.title){ tour.title=t; const el=$("#tourTitle"); if(el) el.value=t; markDirty(); }
+}
 async function initAuth(){
   const { data:{ session } } = await sb.auth.getSession();
-  if(session){ $("#login").classList.add("hidden"); resetStage(); }
+  if(session){ $("#login").classList.add("hidden"); resetStage(); applyUrlParams(); }
   else $("#login").classList.remove("hidden");
 }
 $("#liBtn").addEventListener("click",async ()=>{
@@ -237,7 +243,7 @@ $("#liBtn").addEventListener("click",async ()=>{
   const { error }=await sb.auth.signInWithPassword({ email, password });
   $("#liBtn").disabled=false;
   if(error){ $("#liErr").textContent="Sisselogimine ebaõnnestus. Kontrolli andmeid."; return; }
-  $("#login").classList.add("hidden"); resetStage();
+  $("#login").classList.add("hidden"); resetStage(); applyUrlParams();
 });
 $("#liPass").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#liBtn").click(); });
 
@@ -476,7 +482,7 @@ $("#btnSave").addEventListener("click",async ()=>{
     // config puhtaks (ilma File/local väljadeta)
     const cleanCfg=JSON.parse(JSON.stringify(tour.config, (k,v)=> (k==="file"||k==="local")?undefined:v ));
     busy(true,"Salvestan…");
-    const row={ slug, title:tour.title.trim(), config:cleanCfg };
+    const row={ slug, title:tour.title.trim(), config:cleanCfg, lead_id:tour.lead_id||null };
     let res;
     if(tour.id){ res=await sb.from("tours").update(row).eq("id",tour.id).select().single(); }
     else { const { data:{ user } }=await sb.auth.getUser(); row.created_by=user?.id||null;
@@ -512,10 +518,10 @@ $("#btnMyTours").addEventListener("click",async ()=>{
 });
 async function openTour(slug){
   busy(true,"Avan tuuri…");
-  const { data, error }=await sb.from("tours").select("id,slug,title,config").eq("slug",slug).single();
+  const { data, error }=await sb.from("tours").select("id,slug,title,config,lead_id").eq("slug",slug).single();
   busy(false); $("#mTours").classList.remove("show");
   if(error){ alert("Avamine ebaõnnestus."); return; }
-  tour={ id:data.id, slug:data.slug, title:data.title||"", config:Object.assign({ scenes:[], floorplan:null, agent:{}, autoRotate:false, firstScene:null }, data.config||{}) };
+  tour={ id:data.id, slug:data.slug, title:data.title||"", lead_id:data.lead_id||null, config:Object.assign({ scenes:[], floorplan:null, agent:{}, autoRotate:false, firstScene:null }, data.config||{}) };
   tour.config.scenes.forEach(s=>{ if(!s.image) s.image={url:null}; if(!s.hotspots) s.hotspots=[]; });
   $("#tourTitle").value=tour.title; $("#chkRotate").checked=!!tour.config.autoRotate;
   currentId=tour.config.scenes[0]?.id||null; markSaved();
