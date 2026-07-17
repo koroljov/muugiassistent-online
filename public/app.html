@@ -392,35 +392,121 @@
     <div class="content">
       <div id="authWarn">Sa pole sisse logitud. Värskenda lehte ja logi sisse.</div>
 
-      <div class="view on" id="v-fookus">
-        <div class="hello" id="hello"></div>
-        <div class="h1 serif" id="fkTitle" style="margin-top:5px">Sinu <span class="g">fookus</span> täna.</div>
-        <div class="coach" id="fkCoach"></div>
-        <button class="btn gh" id="ttsBtn" onclick="speakBriefing()" style="margin:-8px 0 16px">🔊 Loe ette</button>
-        <div class="lbl" style="margin:34px 0 14px">Täna</div>
-        <div class="feed" id="feed"><div class="skel skc"></div><div class="skel skc"></div><div class="skel skc"></div></div>
-
-        <div class="ctx">
-          <div class="it"><span class="k">Toru väärtus</span><span class="v" id="sVal">—</span></div>
-          <div class="it"><span class="k">Prognoos<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Toru väärtus korrutatuna etapi tõenäosusega. Mitte lubadus — tõenäosuspõhine ootus.</span></i></span><span class="v g" id="sFcast">—</span></div>
-          <div class="it"><span class="k">Objekte</span><span class="v" id="sCnt">—</span></div>
-          <div class="it"><span class="k">Vajab täna</span><span class="v g" id="sToday">—</span></div>
+      <style id="pw-skin">
+#v-fookus{--pwcard:#182420;--pwline:rgba(255,255,255,.07);--pwg:#4bbf83;--pwg2:#6fd39c;--pwred:#e0705f;--pwamber:#e0b04a;--pwblue:#6ba6e0;--pwink:#eaf0ea;--pwmut:#94a99c;--pwdim:#5f7166;max-width:940px}
+#v-fookus .pw-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin:2px 0 22px}
+#v-fookus #hello{color:var(--pwmut);font-size:13px;margin-bottom:6px}
+#v-fookus #fkTitle{font-size:26px;line-height:1.25;margin:0 0 8px}
+#v-fookus #fkTitle .g{color:var(--pwg)}
+#v-fookus #fkCoach{color:var(--pwmut);font-size:13.5px;max-width:540px;line-height:1.5}
+#v-fookus #ttsBtn{margin:14px 0 0!important}
+#v-fookus .pw-ring{flex:0 0 auto;text-align:center;cursor:pointer;user-select:none;position:relative}
+#v-fookus .pw-orb{width:92px;height:92px;border-radius:50%;margin:0 auto 9px;position:relative;background:radial-gradient(circle at 34% 30%,#7ee3ad,#4bbf83 44%,#2f7d54 80%);box-shadow:0 0 0 6px rgba(75,191,131,.10),0 12px 30px rgba(47,125,84,.32);animation:pwBreathe 4.6s ease-in-out infinite}
+#v-fookus .pw-orb .m2{position:absolute;right:9px;bottom:8px;font:600 13px Georgia,serif;color:#eafff3}
+#v-fookus .pw-ring .cap{font-size:12.5px;color:var(--pwink);font-weight:600}
+@keyframes pwBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+#v-fookus .pw-pop{position:absolute;top:108%;right:0;z-index:40;width:252px;background:var(--pwcard);border:1px solid var(--pwline);border-radius:16px;padding:8px;box-shadow:0 18px 44px rgba(0,0,0,.5);display:none;text-align:left}
+#v-fookus .pw-ring.on .pw-pop{display:block}
+#v-fookus .pw-pop b{display:block;font:600 10.5px/1 Inter,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--pwdim);padding:6px 8px 8px}
+#v-fookus .pw-pop a{display:block;padding:9px 10px;border-radius:10px;color:var(--pwink);font-size:13px;text-decoration:none;cursor:pointer}
+#v-fookus .pw-pop a:hover{background:rgba(75,191,131,.12);color:var(--pwg2)}
+#v-fookus .pw-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:170px;gap:14px;grid-template-areas:"deal today today market" "week today today market" "leak today today market"}
+#v-fookus .pw-tile{background:var(--pwcard);border:1px solid var(--pwline);border-radius:22px;padding:16px 17px;overflow:hidden;display:flex;flex-direction:column;min-height:0;position:relative;transition:border-color .2s}
+#v-fookus .pw-tile:hover{border-color:rgba(75,191,131,.26)}
+#v-fookus .pw-tile.flash{animation:pwFlash 1.1s ease}
+@keyframes pwFlash{0%,100%{box-shadow:0 0 0 0 rgba(75,191,131,0)}30%{box-shadow:0 0 0 3px rgba(75,191,131,.5)}}
+#v-fookus .t-deal{grid-area:deal}
+#v-fookus .t-today{grid-area:today}
+#v-fookus .t-market{grid-area:market}
+#v-fookus .t-week{grid-area:week}
+#v-fookus .t-leak{grid-area:leak}
+#v-fookus .pw-chip{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:11px;background:rgba(75,191,131,.14);color:var(--pwg2);flex:0 0 auto}
+#v-fookus .pw-chip svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#v-fookus .t-market .pw-chip{background:rgba(107,166,224,.14);color:var(--pwblue)}
+#v-fookus .t-leak .pw-chip{background:rgba(224,112,95,.14);color:var(--pwred)}
+#v-fookus .t-week .pw-chip{background:rgba(224,176,74,.14);color:var(--pwamber)}
+#v-fookus .pw-hl{font:600 10.5px/1.3 Inter,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--pwdim);margin-bottom:8px}
+#v-fookus .pw-hl .n{color:var(--pwg2)}
+#v-fookus .pw-num{font:400 27px/1 Georgia,serif;color:var(--pwink)}
+#v-fookus .pw-num.g{color:var(--pwg2)}
+#v-fookus .pw-sub{font-size:11.5px;color:var(--pwmut);margin-top:6px}
+#v-fookus .pw-scroll{overflow:auto;min-height:0;flex:1;margin:0 -4px;padding:0 4px}
+#v-fookus .pw-scroll::-webkit-scrollbar{width:6px}
+#v-fookus .pw-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.10);border-radius:6px}
+#v-fookus .t-today #feed{margin:0}
+#v-fookus .t-market .stat{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-top:1px solid var(--pwline);font-size:12.5px}
+#v-fookus .t-market .stat:first-child{border-top:0}
+#v-fookus .t-market .k{color:var(--pwmut)}
+#v-fookus .t-market .v{color:var(--pwink)}
+#v-fookus .t-market .v.up{color:var(--pwg2)}
+#v-fookus #leakOut,#v-fookus #weekBox{font-size:12px;color:var(--pwmut);line-height:1.55}
+@media(max-width:820px){#v-fookus .pw-grid{grid-template-columns:1fr 1fr;grid-auto-rows:auto;grid-template-areas:"today today" "deal market" "week leak"}#v-fookus .pw-tile{min-height:158px}#v-fookus .t-today{min-height:320px}}
+@media(max-width:560px){#v-fookus .pw-grid{grid-template-columns:1fr;grid-template-areas:"today" "deal" "market" "week" "leak"}#v-fookus .pw-head{flex-direction:column-reverse;align-items:flex-start}#v-fookus .pw-ring{align-self:center}}
+</style>
+<div class="view on" id="v-fookus">
+        <div class="pw-head">
+          <div class="pw-head-l">
+            <div class="hello" id="hello"></div>
+            <div class="h1 serif" id="fkTitle">Sinu <span class="g">fookus</span> täna.</div>
+            <div class="coach" id="fkCoach"></div>
+            <button class="btn gh" id="ttsBtn" onclick="speakBriefing()">🔊 Loe ette</button>
+          </div>
+          <div class="pw-ring" onclick="pwRing(event)">
+            <div class="pw-orb"><span class="m2">m²</span></div>
+            <div class="cap">Mis teoksil?</div>
+            <div class="pw-pop" onclick="event.stopPropagation()">
+              <b>Mis teoksil?</b>
+              <a onclick="pwGo('.t-today')">Millega alustada täna?</a>
+              <a onclick="pwGo('.t-today')">Kellele täna helistada?</a>
+              <a onclick="pwGo('.t-today')">Mis on üle tähtaja?</a>
+              <a onclick="pwGo('.t-market')">Millised on üle turu?</a>
+              <a onclick="pwGo('.t-week')">Nädala kokkuvõte</a>
+            </div>
+          </div>
         </div>
-
-        <div class="fkmore"><button onclick="toggleDeep(this)">Näita ülevaadet ▾</button></div>
-        <div class="deep" id="fkDeep">
-          <div class="panel"><div class="lbl" style="margin-bottom:6px">Turg täna · Maa-amet<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt" id="turgTip">Suunav turubaas (Maa-amet tehingustatistika). Võrdlusalus, mitte täpne hindamine.</span></i></div>
-            <div class="stat"><span class="k">Tallinn korterid</span><span class="v" id="tLinn">—</span></div>
-            <div class="stat"><span class="k">Hinnaindeks</span><span class="v up" id="tIdx">—</span></div>
-            <div class="stat"><span class="k" style="font-size:10px;color:var(--ink3)" id="tDate"></span><span class="v"></span></div>
+        <div class="pw-grid">
+          <div class="pw-tile t-today">
+            <div class="pw-hl">Täna &amp; ootel · <span class="n" id="sToday">—</span> vajab tegevust</div>
+            <div class="pw-scroll">
+              <div class="feed" id="feed"><div class="skel skc"></div><div class="skel skc"></div><div class="skel skc"></div></div>
+            </div>
           </div>
-          <div class="panel"><div class="lbl" style="margin-bottom:6px">Kus lekib<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Kus toru kaotab kõige rohkem — arvutatud kõne-tulemustest (stage_events). Kasvab, mida rohkem kõne-ringi kasutad.</span></i></div>
-            <div id="leakOut" style="font-size:12px;color:var(--ink2);line-height:1.5">Analüüsin…</div>
+          <div class="pw-tile t-deal">
+            <div class="pw-chip"><svg viewBox="0 0 24 24"><path d="M3 8h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11"/><circle cx="16" cy="13" r="1.3"/></svg></div>
+            <div class="pw-hl">Toru väärtus</div>
+            <div class="pw-num" id="sVal">—</div>
+            <div class="pw-sub">≈ vahendus 2,5% · <span id="pwBrokerage">—</span></div>
+            <div class="pw-sub" style="margin-top:auto;display:flex;justify-content:space-between;padding-top:11px;border-top:1px solid var(--pwline)"><span><span id="sCnt">—</span> objekti</span><span>prognoos <span class="g" id="sFcast">—</span></span></div>
           </div>
-          <div class="panel"><div class="lbl" style="margin-bottom:6px">Sinu nädal<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Su viimase 7 päeva tegevus kõne-ringist — õpib sind ajas. Koguneb kasutamisega.</span></i></div>
-            <div id="weekBox" style="font-size:12px;color:var(--ink2);line-height:1.5">—</div>
+          <div class="pw-tile t-market">
+            <div class="pw-chip"><svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M6 20v-7"/><path d="M12 20V5"/><path d="M18 20v-10"/></svg></div>
+            <div class="pw-hl">Turg täna · Maa-amet<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt" id="turgTip">Suunav turubaas (Maa-amet tehingustatistika). Võrdlusalus, mitte täpne hindamine.</span></i></div>
+            <div class="pw-scroll">
+              <div class="stat"><span class="k">Tallinn korterid</span><span class="v" id="tLinn">—</span></div>
+              <div class="stat"><span class="k">Hinnaindeks</span><span class="v up" id="tIdx">—</span></div>
+              <div class="stat"><span class="k" id="tDate" style="font-size:10px;color:var(--pwdim)"></span><span class="v"></span></div>
+            </div>
+          </div>
+          <div class="pw-tile t-week">
+            <div class="pw-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div>
+            <div class="pw-hl">Sinu nädal<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Su viimase 7 päeva tegevus kõne-ringist — õpib sind ajas. Koguneb kasutamisega.</span></i></div>
+            <div class="pw-scroll"><div id="weekBox">—</div></div>
+          </div>
+          <div class="pw-tile t-leak">
+            <div class="pw-chip"><svg viewBox="0 0 24 24"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></svg></div>
+            <div class="pw-hl">Kus lekib<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Kus toru kaotab kõige rohkem — arvutatud kõne-tulemustest (stage_events). Kasvab, mida rohkem kõne-ringi kasutad.</span></i></div>
+            <div class="pw-scroll"><div id="leakOut">Analüüsin…</div></div>
           </div>
         </div>
+        <script>
+        (function(){
+          window.pwRing=function(e){var r=e.currentTarget;var wasOn=r.classList.contains('on');r.classList.toggle('on');e.stopPropagation();if(!wasOn){document.addEventListener('click',function h(){r.classList.remove('on');document.removeEventListener('click',h);});}};
+          window.pwGo=function(sel){var t=document.querySelector(sel);if(!t)return;t.scrollIntoView({behavior:'smooth',block:'center'});t.classList.remove('flash');void t.offsetWidth;t.classList.add('flash');};
+          function fmtEur(n){return n.toLocaleString('et-EE').replace(/[ ,]/g,' ')+' €';}
+          function upd(){var v=document.getElementById('sVal');var o=document.getElementById('pwBrokerage');if(!v||!o)return;var d=(v.textContent||'').replace(/[^0-9]/g,'');if(!d){o.textContent='—';return;}o.textContent=fmtEur(Math.round(parseInt(d,10)*0.025));}
+          var sv=document.getElementById('sVal');if(sv){try{new MutationObserver(upd).observe(sv,{childList:true,characterData:true,subtree:true});}catch(e){}upd();}
+        })();
+        </script>
       </div>
 
       <div class="view" id="v-toru">
