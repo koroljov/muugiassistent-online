@@ -41,7 +41,7 @@ export function verifyState(state: string): string | null {
   }
 }
 const GRAPH = "https://graph.microsoft.com/v1.0";
-export const OUTLOOK_SCOPES = "offline_access openid email User.Read Mail.Read Mail.Send";
+export const OUTLOOK_SCOPES = "offline_access openid email User.Read Mail.ReadWrite Mail.Send";
 
 function appUrl(): string {
   return (process.env.APP_URL || "https://muugiassistent-online.vercel.app").replace(/\/$/, "");
@@ -59,6 +59,7 @@ export function authorizeUrl(state: string): string {
     response_type: "code",
     redirect_uri: redirectUri(),
     response_mode: "query",
+    prompt: "select_account",
     scope: OUTLOOK_SCOPES,
     state,
   });
@@ -157,6 +158,19 @@ export async function fetchMessages(token: string, top = 25): Promise<MailMsg[]>
     unread: m.isRead === false,
     webLink: m.webLink || "",
   }));
+}
+
+export async function deleteMessage(token: string, id: string): Promise<void> {
+  const r = await fetch(GRAPH + "/me/messages/" + encodeURIComponent(id), {
+    method: "DELETE",
+    headers: { authorization: "Bearer " + token },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (r.status !== 204 && r.status !== 200) {
+    let detail = "";
+    try { const j: any = await r.json(); detail = j?.error?.message || ""; } catch {}
+    throw new Error("Graph delete " + r.status + (detail ? ": " + detail : ""));
+  }
 }
 
 // redeploy: MS_CLIENT env aktiveerimine
