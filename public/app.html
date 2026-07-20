@@ -578,7 +578,7 @@
       <div class="num" id="dPost">—</div>
       <div class="lab" id="dPostLab">Postkast</div>
       <div class="dsc" id="dPostSub">pole ühendatud</div>
-      <div class="link" id="dPostLink" style="display:none">Ühenda postkast <svg class="pwi"><use href="#pwi-arrow"/></svg></div>
+      <div class="link" id="dPostLink" onclick="pwPostGo()">Ühenda postkast <svg class="pwi"><use href="#pwi-arrow"/></svg></div>
     </div>
 
     <div class="pw-tile" data-k="ootel" data-w="1" data-h="1">
@@ -622,6 +622,7 @@
   var ACTIVE={kohtumine:1,leping:1,ettevalmistus:1,myygis:1,ostja:1,t_ettevalmistus:1,k_tehing:1,yleandmine:1};
   var EARLY={uus:1,k_kontakt:1,'vestlus toimus':1,'vajab järelkõnet':1,prospect:1};
   function wire(){
+    try{pwPost();}catch(e){}
     var L=window.LEADS||[]; if(!L.length) return;
     var now=new Date();
     var myyN=0,myyV=0,ootN=0,ootV=0,over=0,today=0,overList=[];
@@ -1922,6 +1923,30 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
       else{listHtml=msgs.map(function(m){var b=buyerByEmail(m.from);var when=m.received?new Date(m.received).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';var tag=b?'<span style="font-size:10px;color:var(--gr);border:1px solid var(--gr);border-radius:10px;padding:1px 7px;margin-left:6px">↔ ostja: '+esc(b.name||'')+'</span>':'';return '<a href="'+esc(m.webLink)+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px'+(m.unread?';border-left:3px solid var(--gr)':'')+'"><div style="display:flex;justify-content:space-between;gap:8px"><div style="font-weight:'+(m.unread?'700':'500')+';font-size:13px;color:var(--ink)">'+esc(m.fromName||m.from||'(tundmatu)')+tag+'</div><div style="font-size:11px;color:var(--ink3);white-space:nowrap">'+when+'</div></div><div style="font-size:12.5px;color:var(--ink);margin-top:2px">'+esc(m.subject)+'</div><div style="font-size:11.5px;color:var(--ink2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.preview)+'</div></a>';}).join('');}}
     }catch(e){listHtml='<div class="empty">Kirju ei saanud laadida — proovi uuesti.</div>';}
     el.innerHTML=head+'<div id="mailList">'+listHtml+'</div>';MAIL_MEM=el.innerHTML;}
+  /* ===== Postkasti kast avalehel ===== */
+  var PW_POST_TS=0,PW_POST_MODE='connect';
+  function pwPostGo(){ if(PW_POST_MODE==='connect'){connectOutlook();}else{toggleTab('mail');} }
+  async function pwPost(force){
+    if(!force && Date.now()-PW_POST_TS<60000) return; PW_POST_TS=Date.now();
+    var n=document.getElementById('dPost'),lab=document.getElementById('dPostLab'),sub=document.getElementById('dPostSub'),lnk=document.getElementById('dPostLink');
+    if(!n||!lab||!sub||!lnk)return;
+    var tile=lnk.closest('.pw-tile');
+    function conn(msg){n.style.display='none';lab.style.display='none';sub.className='pw-connect';sub.style.whiteSpace='';sub.innerHTML=msg;lnk.style.display='flex';if(tile){tile.style.cursor='';tile.onclick=null;}PW_POST_MODE='connect';}
+    function live(num,l,s){n.style.display='';lab.style.display='';sub.className='dsc';sub.style.whiteSpace='nowrap';sub.style.overflow='hidden';sub.style.textOverflow='ellipsis';n.innerHTML=num;lab.textContent=l;sub.innerHTML=s;lnk.style.display='none';if(tile){tile.style.cursor='pointer';tile.onclick=function(e){if(e.target.closest('.rm,.mv,.grip'))return;toggleTab('mail');};}PW_POST_MODE='open';}
+    try{
+      var st=await(await mailFetch('/api/outlook/status')).json();
+      if(!st||!st.connected){conn('Postkast pole veel ühendatud.');return;}
+      var mj=await(await mailFetch('/api/outlook/messages'+'?'+'top=25')).json();
+      if(!mj||!mj.ok){live('—','Postkast','kirju ei saanud laadida');return;}
+      var msgs=mj.messages||[];var un=msgs.filter(function(m){return m.unread;});
+      if(!msgs.length){live('0','Postkast tühi','uusi kirju pole');return;}
+      if(!un.length){live('0','Kõik loetud','viimane: '+esc(msgs[0].fromName||msgs[0].from||''));return;}
+      var m=un[0],b=buyerByEmail(m.from);
+      var tag=b?'<span style="color:var(--gr)">↔ '+esc(b.name||'')+'</span> · ':'';
+      live(un.length+' <small>lugemata</small>',(m.fromName||m.from||'(tundmatu)'),tag+esc(String(m.subject||'')));
+    }catch(e){ conn('Ühenduse kontroll ebaõnnestus.'); }
+  }
+
   /* ========== UUENDUSED — muudatuste märkmed ========== */
   var CHANGELOG=[
     {d:'13. juuli 2026',t:'Sinu töövoog: 10 päris etappi, etapiriba, värviteemad, selgem menüü',items:['Töövoog = sinu 10 päris etappi: Uus → Kontakt → Kohtumine/hindamine → Leping → Ettevalmistus → Müük/Näitamised → Ostja/pakkumine → Tehingu ettevalmistus → Tehing/notar → Üleandmine. "Kontakt" koondab vanad vahestaatused (Ühendust võetud, Järelkontakt, Potentsiaalne).','Etapiriba — klõpsa ülal etapil, all on ainult selle objektid. Ei mingit külgkerimist. "Ei soovi" on riba lõpus kiibina.','Menüü koondatud: Juriidiline abi ja Dokumendid leiad Tööriistadest, Meeskonna ja "Mis on uut" Seadetest.','Seaded → Välimus: 5 värviteemat (Roheline, Öösinine, Burgundia, Grafiit, Hele) + tihedus. Sinu ekraani valik — kliendile minevad dokumendid jäävad alati Melli rohelisse.','Seaded → Andmed: ekspordi objektid CSV-failina, impordi kuulutus ja andmeallikate seis ühe klõpsuga.','Telefoni kiirnupud — Seaded → Välimus: vali ise, millised 3 vaadet on telefoni alaribal.','Kõne järel „Järgmine samm ühe tapiga“ — Homme / +3 päeva / +1 nädal otse tulemuse alt.','Fotode järjekord — galeriis saab pilte ◀ ▶ nuppudega liigutada (esimene = pea-pilt, sama järjekord PDF-is).','Saada e-postiga — koostööpakkumine läheb PDF-ina otse sinu Outlookist kliendile (objekti Koostööpakkumise all; vajab Outlooki taasühendamist Postkastis).','Uus M-logo. Vana süsteem kannab nüüd nime "Vana versioon" ja lingib siia.'],try:{label:'Ava Töövoog',view:'toru'}},
