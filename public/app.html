@@ -1941,7 +1941,10 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
       var msgs=mj.messages||[];var un=msgs.filter(function(m){return m.unread;});
       if(!msgs.length){live('0','Postkast tühi','uusi kirju pole');return;}
       if(!un.length){live('0','Kõik loetud','viimane: '+esc(msgs[0].fromName||msgs[0].from||''));return;}
-      var m=un[0],b=buyerByEmail(m.from);
+      var m=null;
+      for(var q=0;q<un.length;q++){ if(buyerByEmail(un[q].from)){m=un[q];break;} }
+      if(!m)m=un[0];
+      var b=buyerByEmail(m.from);
       var tag=b?'<span style="color:var(--gr)">↔ '+esc(b.name||'')+'</span> · ':'';
       live(un.length+' <small>lugemata</small>',(m.fromName||m.from||'(tundmatu)'),tag+esc(String(m.subject||'')));
     }catch(e){ conn('Ühenduse kontroll ebaõnnestus.'); }
