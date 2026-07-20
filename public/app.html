@@ -1912,6 +1912,44 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
   async function connectOutlook(){var el=document.getElementById('mailBox');try{var r=await mailFetch('/api/outlook/login');var j=await r.json();if(j&&j.url){window.location.href=j.url;}else{toast(j&&j.error||'Ei saanud ühendust alustada');}}catch(e){toast('Viga ühenduse alustamisel');}}
   async function disconnectOutlook(){if(!confirm('Eemalda Outlooki ühendus?'))return;try{await mailFetch('/api/outlook/disconnect',{method:'POST'});toast('Outlook ühendus eemaldatud');renderMail();}catch(e){toast('Ei õnnestunud — proovi uuesti');}}
   var MAIL_MEM=null;
+
+  /* ===== Postkasti sorteerimine ===== */
+  function mailClass(m){
+    var from=String(m.from||'').toLowerCase();var subj=String(m.subject||'');
+    var dom=from.split('@')[1]||'';var lp=from.split('@')[0]||'';
+    if(/kv\.ee|city24|kinnisvara24/.test(dom)){
+      if(/statistika|lisateenus|aegu|arve|makse|pakett|kampaania|meeldetuletus/i.test(subj)) return 'muu';
+      if(/p.ring|kuulutusele|kuulutuse|\u043e\u0431\u044a\u044f\u0432\u043b\u0435\u043d|\u043e\u0442\u0432\u0435\u0442/i.test(subj)) return 'paring';
+      return 'muu';
+    }
+    if(/^(no-?reply|noreply|newsletter|news|marketing|promo|uudised|mailer|bounce|notification|notify|do-?not-?reply)/.test(lp)) return 'muu';
+    if(/^(e|news|mail|email|em|link|info|nl)\./.test(dom)) return 'muu';
+    return 'inimene';
+  }
+  function mailAddr(subj){
+    var s=String(subj||'');var m;
+    m=s.match(/^P.ring\s+(.+?)\s+(?:m..gi|..ri)?kuulutusele/i); if(m) return m[1];
+    m=s.match(/\u043d\u0430\s+(.+?)\s+\u043e\u0431\u044a\u044f\u0432\u043b\u0435\u043d/i); if(m) return m[1];
+    m=s.match(/vastus\s+(.+?)\s+kuulutusele/i); if(m) return m[1];
+    return null;
+  }
+  function leadByAddr(a){
+    if(!a||!window.LEADS) return null;
+    var key=String(a).toLowerCase().split(',')[0].replace(/\s+/g,' ').trim();
+    if(key.length<4) return null;
+    return window.LEADS.find(function(l){ return String(l.property_address||'').toLowerCase().indexOf(key)===0; })||null;
+  }
+  function mailToggle(b){ var w=b.parentElement.nextElementSibling; if(w) w.style.display = (w.style.display==='none'?'block':'none'); }
+  function mailSection(title,arr,open,rowFn){
+    if(!arr.length) return '';
+    var un=arr.filter(function(m){return m.unread;}).length;
+    var badge=un?('<span style="color:var(--gr);font-size:11px">'+un+' lugemata</span>'):'';
+    var body=arr.map(rowFn).join('');
+    var head='<div style="display:flex;align-items:center;gap:8px;margin:18px 0 8px"><div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)">'+esc(title)+' ('+arr.length+')</div>'+badge+'</div>';
+    if(open) return head+body;
+    return '<div style="margin:18px 0 8px"><button class="btn gh" style="font-size:11px" onclick="mailToggle(this)">'+esc(title)+' ('+arr.length+') &rsaquo;</button></div><div style="display:none">'+body+'</div>';
+  }
+  function mailOpenObj(b){ var id=b.getAttribute('data-lid'); if(id&&window.openObj) window.openObj(id); }
   async function renderMail(){var el=document.getElementById('mailBox');if(!el)return;if(MAIL_MEM){el.innerHTML=MAIL_MEM;}else{el.innerHTML='<div class="skel skc"></div><div class="skel skc"></div>';}var st;try{st=await(await mailFetch('/api/outlook/status')).json();}catch(e){if(!MAIL_MEM)el.innerHTML='<div class="empty">Ei saanud olekut laadida.</div>';return;}
     if(!st.configured){el.innerHTML='<div style="background:var(--cd);border:1px solid var(--line2);border-radius:12px;padding:16px;font-size:13px;line-height:1.6"><b style="color:var(--amber)">Outlook pole veel seadistatud</b><br>Vaja on Azure rakendust ja Vercel env-muutujaid (MS_CLIENT_ID, MS_CLIENT_SECRET). Kui need on paigas, ilmub siia "Ühenda Outlook" nupp.</div>';return;}
     if(!st.connected){var pr=null;try{pr=await(await mailFetch('/api/outlook/messages'+'?'+'top=25')).json();}catch(e){}
@@ -1922,7 +1960,24 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
     try{var mj=await(await mailFetch('/api/outlook/messages?top=25')).json();
       if(!mj.ok){listHtml='<div class="empty">'+esc(mj.error||'Kirju ei saanud laadida.')+'</div>';}
       else{var msgs=mj.messages||[];if(!msgs.length){listHtml='<div class="empty">Postkast tühi.</div>';}
-      else{listHtml=msgs.map(function(m){var b=buyerByEmail(m.from);var when=m.received?new Date(m.received).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';var tag=b?'<span style="font-size:10px;color:var(--gr);border:1px solid var(--gr);border-radius:10px;padding:1px 7px;margin-left:6px">↔ ostja: '+esc(b.name||'')+'</span>':'';return '<a href="'+esc(m.webLink)+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px'+(m.unread?';border-left:3px solid var(--gr)':'')+'"><div style="display:flex;justify-content:space-between;gap:8px"><div style="font-weight:'+(m.unread?'700':'500')+';font-size:13px;color:var(--ink)">'+esc(m.fromName||m.from||'(tundmatu)')+tag+'</div><div style="font-size:11px;color:var(--ink3);white-space:nowrap">'+when+'</div></div><div style="font-size:12.5px;color:var(--ink);margin-top:2px">'+esc(m.subject)+'</div><div style="font-size:11.5px;color:var(--ink2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.preview)+'</div></a>';}).join('');}}
+      else{var rowHtml=function(m){var b=buyerByEmail(m.from);var when=m.received?new Date(m.received).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';var tag=b?'<span style="font-size:10px;color:var(--gr);border:1px solid var(--gr);border-radius:10px;padding:1px 7px;margin-left:6px">↔ ostja: '+esc(b.name||'')+'</span>':'';return '<a href="'+esc(m.webLink)+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px'+(m.unread?';border-left:3px solid var(--gr)':'')+'"><div style="display:flex;justify-content:space-between;gap:8px"><div style="font-weight:'+(m.unread?'700':'500')+';font-size:13px;color:var(--ink)">'+esc(m.fromName||m.from||'(tundmatu)')+tag+'</div><div style="font-size:11px;color:var(--ink3);white-space:nowrap">'+when+'</div></div><div style="font-size:12.5px;color:var(--ink);margin-top:2px">'+esc(m.subject)+'</div><div style="font-size:11.5px;color:var(--ink2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.preview)+'</div></a>';};
+      var paringRow=function(m){
+        var a=mailAddr(m.subject), l=a?leadByAddr(a):null;
+        var when=m.received?new Date(m.received).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+        var acc=m.unread?'var(--gr)':'var(--line2)';
+        var head=esc(a||m.subject||'(pealkirjata)');
+        var tag=l?'':'<span style="font-size:10px;color:var(--amber);border:1px solid var(--amber);border-radius:10px;padding:1px 7px;margin-left:6px">objekt sidumata</span>';
+        var ob=l?('<button class="btn gh" style="font-size:11px" data-lid="'+esc(l.id)+'" onclick="mailOpenObj(this)">Ava objekt</button>'):'';
+        return '<div style="background:var(--sf);border:1px solid var(--line);border-left:3px solid '+acc+';border-radius:11px;padding:12px 14px;margin-bottom:8px">'
+          +'<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-weight:700;font-size:13.5px;color:var(--ink)">'+head+tag+'</div>'
+          +'<div style="font-size:11px;color:var(--ink3);white-space:nowrap">'+when+'</div></div>'
+          +'<div style="font-size:11.5px;color:var(--ink2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.preview||'')+'</div>'
+          +'<div style="display:flex;gap:6px;margin-top:9px"><a class="btn gh" style="font-size:11px;text-decoration:none" href="'+esc(m.webLink)+'" target="_blank" rel="noopener">Ava kiri</a>'+ob+'</div></div>';
+      };
+      var G={paring:[],inimene:[],muu:[]};
+      msgs.forEach(function(m){ var c=mailClass(m); (G[c]||G.muu).push(m); });
+      listHtml=mailSection('P\u00e4ringud objektidele',G.paring,true,paringRow)+mailSection('Kirjad inimestelt',G.inimene,true,rowHtml)+mailSection('Reklaam ja portaali teated',G.muu,false,rowHtml);
+    }}
     }catch(e){listHtml='<div class="empty">Kirju ei saanud laadida — proovi uuesti.</div>';}
     el.innerHTML=head+'<div id="mailList">'+listHtml+'</div>';MAIL_MEM=el.innerHTML;}
   /* ===== Postkasti kast avalehel ===== */
