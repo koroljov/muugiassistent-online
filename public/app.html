@@ -1914,6 +1914,8 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
   var MAIL_MEM=null;
   async function renderMail(){var el=document.getElementById('mailBox');if(!el)return;if(MAIL_MEM){el.innerHTML=MAIL_MEM;}else{el.innerHTML='<div class="skel skc"></div><div class="skel skc"></div>';}var st;try{st=await(await mailFetch('/api/outlook/status')).json();}catch(e){if(!MAIL_MEM)el.innerHTML='<div class="empty">Ei saanud olekut laadida.</div>';return;}
     if(!st.configured){el.innerHTML='<div style="background:var(--cd);border:1px solid var(--line2);border-radius:12px;padding:16px;font-size:13px;line-height:1.6"><b style="color:var(--amber)">Outlook pole veel seadistatud</b><br>Vaja on Azure rakendust ja Vercel env-muutujaid (MS_CLIENT_ID, MS_CLIENT_SECRET). Kui need on paigas, ilmub siia "Ühenda Outlook" nupp.</div>';return;}
+    if(!st.connected){var pr=null;try{pr=await(await mailFetch('/api/outlook/messages'+'?'+'top=25')).json();}catch(e){}
+      if(pr&&pr.ok){st.connected=true;st.email=st.email||'Outlook';}}
     if(!st.connected){el.innerHTML='<div style="background:var(--cd);border:1px solid var(--line2);border-radius:12px;padding:18px;text-align:center"><div style="font-size:13px;color:var(--ink2);margin-bottom:12px">Ühenda oma Outlook, et näha kirju siin.</div><button class="btn go" style="justify-content:center" onclick="connectOutlook()">✉ Ühenda Outlook</button></div>';return;}
     var head='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:12px;color:var(--ink2)">Ühendatud: <b style="color:var(--gr)">'+esc(st.email||'')+'</b></div><div style="display:flex;gap:6px"><button class="btn gh" style="font-size:11px" onclick="renderMail()">Värskenda</button><button class="btn gh" style="font-size:11px" onclick="disconnectOutlook()">Eemalda</button></div></div>';
     var listHtml;
@@ -1934,10 +1936,8 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
     function conn(msg){n.style.display='none';lab.style.display='none';sub.className='pw-connect';sub.style.whiteSpace='';sub.innerHTML=msg;lnk.style.display='flex';if(tile){tile.style.cursor='';tile.onclick=null;}PW_POST_MODE='connect';}
     function live(num,l,s){n.style.display='';lab.style.display='';sub.className='dsc';sub.style.whiteSpace='nowrap';sub.style.overflow='hidden';sub.style.textOverflow='ellipsis';n.innerHTML=num;lab.textContent=l;sub.innerHTML=s;lnk.style.display='none';if(tile){tile.style.cursor='pointer';tile.onclick=function(e){if(e.target.closest('.rm,.mv,.grip'))return;toggleTab('mail');};}PW_POST_MODE='open';}
     try{
-      var st=await(await mailFetch('/api/outlook/status')).json();
-      if(!st||!st.connected){conn('Postkast pole veel ühendatud.');return;}
       var mj=await(await mailFetch('/api/outlook/messages'+'?'+'top=25')).json();
-      if(!mj||!mj.ok){live('—','Postkast','kirju ei saanud laadida');return;}
+      if(!mj||!mj.ok){conn('Postkast pole veel ühendatud.');return;}
       var msgs=mj.messages||[];var un=msgs.filter(function(m){return m.unread;});
       if(!msgs.length){live('0','Postkast tühi','uusi kirju pole');return;}
       if(!un.length){live('0','Kõik loetud','viimane: '+esc(msgs[0].fromName||msgs[0].from||''));return;}
