@@ -261,6 +261,10 @@ export async function POST(request: Request) {
   const period_start = `${_startD.getFullYear()}-${_pad(_startD.getMonth() + 1)}-01`;
   const period_end = `${_endD.getFullYear()}-${_pad(_endD.getMonth() + 1)}-${_pad(_endD.getDate())}`; // cache-võti muutub iga kuu → automaatne värskendus
   const FRESH_MS = 180 * 24 * 3600 * 1000;
+// Ebaonnestunud paring kirjutab sentineli (tx_count=0). Maakond ja linnaosa EI OLE kunagi horedad
+// (Tallinnas sadu kuni tuhandeid tehinguid), seega seal tahendab null ALATI torget -> luba kiire kordus.
+// Asum voib olla paris hore (Maa-amet peidab alla 5 tehingu) -> seal jaab pikk aken, et mitte raisata krediiti.
+const SENTINEL_RETRY_MS = 6 * 3600 * 1000;
 
   // Parsib HTML-i õige mõõdiku järgi. Tagastab rea VÕI null (andmeid napib / vorm muutus).
   function parseRow(html: string): any | null {
@@ -290,7 +294,9 @@ export async function POST(request: Request) {
       .eq("period_end", period_end)
       .maybeSingle();
     if (cached && Number(cached.tx_count) > 0 && !staleFallback) staleFallback = { data: cached, level: lv.kind };
-    if (cached && cached.fetched_at && Date.now() - new Date(cached.fetched_at).getTime() < FRESH_MS) {
+    const _isSentinel = cached ? !(Number(cached.tx_count) > 0) : false;
+      const _limit = _isSentinel && lv.kind !== "asum" ? SENTINEL_RETRY_MS : FRESH_MS;
+      if (cached && cached.fetched_at && Date.now() - new Date(cached.fetched_at).getTime() < _limit) {
       if (Number(cached.tx_count) > 0) return NextResponse.json({ source: "cache", data: cached, level: lv.kind });
       continue; // sentinel: see tase on teadaolevalt hõre → proovi üldisemat
     }
@@ -328,9 +334,9 @@ export async function POST(request: Request) {
       lastErr = "andmeid napib tasemel '" + lv.kind + "'";
       // Maakonna tasemel on ALATI tuhandeid tehinguid → parse null seal = Maa-amet muutis vormi/struktuuri
       // (mitte hõredus). Märgi allikas 'degraded' (teavitus) ja eralda see ausast "andmeid napib" juhust.
-      if (lv.kind === "maakond" && html && html.length > 500) {
+      if ((lv.kind === "maakond" || lv.kind === "linnaosa") && html && html.length > 500) {
         structural = true;
-        try { await admin.from("source_health").upsert({ source: "maaamet_htraru", status: "degraded", detail: "Maakonna-tase: tulemust ei loetud (vorm võis muutuda). seg=" + segKey, checked_at: new Date().toISOString() }, { onConflict: "source" }); } catch (e) {}
+        try { await admin.from("source_health").upsert({ source: "maaamet_htraru", status: "degraded", detail: lv.kind + "-tase: tulemust ei loetud (vorm võis muutuda või päring ebaõnnestus). seg=" + segKey + " / " + (lv.district || "maakond"), checked_at: new Date().toISOString() }, { onConflict: "source" }); } catch (e) {}
       }
       // Salvesta sentinel (tx_count=0), et seda hõredat taset uuesti ei päriks.
       if (lv.kind !== "maakond") {
