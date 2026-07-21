@@ -338,8 +338,10 @@ const SENTINEL_RETRY_MS = 6 * 3600 * 1000;
         structural = true;
         try { await admin.from("source_health").upsert({ source: "maaamet_htraru", status: "degraded", detail: lv.kind + "-tase: tulemust ei loetud (vorm võis muutuda või päring ebaõnnestus). seg=" + segKey + " / " + (lv.district || "maakond"), checked_at: new Date().toISOString() }, { onConflict: "source" }); } catch (e) {}
       }
-      // Salvesta sentinel (tx_count=0), et seda hõredat taset uuesti ei päriks.
-      if (lv.kind !== "maakond") {
+      // Sentinel (tx_count=0) AINULT asumi tasemel: seal voib olla paris hore (Maa-amet peidab alla 5 tehingu).
+      // Maakond ja linnaosa EI OLE kunagi horedad -> seal on null ALATI torge. Torget ei tohi salvestada andmena,
+      // muidu lukustab see piirkonna. Torkest jaab jalg source_health tabelisse ja jargmine paring proovib uuesti.
+      if (lv.kind === "asum") {
         await admin.from("market_prices").upsert({
           county: county.name, municipality: "", district: lv.district, property_type: segKey,
           property_label: ptype.label + " — " + lv.district + " (andmeid napib)",
