@@ -703,7 +703,7 @@
   function setEdit(on){editing=on;V.classList.toggle('pw-edit',on);editBtn.textContent=on?'Valmis ✓':'Muuda ›';if(on)say('Redigeerimine: tõsta ümber, muuda suurust, × eemalda, Lisa kast');}
   editBtn.addEventListener('click',function(){setEdit(!editing);});
   // ---- tile click nav ----
-  grid.addEventListener('click',function(e){if(e.target.closest('.rm,.mv,.grip'))return;if(editing)return;var call=e.target.closest('.callbtn');if(call)return;var lk=e.target.closest('.link');if(lk){var g=lk.dataset.go;say('Avan: '+(lk.textContent||'').replace(/[›\s]+$/,''));return;}if(e.target.closest('.pw-tile.add'))return;var t=e.target.closest('.pw-tile');if(t){var l=((t.querySelector('.hl')||{}).textContent||'kast').trim();say('Avan: '+l);}});
+  window.pwOpen=function(v){try{if(window.go)window.go(v);}catch(_){}};var PW_NAV={kalender:'settings',tana:'toru',myygis:'toru',ostjad:'buyers',postkast:'mail',ootel:'toru'};grid.addEventListener('click',function(e){if(e.target.closest('.rm,.mv,.grip'))return;if(editing)return;if(e.target.closest('.callbtn'))return;if(e.target.closest('.pw-tile.add'))return;var lk=e.target.closest('.link');if(lk){if(lk.id==='dPostLink')return;if(lk.id==='dCalLink'){window.pwOpen('settings');return;}if(lk.dataset.go==='today'){window.pwOpen('toru');return;}return;}var t=e.target.closest('.pw-tile');if(!t)return;var d=PW_NAV[t.dataset.k];if(d){window.pwOpen(d);return;}if(t.dataset.k==='turg'){say('Turu vaade on ehitamisel.');return;}if(t.dataset.k==='hind'){say('Hinna vaade on ehitamisel.');return;}});
   // ---- orb ----
   var orb=document.getElementById('pwOrb'),qmenu=document.getElementById('pwQmenu');
   if(orb&&qmenu){orb.addEventListener('click',function(e){e.stopPropagation();qmenu.classList.toggle('open');});qmenu.addEventListener('click',function(e){var b=e.target.closest('button');e.stopPropagation();if(b){qmenu.classList.remove('open');say('Küsin: „'+b.textContent+'"…');}});document.addEventListener('click',function(){qmenu.classList.remove('open');});}
@@ -2022,14 +2022,14 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
     el.innerHTML=head+'<div id="mailList">'+listHtml+'</div>';MAIL_MEM=el.innerHTML;}
   /* ===== Postkasti kast avalehel ===== */
   var PW_POST_TS=0,PW_POST_MODE='connect';
-  function pwPostGo(){ if(PW_POST_MODE==='connect'){connectOutlook();}else{toggleTab('mail');} }
+  function pwPostGo(){ if(PW_POST_MODE==='connect'){connectOutlook();}else{window.pwOpen('mail');} }
   async function pwPost(force){
     if(!force && Date.now()-PW_POST_TS<60000) return; PW_POST_TS=Date.now();
     var n=document.getElementById('dPost'),lab=document.getElementById('dPostLab'),sub=document.getElementById('dPostSub'),lnk=document.getElementById('dPostLink');
     if(!n||!lab||!sub||!lnk)return;
     var tile=lnk.closest('.pw-tile');
     function conn(msg){n.style.display='none';lab.style.display='none';sub.className='pw-connect';sub.style.whiteSpace='';sub.innerHTML=msg;lnk.style.display='flex';if(tile){tile.style.cursor='';tile.onclick=null;}PW_POST_MODE='connect';}
-    function live(num,l,s){n.style.display='';lab.style.display='';sub.className='dsc';sub.style.whiteSpace='nowrap';sub.style.overflow='hidden';sub.style.textOverflow='ellipsis';n.innerHTML=num;lab.textContent=l;sub.innerHTML=s;lnk.style.display='none';if(tile){tile.style.cursor='pointer';tile.onclick=function(e){if(e.target.closest('.rm,.mv,.grip'))return;toggleTab('mail');};}PW_POST_MODE='open';}
+    function live(num,l,s){n.style.display='';lab.style.display='';sub.className='dsc';sub.style.whiteSpace='nowrap';sub.style.overflow='hidden';sub.style.textOverflow='ellipsis';n.innerHTML=num;lab.textContent=l;sub.innerHTML=s;lnk.style.display='none';if(tile){tile.style.cursor='pointer';tile.onclick=function(e){if(e.target.closest('.rm,.mv,.grip'))return;window.pwOpen('mail');};}PW_POST_MODE='open';}
     try{
       var mj=await(await mailFetch('/api/outlook/messages'+'?'+'top=25')).json();
       if(!mj||!mj.ok){conn('Postkast pole veel ühendatud.');return;}
