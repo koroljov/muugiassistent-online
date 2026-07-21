@@ -447,6 +447,10 @@
 #v-fookus .link{color:var(--pg);font-size:12px;font-weight:600;margin-top:8px;display:flex;align-items:center;gap:4px}
 #v-fookus .link svg{width:13px;height:13px}
 #v-fookus .pw-act{display:flex;align-items:center;gap:10px;margin-top:12px;background:var(--psf);border:1px solid var(--pln);border-radius:12px;padding:10px 12px}
+.pw-tile[data-k="tana"] .tana-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:auto}
+.pw-tile[data-k="tana"] .tana-row .num{margin-top:0;white-space:nowrap}
+.pw-tile[data-k="tana"] .tana-row .pw-act{margin-top:0;flex:1;min-width:220px}
+.pw-tile[data-k="tana"] .tana-link{margin-left:auto;margin-top:0}
 #v-fookus .pw-act .nm{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #v-fookus .pw-act .pr{font-family:Georgia,serif;font-size:14px;font-weight:700;white-space:nowrap}
 #v-fookus .callbtn{background:var(--pg);color:#07130c;border:none;border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
@@ -555,14 +559,15 @@
     </div>
 
     <div class="pw-tile" data-k="tana" data-w="2" data-h="1">
-      <div class="pw-tl"><div class="ico i-teal"><svg class="pwi"><use href="#pwi-check"/></svg></div><div class="hl">Täna &amp; ootel</div></div>
-      <div class="num"><span id="dTodayN">0</span> <small>täna ·</small> <span class="rd" id="dOverN">0</span> <small>üle tähtaja</small></div>
-      <div class="pw-act" id="dActWrap">
-        <div class="nm" id="dActNm">—</div>
-        <div class="pr" id="dActPr"></div>
-        <button class="callbtn" id="dActBtn"><svg class="pwi"><use href="#pwi-phone"/></svg> Helista</button>
+      <div class="pw-tl"><div class="ico i-teal"><svg class="pwi"><use href="#pwi-check"/></svg></div><div class="hl">Täna &amp; ootel</div><div class="link tana-link" data-go="today">Näita kõiki tegevusi <svg class="pwi"><use href="#pwi-arrow"/></svg></div></div>
+      <div class="tana-row">
+        <div class="num"><span id="dTodayN">0</span> <small>täna ·</small> <span class="rd" id="dOverN">0</span> <small>üle tähtaja</small></div>
+        <div class="pw-act" id="dActWrap">
+          <div class="nm" id="dActNm">—</div>
+          <div class="pr" id="dActPr"></div>
+          <button class="callbtn" id="dActBtn"><svg class="pwi"><use href="#pwi-phone"/></svg> Helista</button>
+        </div>
       </div>
-      <div class="link" data-go="today">Näita kõiki tegevusi <svg class="pwi"><use href="#pwi-arrow"/></svg></div>
     </div>
 
     <div class="pw-tile" data-k="myygis" data-w="1" data-h="1">
