@@ -1540,7 +1540,7 @@ function stateFull(v){
     var max=d.lo[0].v,h='';
     h+='<div class="section"><h3>Tallinna linnaosad</h3><div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:4px 0 16px"><div style="font-family:Georgia,serif;font-size:36px;color:var(--gr);line-height:1">'+eur(d.w.avg)+' <span style="font-size:15px;color:var(--ink2)">€/m²</span></div><div style="color:var(--ink2);font-size:13px">kaalutud mediaan · '+d.w.n+' linnaosa · '+eur(d.w.tx)+' tehingut · viimased 12 kuud</div></div>';
     d.lo.forEach(function(x){h+=pwRow(pwTitle(x.k),x.v,x.tx,max);});
-    var _pes={},_pmax='';d.lo.concat(d.as).forEach(function(x){var m=(window.MKTMAP||{})[x.k];var pe=m&&m.pe||'';if(pe){_pes[pe]=(_pes[pe]||0)+1;if(pe>_pmax)_pmax=pe;}});var _mix=Object.keys(_pes).length>1;
+    var _pes={},_pmax='';d.lo.forEach(function(x){var m=(window.MKTMAP||{})[x.k];var pe=m&&m.pe||'';if(pe){_pes[pe]=(_pes[pe]||0)+1;if(pe>_pmax)_pmax=pe;}});var _mix=Object.keys(_pes).length>1;
     h+='<div class="coach" style="margin-top:14px">Allikas: Maa-ameti tehingustatistika, libisev 12 kuud kuni '+(_pmax?_pmax.slice(0,7).split('-').reverse().join('.'):'—')+'.'+(_mix?' Osa piirkondi on vanemast aknast — nende number uueneb järgmisel päringul.':'')+' Puuduvad piirkonnad pole veel laetud.</div></div>';
     if(d.as.length){var am=d.as[0].v;h+='<div class="section"><h3>Asumid</h3><div class="coach" style="margin-top:0">Asumid on linnaosade sees. Neid ei liideta ülemisse keskmisse — muidu loeks samad tehingud kaks korda.</div>';d.as.forEach(function(x){h+=pwRow(pwTitle(x.k),x.v,x.tx,am);});h+='</div>';}
     b.innerHTML=h;}
