@@ -16,9 +16,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
-    --bg:#131b16;--bg2:#0d130f;--sf:#1b261f;--cd:#212e27;--cd2:#2a382f;--inp:#101811;
-    --ink:#e5ede7;--ink2:#a3b4aa;--ink3:#89978f;--line:rgba(255,255,255,.075);--line2:rgba(255,255,255,.14);
-    --gr:#48c281;--gr2:#2b8f5a;--grsoft:rgba(72,194,129,.15);--gold:#d2b06c;--te:#dd8d61;--red:#e0715f;--amber:#d8a24e;--violet:#a78bfa;--blue:#5aa2e0;
+    --bg:#0e1512;--bg2:#0a100d;--sf:#131d18;--cd:#182420;--cd2:#1e2c26;--inp:#0c1410;
+    --ink:#eaf0ea;--ink2:#94a99c;--ink3:#7d9188;--line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.13);
+    --gr:#4bbf83;--gr2:#2f7d54;--grsoft:rgba(75,191,131,.13);--gold:#d2b06c;--te:#dd8d61;--red:#e0715f;--amber:#d8a24e;--violet:#a78bfa;--blue:#5aa2e0;
     --sh:0 18px 40px -28px rgba(0,0,0,.7);
   }
   html[data-mtheme="sinine"]{--bg:#101720;--bg2:#0b1016;--sf:#161f2a;--cd:#1c2735;--cd2:#243140;--inp:#0c1218;--ink:#e4eaf1;--ink2:#a4b2c2;--ink3:#818fa4;--gr:#5f9fd8;--gr2:#396f9f;--grsoft:rgba(95,159,216,.15)}
@@ -167,6 +167,11 @@
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 4px}
   .chip{font-size:12.5px;padding:8px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--cd);color:var(--ink2);cursor:pointer;user-select:none;transition:all .12s}
   .chip.on{background:var(--grsoft);border-color:var(--gr);color:var(--gr);font-weight:600}
+  /* Pindala m2 uhtne nahk */
+  .card,.sec,.panel,.box,.modal,.mcard{border-radius:22px}
+  .btn,.chip,.tag,.pill,.newbtn,.thsw,.dnsw{border-radius:30px}
+  input,textarea,select{border-radius:14px}
+  .side .nav a{border-radius:14px}
   :root{--ease:cubic-bezier(.32,.72,0,1)}
   .view.on{animation:fade .42s var(--ease)}
   .nav a{transition:background .22s var(--ease),color .22s var(--ease),transform .16s var(--ease)}
