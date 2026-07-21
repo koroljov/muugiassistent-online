@@ -1115,7 +1115,7 @@
       <div class="view" id="v-mail">
         <div class="hello">Postkast</div>
         <div class="h1 serif" style="margin-top:5px">Su <span class="g">Outlook</span> siin.</div>
-        <div class="coach">Näed viimased kirjad siin. Tunneb saatja ära, kui see on su ostjate nimekirjas. Kirjad avanevad Outlookis.</div>
+        <div class="coach">Päringud objektidele on eraldi ja eespool. Klõpsa kirjal — see avaneb siinsamas. Reklaam on kokku volditud.</div>
         <div class="section"><div id="mailBox"><div class="skel skc"></div><div class="skel skc"></div></div></div>
       </div>
 
@@ -1972,6 +1972,21 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
       if(window.toast) window.toast('Andmed t\u00e4idetud kirjast. Kontrolli ja salvesta.');
     },250);
   }
+  function mailPanel(m){
+    var t=String(m.bodyText||m.preview||'').trim();
+    if(!t) t='(Kirja sisu ei \u00f5nnestunud laadida.)';
+    return '<div class="mailbody" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">'
+      +'<div style="white-space:pre-wrap;font-size:12.5px;line-height:1.55;color:var(--ink);max-height:360px;overflow:auto">'+esc(t)+'</div>'
+      +'<div style="margin-top:10px"><a class="btn gh" style="font-size:11px;text-decoration:none" href="'+esc(m.webLink)+'" target="_blank" rel="noopener">Ava Outlookis</a></div>'
+      +'</div>';
+  }
+  function mailOpen(el,ev){
+    if(ev){ var t=ev.target; if(t&&t.closest&&t.closest('a,button')) return; }
+    var p=el.querySelector('.mailbody'); if(!p) return;
+    var on=p.style.display==='none';
+    p.style.display = on?'block':'none';
+    el.style.borderColor = on?'var(--gr)':'var(--line)';
+  }
   async function renderMail(){var el=document.getElementById('mailBox');if(!el)return;if(MAIL_MEM){el.innerHTML=MAIL_MEM;}else{el.innerHTML='<div class="skel skc"></div><div class="skel skc"></div>';}var st;try{st=await(await mailFetch('/api/outlook/status')).json();}catch(e){if(!MAIL_MEM)el.innerHTML='<div class="empty">Ei saanud olekut laadida.</div>';return;}
     if(!st.configured){el.innerHTML='<div style="background:var(--cd);border:1px solid var(--line2);border-radius:12px;padding:16px;font-size:13px;line-height:1.6"><b style="color:var(--amber)">Outlook pole veel seadistatud</b><br>Vaja on Azure rakendust ja Vercel env-muutujaid (MS_CLIENT_ID, MS_CLIENT_SECRET). Kui need on paigas, ilmub siia "Ühenda Outlook" nupp.</div>';return;}
     if(!st.connected){var pr=null;try{pr=await(await mailFetch('/api/outlook/messages'+'?'+'top=25')).json();}catch(e){}
@@ -1982,7 +1997,7 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
     try{var mj=await(await mailFetch('/api/outlook/messages?top=25')).json();
       if(!mj.ok){listHtml='<div class="empty">'+esc(mj.error||'Kirju ei saanud laadida.')+'</div>';}
       else{var msgs=mj.messages||[];if(!msgs.length){listHtml='<div class="empty">Postkast tühi.</div>';}
-      else{var rowHtml=function(m){var b=buyerByEmail(m.from);var when=m.received?new Date(m.received).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';var tag=b?'<span style="font-size:10px;color:var(--gr);border:1px solid var(--gr);border-radius:10px;padding:1px 7px;margin-left:6px">↔ ostja: '+esc(b.name||'')+'</span>':'';return '<a href="'+esc(m.webLink)+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px'+(m.unread?';border-left:3px solid var(--gr)':'')+'"><div style="display:flex;justify-content:space-between;gap:8px"><div style="font-weight:'+(m.unread?'700':'500')+';font-size:13px;color:var(--ink)">'+esc(m.fromName||m.from||'(tundmatu)')+tag+'</div><div style="font-size:11px;color:var(--ink3);white-space:nowrap">'+when+'</div></div><div style="font-size:12.5px;color:var(--ink);margin-top:2px">'+esc(m.subject)+'</div><div style="font-size:11.5px;color:var(--ink2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.preview)+'</div></a>';};
+      else{var rowHtml=function(m){var b=buyerByEmail(m.from);var when=m.received?new Date(m.received).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';var tag=b?'<span style="font-size:10px;color:var(--gr);border:1px solid var(--gr);border-radius:10px;padding:1px 7px;margin-left:6px">↔ ostja: '+esc(b.name||'')+'</span>':'';return '<div data-mid="'+esc(m.id)+'" onclick="mailOpen(this,event)" style="cursor:pointer;display:block;text-decoration:none;background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px'+(m.unread?';border-left:3px solid var(--gr)':'')+'"><div style="display:flex;justify-content:space-between;gap:8px"><div style="font-weight:'+(m.unread?'700':'500')+';font-size:13px;color:var(--ink)">'+esc(m.fromName||m.from||'(tundmatu)')+tag+'</div><div style="font-size:11px;color:var(--ink3);white-space:nowrap">'+when+'</div></div><div style="font-size:12.5px;color:var(--ink);margin-top:2px">'+esc(m.subject)+'</div><div style="font-size:11.5px;color:var(--ink2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.preview)+'</div>'+mailPanel(m)+'</div>';};
       var paringRow=function(m){
         var a=mailAddr(m.subject), l=a?leadByAddr(a):null;
         var when=m.received?new Date(m.received).toLocaleDateString('et-EE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
@@ -1993,11 +2008,11 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
         var ct=mailContacts(m.bodyText||m.preview||'');
         var cline=(ct.mail||ct.tel)?('<div style="font-size:11.5px;margin-top:6px;color:var(--ink2)">Ostja: '+(ct.mail?('<a href="mailto:'+esc(ct.mail)+'" style="color:var(--gr);text-decoration:none">'+esc(ct.mail)+'</a>'):'')+(ct.tel?(' \u00b7 <a href="tel:'+esc(ct.tel.replace(/[\s-]/g,''))+'" style="color:var(--gr);text-decoration:none">'+esc(ct.tel)+'</a>'):'')+'</div>'):'';
         var ab=(ct.mail&&!buyerByEmail(ct.mail))?('<button class="btn gh" style="font-size:11px" data-bm="'+esc(ct.mail)+'" data-bt="'+esc(ct.tel||'')+'" onclick="mailAddBuyer(this)">Lisa ostjaks</button>'):'';
-        return '<div style="background:var(--sf);border:1px solid var(--line);border-left:3px solid '+acc+';border-radius:11px;padding:12px 14px;margin-bottom:8px">'
+        return '<div data-mid="'+esc(m.id)+'" onclick="mailOpen(this,event)" style="cursor:pointer;background:var(--sf);border:1px solid var(--line);border-left:3px solid '+acc+';border-radius:11px;padding:12px 14px;margin-bottom:8px">'
           +'<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-weight:700;font-size:13.5px;color:var(--ink)">'+head+tag+'</div>'
           +'<div style="font-size:11px;color:var(--ink3);white-space:nowrap">'+when+'</div></div>'
           +'<div style="font-size:11.5px;color:var(--ink2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.preview||'')+'</div>'
-          +cline+'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:9px"><a class="btn gh" style="font-size:11px;text-decoration:none" href="'+esc(m.webLink)+'" target="_blank" rel="noopener">Ava kiri</a>'+ob+ab+'</div></div>';
+          +cline+'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:9px"><a class="btn gh" style="font-size:11px;text-decoration:none" href="'+esc(m.webLink)+'" target="_blank" rel="noopener">Ava Outlookis</a>'+ob+ab+'</div>'+mailPanel(m)+'</div>';
       };
       var G={paring:[],inimene:[],muu:[]};
       msgs.forEach(function(m){ var c=mailClass(m); (G[c]||G.muu).push(m); });
