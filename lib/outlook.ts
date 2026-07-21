@@ -141,10 +141,29 @@ export async function graphMe(token: string): Promise<{ email: string; name: str
   return { email: j.mail || j.userPrincipalName || "", name: j.displayName || "" };
 }
 
-export type MailMsg = { id: string; subject: string; from: string; fromName: string; received: string; preview: string; unread: boolean; webLink: string };
+export type MailMsg = { id: string; subject: string; from: string; fromName: string; received: string; preview: string; unread: boolean; webLink: string; bodyText: string };
+
+// HTML -> lihtne tekst, et kirja sisust saaks kontakte otsida
+function mailStrip(h: string): string {
+  return String(h || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|tr|li|h[1-6])>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, 4000);
+}
 
 export async function fetchMessages(token: string, top = 25): Promise<MailMsg[]> {
-  const url = `${GRAPH}/me/messages?$top=${top}&$select=subject,from,receivedDateTime,bodyPreview,isRead,webLink&$orderby=receivedDateTime desc`;
+  const url = `${GRAPH}/me/messages?$top=${top}&$select=subject,from,receivedDateTime,bodyPreview,body,isRead,webLink&$orderby=receivedDateTime desc`;
   const r = await fetch(url, { headers: { authorization: "Bearer " + token } });
   if (!r.ok) throw new Error("graph_messages_" + r.status);
   const j = await r.json();
@@ -157,6 +176,7 @@ export async function fetchMessages(token: string, top = 25): Promise<MailMsg[]>
     preview: m.bodyPreview || "",
     unread: m.isRead === false,
     webLink: m.webLink || "",
+    bodyText: mailStrip((m.body && m.body.content) || m.bodyPreview || ""),
   }));
 }
 
