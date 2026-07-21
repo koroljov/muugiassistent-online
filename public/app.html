@@ -658,7 +658,7 @@
     var tr=document.getElementById('dTurgTrend'); tr.innerHTML='';
     if(idx){tr.innerHTML='<svg class="pwi"><use href="#pwi-market"/></svg> '+idx;}
     // Hind — mellChecks over-market
-    var over2=0; try{ for(var j=0;j<L.length;j++){var c=window.mellChecks&&window.mellChecks(L[j]); if(Array.isArray(c)&&c.some(function(x){return /turu|€\/m|üle/i.test(JSON.stringify(x));}))over2++; } }catch(_){}
+    var over2=0; try{ over2=(typeof pwObjMkt==='function'?pwObjMkt():[]).filter(function(x){return x.d>=10;}).length; }catch(_){}
     document.getElementById('dHind').textContent=over2;
     var hb=document.getElementById('dHindBadge'); if(over2>0){hb.style.display='';hb.textContent=over2;} else hb.style.display='none';
     // Ostjad
