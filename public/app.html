@@ -1922,7 +1922,8 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
       if(/p.ring|kuulutusele|kuulutuse|\u043e\u0431\u044a\u044f\u0432\u043b\u0435\u043d|\u043e\u0442\u0432\u0435\u0442/i.test(subj)) return 'paring';
       return 'muu';
     }
-    if(/^(no-?reply|noreply|newsletter|news|marketing|promo|uudised|mailer|bounce|notification|notify|do-?not-?reply)/.test(lp)) return 'muu';
+    if(/no-?reply|mittevastata|do-?not-?reply|mailer-daemon|bounce|unsubscribe/.test(from)) return 'muu';
+    if(/^(info|post|news|uudised|editors|marketing|promo|newsletter|notification|notify|support|billing|arve|hello|kliendi|kontakt|reklaam)/.test(lp)) return 'muu';
     if(/^(e|news|mail|email|em|link|info|nl)\./.test(dom)) return 'muu';
     return 'inimene';
   }
