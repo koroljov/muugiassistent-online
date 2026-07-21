@@ -896,13 +896,44 @@
       rows.push({cls:'warn',icon:'twi-clock',html:'<b>'+(stalled.length<=10?sona(stalled.length).charAt(0).toUpperCase()+sona(stalled.length).slice(1):stalled.length)+' tehingut</b> seisavad üle 14 päeva.<div class="tw-s2">'+esc(nimi(s0))+', +'+(stalled.length-1)+'. Otsusta: edasi või välja.</div>',btn:{t:'Vaata',pri:false,id:s0.id}});}
     var fh='';
     rows.forEach(function(r,i){
-      fh+='<div class="tw-fr '+r.cls+'"><div class="tw-fic '+r.cls+'"><svg class="twi"><use href="#'+r.icon+'"/></svg></div><div class="tw-txt">'+r.html+'</div><div class="tw-actbox">'+(r.btn?'<button class="tw-abtn'+(r.btn.pri?' pri':'')+'" data-open="'+r.btn.id+'">'+(r.btn.phone?'<svg class="twi"><use href="#twi-phone"/></svg> ':'')+r.btn.t+'</button>':'')+'</div></div>';
+      fh+='<div class="tw-fr '+r.cls+'"><div class="tw-fic '+r.cls+'"><svg class="twi"><use href="#'+r.icon+'"/></svg></div><div class="tw-txt">'+r.html+'</div><div class="tw-actbox">'+(r.btn?'<button class="tw-abtn'+(r.btn.pri?' pri':'')+'" '+(r.btn.phone?'data-call':'data-open')+'="'+r.btn.id+'">'+(r.btn.phone?'<svg class="twi"><use href="#twi-phone"/></svg> ':'')+r.btn.t+'</button>':'')+'</div></div>';
     });
     if(!rows.length) fh='<div class="tw-empty">Praegu pole midagi, mis vajaks su sammu.</div>';
     document.getElementById('twFeed').innerHTML=fh;
   }
+  // Tehtud-ahel: Helista -> tulemus samas reas -> paris staatusemuutus (mitte volts-linnuke).
+  function twBar(id){return '<div class="tw-obar" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end">'
+    +'<span style="color:var(--ink2);font-size:12px;margin-right:2px">Kõne tehtud —</span>'
+    +'<button class="tw-abtn pri" data-oc="vestlus toimus" data-id="'+id+'">Ühendust võetud</button>'
+    +'<button class="tw-abtn" data-oc="vajab järelkõnet" data-d="2" data-id="'+id+'">+2 p</button>'
+    +'<button class="tw-abtn" data-oc="vajab järelkõnet" data-d="7" data-id="'+id+'">+1 näd</button>'
+    +'<button class="tw-abtn" data-oc="ei soovi abi" data-id="'+id+'">Ei soovi</button>'
+    +'<button class="tw-abtn" data-open="'+id+'">Kõneabi</button></div>';}
+  async function twOutcome(id,newKey,days){
+    var L=window.LEADS||[];var l=L.find(function(x){return x.id===id;});if(!l)return{error:'Objekti ei leitud'};
+    var from=l.status||null;var patch={status:newKey,next_action_at:null,last_contact_at:new Date().toISOString()};
+    if(newKey==='vajab järelkõnet'){var d=new Date();d.setDate(d.getDate()+(days||3));patch.next_action_at=d.toISOString().slice(0,10);}
+    if(newKey==='prospect')patch.assigned_to=null;
+    var up=await sb.from('leads').update(patch).eq('id',id);
+    if(up.error)return{error:up.error.message};
+    if(from!==newKey){try{await sb.from('stage_events').insert({lead_id:id,user_id:(window.ME&&window.ME.id)||null,from_status:from,to_status:newKey});}catch(e){}}
+    Object.assign(l,patch);
+    return{ok:true,patch:patch};}
+  async function twApply(oc){
+    var row=oc.closest('.tw-fr');var box=row&&row.querySelector('.tw-actbox');if(!box)return;
+    box.innerHTML='<span style="color:var(--ink2);font-size:12px">Salvestan…</span>';
+    var res=await twOutcome(oc.dataset.id,oc.dataset.oc,+oc.dataset.d||0);
+    if(res.error){box.innerHTML='<span style="color:var(--red);font-size:12px">Viga: '+res.error+'</span>';return;}
+    var extra=res.patch.next_action_at?(' · järelkontakt '+new Date(res.patch.next_action_at).toLocaleDateString('et-EE',{day:'numeric',month:'short'})):'';
+    box.innerHTML='<span style="color:var(--gr);font-size:12px">✓ '+oc.dataset.oc+extra+'</span> <button class="tw-abtn" data-open="'+oc.dataset.id+'">Kõneabi</button>';
+    row.style.opacity='.62';
+    try{if(typeof renderFookus==='function')renderFookus();if(typeof renderKanban==='function')renderKanban();}catch(e){}}
   // clicks
   W.addEventListener('click',function(e){
+    var cbt=e.target.closest('[data-call]');
+    if(cbt){e.stopPropagation();var _r=cbt.closest('.tw-fr');var _bx=_r&&_r.querySelector('.tw-actbox');if(_bx)_bx.innerHTML=twBar(cbt.dataset.call);return;}
+    var oc=e.target.closest('[data-oc]');
+    if(oc){e.stopPropagation();twApply(oc);return;}
     var b=e.target.closest('[data-open]');
     if(b){e.stopPropagation();try{window.openObj&&window.openObj(b.dataset.open);}catch(_){}return;}
     var s=e.target.closest('.tw-stg');
