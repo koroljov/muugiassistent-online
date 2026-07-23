@@ -4,7 +4,7 @@
 import { getSupabaseAdmin } from "./supabase-server";
 import crypto from "crypto";
 
-const AUTH_BASE = "https://login.microsoftonline.com/common/oauth2/v2.0";
+const AUTH_BASE = "https://login.microsoftonline.com/5fb73026-a665-4d6a-8fcd-0347e4f7b0b7/oauth2/v2.0";
 
 // --- Kasutaja tuvastus Bearer tokenist (sama muster mis /api/admin/invite) ---
 export async function userIdFromBearer(request: Request): Promise<string | null> {
@@ -41,7 +41,7 @@ export function verifyState(state: string): string | null {
   }
 }
 const GRAPH = "https://graph.microsoft.com/v1.0";
-export const OUTLOOK_SCOPES = "offline_access openid email User.Read Mail.ReadWrite Mail.Send";
+export const OUTLOOK_SCOPES = "offline_access openid email User.Read Mail.Read";
 
 function appUrl(): string {
   return (process.env.APP_URL || "https://muugiassistent-online.vercel.app").replace(/\/$/, "");
