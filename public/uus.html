@@ -230,7 +230,7 @@
       var tmap={'korter':'korter','maja':'maja','majaosa':'majaosa','maa-krunt':'maa','maa':'maa','äripind':'ari','aripind':'ari','garaaž':'garaaz','garaaz':'garaaz'};
       if(d.type){var tk=tmap[String(d.type).toLowerCase()];if(tk){var te=document.querySelector('.type[data-t="'+tk+'"]');if(te)te.click();}}
       if(d.deal){var dv=(String(d.deal).toLowerCase()==='uur')?'uur':'muuk';var db=document.querySelector('#dealSeg button[data-v="'+dv+'"]');if(db)db.click();}
-      setV('address',d.addr); setV('condition',d.condition); setV('contactName',d.name); setV('phone',d.phone); setV('email',d.email);
+      setV('address',d.addr); setV('condition',d.condition); setV('contactName',d.name); setV('phone',(function(v){if(!v)return null;var s=String(v).replace(/\D/g,'');if(s.indexOf('372')===0)s=s.slice(3);return (s.length>=7&&s.length<=8&&/^[3-9]/.test(s))?s:null;})(d.phone)); setV('email',d.email);
       if(d.price)setV('price',String(d.price).replace(/[^\d]/g,''));
       if(d.area)setV('area',String(d.area).replace(/[^\d.,]/g,'').replace(',','.'));
       if(d.rooms)setV('rooms',String(d.rooms).replace(/[^\d]/g,''));
