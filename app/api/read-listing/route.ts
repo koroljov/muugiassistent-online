@@ -44,18 +44,11 @@ export async function POST(request: Request) {
   let html = "";
   try {
     const _reveal = "try{var e=document.querySelectorAll('a,button');for(var i=0;i<e.length;i++){var t=(e[i].textContent||'').trim().toLowerCase();if(t.length<40&&t.indexOf('näita')>-1){e[i].click();}}}catch(x){}";
-    const _scenario = Buffer.from(JSON.stringify({ steps: [ { execute: { script: _reveal } }, { wait: 2200 } ] })).toString("base64");
-    const _base = { key, url, render_js: "true", asp: "true", country: "ee", rendering_wait: "2500" };
-    let params = new URLSearchParams({ ..._base, js_scenario: _scenario });
-    let r = await fetch("https://api.scrapfly.io/scrape?" + params.toString(), { signal: AbortSignal.timeout(55000) });
-    let j = await r.json();
+    const _scenario = Buffer.from(JSON.stringify([ { execute: { script: _reveal, timeout: 2500 } } ])).toString("base64url");
+    const params = new URLSearchParams({ key, url, render_js: "true", asp: "true", country: "ee", rendering_wait: "2500", js_scenario: _scenario });
+    const r = await fetch("https://api.scrapfly.io/scrape?" + params.toString(), { signal: AbortSignal.timeout(55000) });
+    const j = await r.json();
     html = j?.result?.content || "";
-    if (!html) {
-      params = new URLSearchParams(_base);
-      r = await fetch("https://api.scrapfly.io/scrape?" + params.toString(), { signal: AbortSignal.timeout(55000) });
-      j = await r.json();
-      html = j?.result?.content || "";
-    }
     if (!html) await reportHealth("portaalid", "degraded", "Scrapfly ei tagastanud sisu");
     if (!html) return NextResponse.json({ error: "Scrapfly ei tagastanud sisu: " + JSON.stringify(j?.result?.error || {}).slice(0, 200) }, { status: 502 });
   } catch (e: any) {
