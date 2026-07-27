@@ -43,8 +43,7 @@ export async function POST(request: Request) {
 
   let html = "";
   try {
-    const _reveal = "try{var e=document.querySelectorAll('a,button');for(var i=0;i<e.length;i++){var t=(e[i].textContent||'').trim().toLowerCase();if(t.length<40&&t.indexOf('näita')>-1){e[i].click();}}}catch(x){}";
-    const _scenario = Buffer.from(JSON.stringify([ { execute: { script: _reveal, timeout: 2500 } } ])).toString("base64url");
+    const _scenario = Buffer.from(JSON.stringify([ { click: { selector: "//a[contains(.,'numbrit') or contains(.,'telefoni')] | //button[contains(.,'numbrit') or contains(.,'telefoni')]", ignore_if_not_visible: true, multiple: true } }, { wait: 3000 } ])).toString("base64url");
     const params = new URLSearchParams({ key, url, render_js: "true", asp: "true", country: "ee", rendering_wait: "2500", js_scenario: _scenario });
     const r = await fetch("https://api.scrapfly.io/scrape?" + params.toString(), { signal: AbortSignal.timeout(55000) });
     const j = await r.json();
