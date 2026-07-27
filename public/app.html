@@ -1228,7 +1228,7 @@
         <div class="ohead"><div><div class="src" id="oKick" style="margin-bottom:6px"></div><div class="otitle serif" id="oTitle"></div><div class="osub" id="oSub"></div></div><div class="oprice"><div class="p" id="oPrice"></div><div class="m" id="oM2"></div></div></div>
         <div class="srcbar"><span class="src tipwrap">Maa-amet<span class="tt">Maa-amet — riiklik maa- ja tehinguregister. Piirkonna hinnatase (€/m²) ja tehingute statistika.</span></span><span class="src tipwrap">EHR<span class="tt">EHR — ehitisregister. Ehitise ametlikud faktid: pind, ehitusaasta, kasutusotstarve, kasutusluba.</span></span><span class="src tipwrap">Kinnistusraamat<span class="tt">Kinnistusraamat — omandi ja koormatiste (hüpoteek, servituut) ametlik register.</span></span><span class="src tipwrap">Kataster<span class="tt">Kataster — katastriüksuse (kinnistu maa) andmed: pindala, sihtotstarve, piirid.</span></span></div>
         <div class="prepbar" style="display:flex;align-items:center;gap:10px;margin:12px 0 2px;flex-wrap:wrap"><button class="btn mell" id="prepBtn" onclick="prepObj()" style="white-space:nowrap">✦ Valmista ette</button><button class="btn gh" onclick="openAsk()" style="white-space:nowrap" title="Küsi Mellilt selle objekti kohta">✦ Küsi selle kohta</button><span class="msg" id="prepMsg" style="font-size:11px;color:var(--ink3)">Üks klõps: hinnang → kuulutus → kaaskiri → pakkumine valmis mustandina.</span></div>
-        <div class="otabs"><div class="otab on" data-o="kok">Kokkuvõte</div><div class="otab" data-o="kuul">Kuulutus</div><div class="otab" data-o="pakk">Koostööpakkumine</div><div class="otab" data-o="yle">Ülevaatus</div><div class="otab" data-o="dok">Dokumendid</div></div>
+        <div class="otabs"><div class="otab on" data-o="kok">Kokkuvõte</div><div class="otab" data-o="kuul">Kuulutus</div><div class="otab" data-o="pakk">Koostööpakkumine</div><div class="otab" data-o="yle">Ülevaatus</div><div class="otab" data-o="dok">Dokumendid</div><div class="otab" data-o="hind">Hind</div></div><div class="oview" id="o-hind"><div id="cmpBody"></div></div>
 
         <div class="oview on" id="o-kok">
           <div id="oChecks" style="display:none"></div>
@@ -1587,9 +1587,170 @@ function stateFull(v){
       h+='<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;margin:7px 0;border:1px solid var(--line);border-radius:22px;background:var(--cd)"><div style="flex:1;min-width:0"><div style="color:var(--ink);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(x.l.property_address||x.l.contact_name||'Objekt')+'</div><div style="color:var(--ink2);font-size:12px;margin-top:2px">'+eur(x.own)+' €/m² · '+x.nm+' mediaan '+eur(x.mkt)+' €/m²'+(x.real?'':' <span style="color:var(--ink3)">(suunav hinnang)</span>')+'</div></div><div style="font-family:Georgia,serif;font-size:20px;color:'+col+';width:70px;text-align:right">+'+x.d+'%</div><button class="btn gh" onclick="openObj(&quot;'+x.l.id+'&quot;)">Ava</button></div>';});
     h+='<div class="coach" style="margin-top:14px">Uusarendus on mediaanist seaduspäraselt kõrgemal — vaata enne järelduse tegemist, kas objekt on uus. Mediaan katab piirkonna kõik korterid, mitte ainult sarnased.</div></div>';
     b.innerHTML=h;}
+  function cmpDefaultElements(isAri){
+  var base = isAri ? ["Tehinguaeg","Asukoht","Suurus (pind)","Seisukord","Kasutusotstarve/nähtavus","Eritegur"] : ["Tehinguaeg","Asukoht","Suurus (pind)","Seisukord","Küte","Eritegur"];
+  return base.map(function(n){return {name:n, adj:[0,0,0]};});
+}
+function cmpDefaultState(o){
+  var t = ((o.use_purpose||"")+" "+(o.property_type||"")).toLowerCase();
+  var isAri = /äri|ari|tootmis|büroo|buroo|kaubandus|ladu|majutus/.test(t);
+  return {unit:(/korter/i.test(o.property_type||"")?"m2":"total"), comps:[{label:"",price:0},{label:"",price:0},{label:"",price:0}], elements:cmpDefaultElements(isAri), weights:null, isAri:isAri};
+}
+function cmpCompute(st){
+  var comps=st.comps, elements=st.elements, n=comps.length;
+  var tot=new Array(n).fill(0);
+  elements.forEach(function(el){el.adj.forEach(function(v,i){tot[i]+=(+v||0);});});
+  var adjPrice=comps.map(function(c,i){return (+c.price||0)*(1+tot[i]/100);});
+  var absSum=new Array(n).fill(0);
+  elements.forEach(function(el){el.adj.forEach(function(v,i){absSum[i]+=Math.abs(+v||0);});});
+  var inv=absSum.map(function(a){return 1/Math.max(a,1);});
+  var invSum=inv.reduce(function(a,b){return a+b;},0)||1;
+  var wSugg=inv.map(function(x){return x/invSum;});
+  return {tot:tot, adjPrice:adjPrice, absSum:absSum, wSugg:wSugg};
+}
+function cmpResult(st){
+  var c=cmpCompute(st);
+  var w=(st.weights&&st.weights.length===st.comps.length)?st.weights.map(function(x){return +x||0;}):c.wSugg;
+  var wsum=w.reduce(function(a,b){return a+b;},0)||1;
+  var val=0;
+  c.adjPrice.forEach(function(p,i){val+=p*(w[i]/wsum);});
+  return {calc:c, weights:w, wsum:wsum, value:val};
+}
+function cmpTargetInfo(o,unit){
+  var p=+o.price||0, a=+o.area||0;
+  if(unit==="m2"&&a>0) return {label:"Sihtobjekti €/m²", val:p/a};
+  return {label:"Sihtobjekti tervikhind", val:p};
+}
+function cmpAddComp(){
+  var st=window.__cmp; st.comps.push({label:"",price:0});
+  st.elements.forEach(function(el){el.adj.push(0);});
+  if(st.weights)st.weights.push(0);
+  cmpRenderShell();
+}
+function cmpRemoveComp(i){
+  var st=window.__cmp; if(st.comps.length<=2)return;
+  st.comps.splice(i,1);
+  st.elements.forEach(function(el){el.adj.splice(i,1);});
+  if(st.weights)st.weights.splice(i,1);
+  cmpRenderShell();
+}
+function cmpAddElement(){
+  var st=window.__cmp; st.elements.push({name:"Uus element", adj:st.comps.map(function(){return 0;})});
+  cmpRenderShell();
+}
+function cmpRemoveElement(ei){
+  var st=window.__cmp; st.elements.splice(ei,1); cmpRenderShell();
+}
+function cmpResetPreset(isAri){
+  var st=window.__cmp; st.elements=cmpDefaultElements(isAri); st.isAri=isAri; st.weights=null; cmpRenderShell();
+}
+function cmpSetUnit(u){
+  window.__cmp.unit=u; cmpRenderShell();
+}
+function cmpSetComp(i,field,val){
+  window.__cmp.comps[i][field]= field==="price"? (+val||0) : val;
+  cmpRenderResults();
+}
+function cmpSetElName(ei,val){
+  window.__cmp.elements[ei].name=val;
+}
+function cmpSetAdj(ei,i,val){
+  window.__cmp.elements[ei].adj[i]=(+val||0);
+  cmpRenderResults();
+}
+function cmpSetWeight(i,val){
+  var st=window.__cmp;
+  if(!st.weights){var r=cmpResult(st);st.weights=r.weights.slice();}
+  st.weights[i]=(+val||0);
+  cmpRenderResults();
+}
+async function cmpSave(){
+  var st=window.__cmp; if(!O||!O.id)return;
+  var r=cmpResult(st); st.result=Math.round(r.value); st.savedAt=new Date().toISOString();
+  O.comp_calc=st;
+  var msg=document.getElementById("cmpMsg"); if(msg)msg.textContent="Salvestan…";
+  try{ var up=await sb.from("leads").update({comp_calc:st}).eq("id",O.id); if(up.error)throw new Error(up.error.message); if(msg)msg.textContent="Salvestatud ✓ "+eur(st.result)+(st.unit==="m2"?" €/m²":" €"); }
+  catch(e){ if(msg)msg.textContent="Salvestamine ebaõnnestus: "+e.message; }
+}
+function cmpRenderResults(){
+  var st=window.__cmp; if(!st)return;
+  var r=cmpResult(st);
+  r.calc.tot.forEach(function(t,i){ var el=document.getElementById("cmp_tot_"+i); if(el)el.textContent=(t>=0?"+":"")+t+"%"; });
+  r.calc.adjPrice.forEach(function(p,i){ var el=document.getElementById("cmp_adjprice_"+i); if(el)el.textContent=eur(Math.round(p)); });
+  r.calc.absSum.forEach(function(a,i){ var el=document.getElementById("cmp_abs_"+i); if(el)el.textContent=a+"%"; });
+  r.weights.forEach(function(w,i){ var el=document.getElementById("cmp_w_"+i); if(el&&document.activeElement!==el)el.value=(+w.toFixed(3)); var elp=document.getElementById("cmp_wpart_"+i); if(elp)elp.textContent=Math.round(w/r.wsum*100)+"%"; });
+  var rv=document.getElementById("cmp_result"); if(rv)rv.textContent=eur(Math.round(r.value))+(st.unit==="m2"?" €/m²":" €");
+  var tv=cmpTargetInfo(O,st.unit); var tvEl=document.getElementById("cmp_target_val"); if(tvEl)tvEl.textContent=tv.val>0?eur(Math.round(tv.val))+(st.unit==="m2"?" €/m²":" €"):"—";
+}
+function renderCmp(){
+  var b=document.getElementById("cmpBody"); if(!b||!O)return;
+  window.__cmp = O.comp_calc ? JSON.parse(JSON.stringify(O.comp_calc)) : cmpDefaultState(O);
+  if(!window.__cmp.comps)window.__cmp=cmpDefaultState(O);
+  cmpRenderShell();
+}
+function cmpRenderShell(){
+  var b=document.getElementById("cmpBody"); if(!b)return;
+  var st=window.__cmp; var n=st.comps.length;
+  var tv=cmpTargetInfo(O,st.unit);
+  var h="<div class=\"section\">";
+  h+="<h3>Võrdlusmeetodi kalkulaator</h3>";
+  h+="<div class=\"coach\" style=\"margin-top:0\">Sama loogika, mida kasutavad eksperthindajad (EVS 875-11): kohanda erisused iga võrreldava tehingu juures, kaalu tulemused ja saad turuväärtuse.</div>";
+  h+="<div style=\"display:flex;gap:8px;flex-wrap:wrap;margin:10px 0\">";
+  h+="<button class=\"btn "+(st.unit==="total"?"mell":"gh")+"\" onclick=\"cmpSetUnit('total')\">Tervikhind</button>";
+  h+="<button class=\"btn "+(st.unit==="m2"?"mell":"gh")+"\" onclick=\"cmpSetUnit('m2')\">€/m²</button>";
+  h+="<span style=\"flex:1\"></span>";
+  h+="<button class=\"btn gh\" onclick=\"cmpResetPreset(false)\">Lähtesta (era)</button>";
+  h+="<button class=\"btn gh\" onclick=\"cmpResetPreset(true)\">Lähtesta (äri)</button>";
+  h+="</div>";
+  h+="<div style=\"overflow-x:auto\"><table style=\"border-collapse:collapse;width:100%;min-width:"+(560+n*180)+"px\">";
+  h+="<tr><td style=\"padding:6px 8px;color:var(--ink3);font-size:11px\">"+tv.label+"</td><td style=\"padding:6px 8px;font-family:Georgia,serif;font-size:16px\" id=\"cmp_target_val\">"+(tv.val>0?eur(Math.round(tv.val))+(st.unit==="m2"?" €/m²":" €"):"—")+"</td>";
+  st.comps.forEach(function(c,i){
+    h+="<td style=\"padding:6px 8px\"><input value=\""+(c.label||"").replace(/\"/g,"&quot;")+"\" placeholder=\"Aadress\" oninput=\"cmpSetComp("+i+",'label',this.value)\" style=\"width:150px;background:var(--inp);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:6px 8px;font-size:12.5px\"></td>";
+  });
+  h+="<td></td></tr>";
+  h+="<tr><td style=\"padding:6px 8px;color:var(--ink3);font-size:11px\">Tehinguhind ("+(st.unit==="m2"?"€/m²":"€")+")</td><td></td>";
+  st.comps.forEach(function(c,i){
+    h+="<td style=\"padding:6px 8px\"><input type=\"number\" value=\""+(c.price||"")+"\" oninput=\"cmpSetComp("+i+",'price',this.value)\" style=\"width:110px;background:var(--inp);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:6px 8px;font-size:12.5px\"></td>";
+  });
+  h+="<td><button class=\"btn gh\" onclick=\"cmpAddComp()\" title=\"Lisa tehing\">+</button></td></tr>";
+  st.elements.forEach(function(el,ei){
+    h+="<tr style=\"border-top:1px solid var(--line)\"><td style=\"padding:6px 8px\"><input value=\""+(el.name||"").replace(/\"/g,"&quot;")+"\" oninput=\"cmpSetElName("+ei+",this.value)\" style=\"width:150px;background:transparent;border:none;color:var(--ink);font-size:12.5px;padding:4px 0\"></td><td></td>";
+    el.adj.forEach(function(v,i){
+      h+="<td style=\"padding:6px 8px\"><input type=\"number\" value=\""+v+"\" step=\"5\" oninput=\"cmpSetAdj("+ei+","+i+",this.value)\" style=\"width:70px;background:var(--inp);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:6px 8px;font-size:12.5px\">%</td>";
+    });
+    h+="<td><button class=\"btn gh\" onclick=\"cmpRemoveElement("+ei+")\" title=\"Eemalda\">–</button></td></tr>";
+  });
+  h+="<tr><td colspan=\"2\" style=\"padding:8px\"><button class=\"btn gh\" onclick=\"cmpAddElement()\">+ Lisa element</button></td>";
+  for(var i=0;i<n;i++)h+="<td></td>"; h+="<td></td></tr>";
+  h+="<tr style=\"border-top:2px solid var(--line2)\"><td colspan=\"2\" style=\"padding:6px 8px;color:var(--ink2);font-size:12px\">Kohandus kokku</td>";
+  for(var i2=0;i2<n;i2++)h+="<td style=\"padding:6px 8px;font-size:12.5px\" id=\"cmp_tot_"+i2+"\">—</td>";
+  h+="<td></td></tr>";
+  h+="<tr><td colspan=\"2\" style=\"padding:6px 8px;color:var(--ink2);font-size:12px\">Kohandatud hind</td>";
+  for(var i3=0;i3<n;i3++)h+="<td style=\"padding:6px 8px;font-family:Georgia,serif\" id=\"cmp_adjprice_"+i3+"\">—</td>";
+  h+="<td></td></tr>";
+  h+="<tr><td colspan=\"2\" style=\"padding:6px 8px;color:var(--ink2);font-size:12px\">Abs-kohanduste summa</td>";
+  for(var i4=0;i4<n;i4++)h+="<td style=\"padding:6px 8px;font-size:12.5px\" id=\"cmp_abs_"+i4+"\">—</td>";
+  h+="<td></td></tr>";
+  h+="<tr><td colspan=\"2\" style=\"padding:6px 8px;color:var(--ink2);font-size:12px\">Kaal (soovituslik, muudetav)</td>";
+  st.comps.forEach(function(c,i){
+    h+="<td style=\"padding:6px 8px\"><input type=\"number\" step=\"0.05\" id=\"cmp_w_"+i+"\" oninput=\"cmpSetWeight("+i+",this.value)\" style=\"width:70px;background:var(--inp);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:6px 8px;font-size:12.5px\"><span id=\"cmp_wpart_"+i+"\" style=\"color:var(--ink3);font-size:11px;margin-left:4px\"></span></td>";
+  });
+  h+="<td><button class=\"btn gh\" onclick=\"cmpRemoveComp("+(n-1)+")\" title=\"Eemalda viimane tehing\">–</button></td></tr>";
+  h+="</table></div>";
+  h+="<div style=\"display:flex;align-items:baseline;gap:14px;margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--cd)\">";
+  h+="<div style=\"color:var(--ink2);font-size:12.5px\">Turuväärtus (kaalutud keskmine)</div>";
+  h+="<div id=\"cmp_result\" style=\"font-family:Georgia,serif;font-size:24px;color:var(--gr)\">—</div>";
+  h+="<span style=\"flex:1\"></span>";
+  h+="<button class=\"btn mell\" onclick=\"cmpSave()\">Salvesta</button>";
+  h+="<span class=\"msg\" id=\"cmpMsg\" style=\"font-size:11px;color:var(--ink3)\"></span>";
+  h+="</div>";
+  h+="</div>";
+  b.innerHTML=h;
+  cmpRenderResults();
+}
   function go(v){var _s=document.querySelector('.side');if(_s)_s.classList.remove('open');var _b=document.getElementById('sideback');if(_b)_b.classList.remove('on');document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.tabbar a[data-v]').forEach(function(a){a.classList.toggle('on',a.dataset.v===v);});document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on');});var el=document.getElementById('v-'+v);if(el)el.classList.add('on');document.querySelector('.content').scrollTop=0;if(v==='team')renderTeam();if(v==='stats')renderStats();if(v==='buyers')renderBuyers();if(v==='updates')renderUpdates();if(v==='mail')renderMail();if(v==='turg')renderTurg();if(v==='hind')renderHind();if(v==='notes')loadNotes();if(v==='tools'){try{fillDocSel();}catch(e){}}try{localStorage.setItem('mell_view',v);}catch(e){}}
   document.querySelectorAll('.side .nav a[data-v]').forEach(function(a){a.addEventListener('click',function(){go(a.dataset.v);});});
-  document.querySelectorAll('.otab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.otab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.oview').forEach(function(x){x.classList.remove('on');});document.getElementById('o-'+t.dataset.o).classList.add('on');if(t.dataset.o==='pakk')renderDoc();});});
+  document.querySelectorAll('.otab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.otab').forEach(function(x){x.classList.remove('on');});t.classList.add('on');document.querySelectorAll('.oview').forEach(function(x){x.classList.remove('on');});document.getElementById('o-'+t.dataset.o).classList.add('on');if(t.dataset.o==='pakk')renderDoc();if(t.dataset.o==='hind')renderCmp();});});
 
   /* urgency + fookus */
   function urg(l){if(!l.next_action_at)return{rank:5,txt:'',cls:'',over:0};var d=new Date(l.next_action_at);d.setHours(0,0,0,0);var n=new Date();n.setHours(0,0,0,0);var diff=Math.round((d-n)/86400000);if(diff<0)return{rank:0,txt:'hilinenud '+d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}),cls:'r',over:-diff};if(diff===0)return{rank:1,txt:'täna',cls:'a',over:0};if(diff===1)return{rank:2,txt:'homme',cls:'g',over:0};return{rank:3,txt:d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}),cls:'g',over:0};}
