@@ -2449,6 +2449,60 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
   };
   try{ cmpRenderShell=wrapped; }catch(e){}
   try{ window.cmpRenderShell=wrapped; }catch(e){}
+
+/* --- Mell enhance: Hinna vaade seisukord/ehitusaasta --- */
+;(function(){
+  if(window.__hindEnh) return;
+  var _rh=(typeof window.renderHind==='function')?window.renderHind:(typeof renderHind==='function'?renderHind:null);
+  window.__hindEnh=1; window.__hindExp=window.__hindExp||false;
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function fmt(x){x=Math.round(+x||0);return String(x).replace(/\B(?=(\d{3})+(?!\d))/g,' ');}
+  function ageF(by){ by=+by||0; if(!by)return 1; if(by>=2015)return 1.20; if(by>=2005)return 1.08; if(by>=1991)return 1.00; if(by>=1961)return 0.92; return 1.00; }
+  function condF(c){ c=String(c||'').toLowerCase();
+    if(c.indexOf('renoveeri')>-1||c.indexOf('uusarend')>-1||c.indexOf('korras')>-1||c.indexOf('valmis')>-1||c.indexOf('v\u00e4ga hea')>-1) return 1.15;
+    if(c.indexOf('remont')>-1||c.indexOf('halb')>-1||c.indexOf('kehv')>-1||c.indexOf('lammut')>-1||c.indexOf('kapitaal')>-1||c.indexOf('vajab')>-1) return 0.80;
+    if(c.indexOf('hea')>-1) return 1.05;
+    return 1.00; }
+  function tag(by){ by=+by||0; if(by>=2015)return {t:'UUSARENDUS',c:'#4bbf83'}; if(by>=2005)return {t:'uuem',c:'var(--ink2)'}; if(by>=1961&&by<=1990)return {t:'paneel',c:'var(--ink2)'}; return null; }
+  var wrapped=function(){
+    var b=document.getElementById('hindBody'); if(!b){ if(_rh)return _rh.apply(this,arguments); return; }
+    var out=(typeof pwObjMkt==='function')?pwObjMkt():[];
+    var ov=out.filter(function(x){return x.d>=10;});
+    if(!ov.length){ b.innerHTML='<div class="section"><div class="empty">\u00dckski objekt ei \u00fcleta piirkonna mediaani \u00fcle 10%.</div></div>'; return; }
+    var older=[], nu=[];
+    ov.forEach(function(x){ var by=+((x.l&&x.l.build_year))||0; if(by>=2015) nu.push(x); else older.push(x); });
+    var exp=window.__hindExp;
+    function rows(list){ return list.map(function(x){
+      var l=x.l||{}, name=esc(l.property_address||l.contact_name||x.nm||'Objekt');
+      var by=l.build_year||null, cond=String(l.condition||'').trim(), tg=tag(by), meta=[];
+      if(by) meta.push(by);
+      if(cond) meta.push(esc(cond));
+      if(tg) meta.push('<span style="color:'+tg.c+';font-weight:600">'+tg.t+'</span>');
+      var expHtml='';
+      if(exp){ var f=ageF(by)*condF(cond), e=x.mkt*f, r=e?Math.round((x.own/e-1)*100):0;
+        var col=r>8?'#e0715f':(r<-8?'#4bbf83':'var(--ink2)');
+        expHtml='<div style="color:var(--ink2);font-size:12px;margin-top:2px">ootus '+fmt(e)+' \u20ac/m\u00b2 <span style="opacity:.7">(hinnang)</span> \u00b7 tegelik <span style="color:'+col+'">'+(r>=0?'+':'')+r+'%</span> ootuse suhtes</div>'; }
+      return '<div style="margin:8px 0;padding-bottom:8px;border-bottom:1px solid var(--line)">'
+        +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">'
+        +'<div style="color:var(--ink)">'+name+'</div>'
+        +'<div style="color:var(--ink);white-space:nowrap"><b>'+fmt(x.own)+'</b> \u20ac/m\u00b2 <span style="color:#e0a24e">+'+x.d+'%</span></div></div>'
+        +'<div style="color:var(--ink2);font-size:12px;margin-top:2px">'+esc(x.nm)+' mediaan '+fmt(x.mkt)+' \u20ac/m\u00b2'+(meta.length?' \u00b7 '+meta.join(' \u00b7 '):'')+'</div>'
+        +expHtml+'</div>'; }).join(''); }
+    var h='<div class="section">';
+    h+='<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">';
+    h+='<h3 style="margin:0">\u00dcle piirkonna mediaani</h3>';
+    h+='<label style="font-size:12px;color:var(--ink2);cursor:pointer;user-select:none"><input type="checkbox" id="hindExpTgl"'+(exp?' checked':'')+' style="vertical-align:middle;margin-right:5px">Seisukorra-p\u00f5hine ootushind (hinnang)</label>';
+    h+='</div>';
+    if(older.length){ h+='<div style="color:var(--ink2);font-size:12px;margin:10px 0 2px">Vanem vara \u00fcle mediaani \u2014 tasub vaadata ('+older.length+')</div>'+rows(older); }
+    if(nu.length){ h+='<div style="color:var(--ink2);font-size:12px;margin:14px 0 2px">T\u00f5en\u00e4oline uusarendus \u2014 k\u00f5rgem hind ootusp\u00e4rane ('+nu.length+')</div>'+rows(nu); }
+    h+='</div>';
+    b.innerHTML=h;
+    var tgl=document.getElementById('hindExpTgl');
+    if(tgl) tgl.addEventListener('change',function(){ window.__hindExp=tgl.checked; wrapped(); });
+  };
+  try{ renderHind=wrapped; }catch(e){}
+  try{ window.renderHind=wrapped; }catch(e){}
+})();
 })();
 async function init(){const{data:{session}}=await sb.auth.getSession();if(!session){showLogin();return;}ME=session.user;loadSettings();try{if(!localStorage.getItem('mell_settings')){var _en=(session.user.email||'').split('@')[0].split(/[._]/)[0];if(_en)SETTINGS.name=_en.charAt(0).toUpperCase()+_en.slice(1);SETTINGS.role='Uus Maa müügispetsialist';SETTINGS.phone='';SETTINGS.email=session.user.email||'';}}catch(e){}fillSettings();loadDocCfg();sb.from('profiles').select('org_id').eq('id',ME.id).maybeSingle().then(function(p){var oid=p&&p.data&&p.data.org_id;if(!oid)return;window._MYORG=oid;sb.from('orgs').select('owner_id').eq('id',oid).maybeSingle().then(function(o){if(o&&o.data&&o.data.owner_id===ME.id){var tn=document.getElementById('navTeam');if(tn)tn.style.display='';}});});var _gw='Tere',_nm=(session.user.email?session.user.email.split('@')[0].split('.')[0]:'');_nm=_nm?_nm.charAt(0).toUpperCase()+_nm.slice(1):'';document.getElementById('hello').textContent=_gw+(_nm?', '+_nm:'')+' · '+new Date().toLocaleDateString('et-EE',{weekday:'long',day:'numeric',month:'long'});var{data,error}=await sb.from('leads').select('*').is('archived_at',null).order('created_at',{ascending:false}).limit(500);if(error){document.getElementById('feed').innerHTML='<div class="empty">Viga.</div>';return;}LEADS=data||[];sb.from('calls').select('*').then(function(cr){CALLS=cr.data||[];});loadBuyers().then(function(){try{renderFookus();renderKanban();}catch(e){}});countUp('sVal',LEADS.reduce(function(a,l){return a+(Number(l.price)||0);},0),' €');countUp('sFcast',forecast(),' €');countUp('sCnt',LEADS.length,'');document.getElementById('tLinn').textContent=eur(TURG.linn)+' €/m²';document.getElementById('tIdx').textContent=TURG.indeks;document.getElementById('tDate').textContent=TURG.allikas+' · '+TURG.paev;document.getElementById('mKm').textContent=(MAARAD.km*100)+'%';document.getElementById('mSrc').textContent=MAARAD.allikas+' · '+MAARAD.paev;await loadMktMap();try{var _d=pwMkt();if(_d.w&&_d.w.n>=3){var _tl=document.getElementById('tLinn');if(_tl)_tl.textContent=eur(_d.w.avg)+' €/m²';var _td=document.getElementById('tDate');if(_td)_td.textContent='Maa-amet · '+_d.w.n+' linnaosa';var _lb=document.getElementById('dTurgLab');if(_lb)_lb.textContent='Tallinn · '+_d.w.n+' linnaosa';}try{var _hn=(typeof pwObjMkt==='function'?pwObjMkt():[]).filter(function(x){return x.d>=10;}).length;var _hb=document.getElementById('navHindBadge');if(_hb){if(_hn>0){_hb.style.display='';_hb.textContent=_hn;}else _hb.style.display='none';}}catch(e){}}catch(e){}try{await loadMembers();}catch(e){}renderFookus();renderKanban();renderLeak();renderReport();renderBell();try{setToruScope(TORU_SCOPE);}catch(e){}var pre=new URLSearchParams(location.search).get('id');var savedV=null,savedO=null;try{savedV=localStorage.getItem('mell_view');savedO=localStorage.getItem('mell_obj');}catch(e){}
     if(pre&&LEADS.find(function(l){return l.id===pre;}))openObj(pre);
