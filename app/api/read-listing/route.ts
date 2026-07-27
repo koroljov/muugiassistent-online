@@ -42,14 +42,11 @@ export async function POST(request: Request) {
   if (!key) return NextResponse.json({ error: "SCRAPFLY_KEY puudub serveris" }, { status: 500 });
 
   let html = "";
-  let dbg: any = null;
   try {
-    const _scenario = Buffer.from(JSON.stringify([ { scroll: { selector: "bottom" } }, { wait: 2000 }, { click: { selector: "//a[contains(.,'numbrit') or contains(.,'telefoni') or contains(.,'Näita')] | //button[contains(.,'numbrit') or contains(.,'telefoni') or contains(.,'Näita')]", ignore_if_not_visible: true, multiple: true } }, { wait: 3000 } ])).toString("base64url");
-    const params = new URLSearchParams({ key, url, render_js: "true", asp: "true", country: "ee", rendering_wait: "2500", js_scenario: _scenario });
+    const params = new URLSearchParams({ key, url, render_js: "true", asp: "true", country: "ee", rendering_wait: "2500" });
     const r = await fetch("https://api.scrapfly.io/scrape?" + params.toString(), { signal: AbortSignal.timeout(55000) });
     const j = await r.json();
     html = j?.result?.content || "";
-    dbg = j?.result?.browser_data?.js_scenario || null;
     if (!html) await reportHealth("portaalid", "degraded", "Scrapfly ei tagastanud sisu");
     if (!html) return NextResponse.json({ error: "Scrapfly ei tagastanud sisu: " + JSON.stringify(j?.result?.error || {}).slice(0, 200) }, { status: 502 });
   } catch (e: any) {
@@ -77,6 +74,5 @@ export async function POST(request: Request) {
     ogTitle, ogDesc, text,
     tel: telM ? telM[0].trim() : "",
     email: emailM ? emailM[0].trim() : "",
-    dbg,
   });
 }
