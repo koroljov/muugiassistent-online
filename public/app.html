@@ -1706,8 +1706,9 @@ async function cmpFetchLink(i){
     if(!d.addr&&!d.price){ if(msgEl){msgEl.style.color="#e0715f";msgEl.textContent="Ei leidnud andmeid \u2014 t\u00e4ida k\u00e4sitsi.";} return; }
     if(d.addr) st.comps[i].label=d.addr;
     if(d.price){ var p=+d.price; if(st.unit==="m2"&&d.area) p=Math.round(p/(+d.area)); st.comps[i].price=p; }
-    if(msgEl){msgEl.style.color="#48c281";msgEl.textContent="\u2713 Loetud";}
     cmpRenderShell();
+    var msgEl2=document.getElementById("cmp_linkmsg_"+i);
+    if(msgEl2){msgEl2.style.color="#48c281";msgEl2.textContent="\u2713 Loetud";}
   }catch(e){ if(msgEl){msgEl.style.color="#e0715f";msgEl.textContent="Viga: "+(e.message||e);} }
 }
   function cmpRenderShell(){
