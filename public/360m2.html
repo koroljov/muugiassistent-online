@@ -466,7 +466,7 @@ $("#btnSave").addEventListener("click",async ()=>{
       i++;
       if(!sc.image.url && sc.image.file){
         busy(true,`Laen fotot ${i}/${tour.config.scenes.length}…`);
-        const full=await compress(sc.image.file, 6000, 0.82);
+        const full=await compress(sc.image.file, 4096, 0.82);
         sc.image.url=await uploadBlob(`${slug}/${sc.id}.jpg`, full);
         const th=await compress(sc.image.file, 320, 0.7);
         sc.thumb=await uploadBlob(`${slug}/${sc.id}_t.jpg`, th);
