@@ -87,7 +87,7 @@
   <div class="section">
     <h3><span class="d"></span>✦ Impordi kuulutus portaalist</h3>
     <div class="grid3">
-      <div class="field"><label>Portaali link (kui olemas)</label><input class="inp" id="propertyLink" placeholder="kv.ee / kinnisvara24 / city24"><button class="btn go" type="button" id="listingBtn" onclick="readListing()" style="margin-top:6px;font-size:12px;padding:6px 10px">✦ Loe kuulutus (AI täidab väljad)</button><div id="listingMsg" style="font-size:10.5px;margin-top:4px;color:var(--tx2)"></div></div>
+      <div class="field"><label>Portaali link (kui olemas)</label><input class="inp" id="propertyLink" placeholder="kv.ee / kinnisvara24 / city24"><button class="btn go" type="button" id="listingBtn" onclick="readListing()" style="margin-top:6px;font-size:12px;padding:6px 10px">✦ Loe kuulutus (AI täidab väljad)</button><div id="listingMsg" style="font-size:10.5px;margin-top:4px;color:var(--tx2)"></div><div style="margin-top:10px;font-size:11px;color:var(--ink2,#9fb0a8)">Telefon on kv.ee-s peidus? Kasuta telefoniga importi (töötab sinu brauseris, saab ka telefoni): <a id="mellBm" href="#" style="display:inline-block;margin-top:4px;padding:5px 10px;border:1px solid var(--line);border-radius:8px;color:var(--gr,#4bbf83);text-decoration:none;font-weight:600">✦ Telefoniga import</a><div style="margin-top:3px;opacity:.85">Lohista see nupp üks kord järjehoidjaribale. Siis ava kv.ee kuulutus ja vajuta seda — telefon ja väljad tulevad automaatselt.</div></div></div>
     </div>
   </div>
 
@@ -312,6 +312,60 @@
     if(st){st.style.color='#48c281';st.textContent=filled.length?('✓ Täidetud: '+filled.join(', ')+'. Kontrolli üle.'):'Uusi andmeid ei leidnud (aadress ei lahenenud või juba täidetud).';}}
   setType('korter','Korter');
   init();
+
+/* --- Mell: telefoniga import (bookmarklet) --- */
+async function applyListing(j){
+  var st=document.getElementById('listingMsg'), b=document.getElementById('listingBtn');
+  try{
+var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON kujul {"addr":"","type":"","condition":"","deal":"","price":"","area":"","rooms":"","floor":"","buildYear":"","name":"","phone":"","email":""}. type=ÜKS: Korter, Maja, Majaosa, Maa-krunt, Äripind, Garaaž. deal="muuk" kui müük, "uur" kui üür. condition=ÜKS kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". price=ainult number eurodes. area=üldpind m2 number. rooms=tubade arv number. floor="3/5" voi "3". buildYear=4-kohaline aasta. name/phone/email=kontakt. Puuduv jäta "".';
+      var usr='Pealkiri: '+(j.ogTitle||'')+'\nKirjeldus: '+(j.ogDesc||'')+'\nTelefon: '+(j.tel||'')+'\nE-post: '+(j.email||'')+'\nTekst: '+(j.text||'');
+      var ans=await aiFetch({system:sys,max_tokens:300,messages:[{role:'user',content:usr}]});
+      var jm=(ans||'').match(/\{[\s\S]*\}/); var d=jm?JSON.parse(jm[0]):{};
+      if(!d.addr&&!d.type&&!d.price&&!d.area&&!d.name){ if(st){st.style.color='#e0715f';st.textContent='AI ei leidnud andmeid — kontrolli URL või täida käsitsi.';} if(b)b.disabled=false; return; }
+      var setV=function(id,val){var el=document.getElementById(id);if(el&&val!=null&&val!==''&&!el.value)el.value=val;};
+      var tmap={'korter':'korter','maja':'maja','majaosa':'majaosa','maa-krunt':'maa','maa':'maa','äripind':'ari','aripind':'ari','garaaž':'garaaz','garaaz':'garaaz'};
+      if(d.type){var tk=tmap[String(d.type).toLowerCase()];if(tk){var te=document.querySelector('.type[data-t="'+tk+'"]');if(te)te.click();}}
+      if(d.deal){var dv=(String(d.deal).toLowerCase()==='uur')?'uur':'muuk';var db=document.querySelector('#dealSeg button[data-v="'+dv+'"]');if(db)db.click();}
+      setV('address',d.addr); setV('condition',d.condition); setV('contactName',d.name); setV('phone',(function(v){if(!v)return null;var s=String(v).replace(/\D/g,'');if(s.indexOf('372')===0)s=s.slice(3);return (s.length>=7&&s.length<=8&&/^[3-9]/.test(s))?s:null;})(d.phone)); setV('email',d.email);
+      if(d.price)setV('price',String(d.price).replace(/[^\d]/g,''));
+      if(d.area)setV('area',String(d.area).replace(/[^\d.,]/g,'').replace(',','.'));
+      if(d.rooms)setV('rooms',String(d.rooms).replace(/[^\d]/g,''));
+      if(d.floor)setV('floor',String(d.floor).trim());
+      if(d.buildYear){var by=String(d.buildYear).replace(/[^\d]/g,'').slice(0,4);if(by.length===4)setV('buildYear',by);}
+      if(st){st.style.color='#48c281';st.textContent='✓ AI luges kuulutuse — kontrolli väljad ja salvesta. Aadressi järgi saab veel ✦ Maa-amet+EHR täita.';}
+    
+  }catch(e){ if(st){ st.style.color='#e0715f'; st.textContent='Import eba\u00f5nnestus.'; } }
+  if(b)b.disabled=false;
+}
+function importFromHash(){
+  try{
+    var h=location.hash||'';
+    if(h.indexOf('#import=')!==0) return;
+    var data=JSON.parse(decodeURIComponent(escape(atob(h.slice(8)))));
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){ location.hash=''; }
+    var pl=document.getElementById('propertyLink'); if(pl&&data.url&&!pl.value) pl.value=data.url;
+    var ph=(function(v){ if(!v) return null; var s=String(v).replace(/[^0-9]/g,''); if(s.indexOf('372')===0)s=s.slice(3); return (s.length>=7&&s.length<=8&&/^[3-9]/.test(s))?s:null; })(data.tel);
+    if(ph){ var pe=document.getElementById('phone'); if(pe&&!pe.value) pe.value=ph; }
+    var j={ ogTitle:data.ogTitle||'', ogDesc:data.ogDesc||'', tel:data.tel||'', email:data.email||'', text:(data.price?('Hind: '+data.price+' | '):'')+(data.text||'') };
+    applyListing(j);
+  }catch(e){}
+}
+function mellGrab(){
+  if(!/kv\.ee|kinnisvara24\.ee|city24\.ee|facebook\.com\//.test(location.hostname)){ alert('Ava k\u00f5igepealt kuulutuse leht (kv.ee, kinnisvara24, city24 v\u00f5i Facebook Marketplace).'); return; }
+  function m(p){ var e=document.querySelector('meta[property="'+p+'"]'); return e?e.content:''; }
+  try{ var c=[].slice.call(document.querySelectorAll('a,button,div,span')).filter(function(e){ var t=(e.textContent||'').trim(); return t.length<40 && /(numbrit|telefoni|n\u00e4ita)/i.test(t); }); c.sort(function(a,b){ return a.textContent.length-b.textContent.length; }); if(c[0]) c[0].click(); }catch(_){}
+  setTimeout(function(){
+    var price='', bf=-1;
+    try{ var all=document.querySelectorAll('*'); for(var i=0;i<all.length;i++){ var el=all[i]; if(el.children.length===0){ var tx=(el.textContent||'').trim(); if((/\u20ac|eur/i.test(tx)) && (/[0-9]/.test(tx)) && tx.length<24){ var fs=parseFloat(getComputedStyle(el).fontSize)||0; if(fs>bf){ bf=fs; price=tx; } } } } }catch(_){}
+    var tel=''; try{ var a=document.querySelector('a[href^="tel:"]'); if(a) tel=a.getAttribute('href').replace(/^tel:/,''); }catch(_){}
+    var email=''; try{ var e2=document.querySelector('a[href^="mailto:"]'); if(e2) email=e2.getAttribute('href').replace(/^mailto:/,'').split('?')[0]; }catch(_){}
+    var data={ ogTitle:m('og:title'), ogDesc:m('og:description'), text:(document.body.innerText||'').replace(/\s+/g,' ').slice(0,7000), tel:tel, email:email, price:price, url:location.href };
+    var b64=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    window.open('https://muugiassistent-online.vercel.app/uus.html#import='+b64,'_blank');
+  }, 1600);
+}
+(function(){ function boot(){ try{ var bm=document.getElementById('mellBm'); if(bm) bm.href='javascript:('+mellGrab.toString()+')();'; }catch(_){} importFromHash(); } if(document.readyState!=='loading') boot(); else document.addEventListener('DOMContentLoaded', boot); })();
+
 </script>
 </body>
 </html>
