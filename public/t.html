@@ -171,6 +171,7 @@ function buildViewer(cfg){
     scenes[s.id] = {
       type:"equirectangular",
       panorama: s.image && s.image.url ? s.image.url : s.image,
+      preview: (s.thumb && s.thumb.url ? s.thumb.url : s.thumb) || undefined,
       hfov: 110,
       hotSpots: (s.hotspots||[]).map(h=>({
         pitch:h.pitch, yaw:h.yaw, type:"scene", sceneId:h.target,
