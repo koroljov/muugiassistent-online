@@ -287,10 +287,14 @@ function loadScene(id){
   currentId=id; $("#empty").style.display="none";
   const hotSpots=sc.hotspots.map(h=>({ pitch:h.pitch, yaw:h.yaw, type:"scene", text:h.text||nameOf(h.target),
     clickHandlerFunc:()=>{ if(mode==="view") loadScene(h.target); } }));
+  const __sig=id+"|"+String(sc.image.local||sc.image.url||"").slice(-48)+"|"+JSON.stringify(sc.hotspots);
+  if(!(viewer&&window.__loadSig===__sig)){
   if(viewer){ try{viewer.destroy();}catch(e){} viewer=null; }
   viewer=pannellum.viewer("pano",{ type:"equirectangular", panorama: sc.image.local||sc.image.url,
     autoLoad:true, showControls:true, hotSpots, compass:false, hfov:110 });
   viewer.on("mousedown",onDown); viewer.on("mouseup",onUp);
+  window.__loadSig=__sig;
+  }
   renderScenes(); renderPlan(); updateButtons();
 }
 function nameOf(id){ const s=tour.config.scenes.find(x=>x.id===id); return s?s.name:"Ruum"; }
