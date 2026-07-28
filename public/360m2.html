@@ -451,7 +451,7 @@ async function ensureSlug(){
   tour.slug=s; return s;
 }
 async function uploadBlob(path, blob){
-  const { error }=await sb.storage.from("tours").upload(path, blob, { upsert:true, contentType:"image/jpeg" });
+  const { error }=await sb.storage.from("tours").upload(path, blob, { upsert:true, contentType:"image/jpeg", cacheControl:"31536000" });
   if(error) throw error;
   return sb.storage.from("tours").getPublicUrl(path).data.publicUrl;
 }
