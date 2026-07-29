@@ -64,6 +64,7 @@
     padding:12px 18px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4);
     display:inline-flex;align-items:center;gap:8px}
   #cta{right:14px;bottom:88px}
+  #waBtn{right:14px;bottom:150px;text-decoration:none}
   /* modal */
   .mbg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
   .mbg.show{display:flex}
@@ -106,6 +107,7 @@
 </div>
 
 <button class="fab" id="cta">Tunnen huvi</button>
+<a class="fab" id="waBtn" style="display:none" target="_blank" rel="noopener">WhatsApp</a>
 
 <div id="rooms"></div>
 
@@ -254,6 +256,12 @@ function buildAgent(cfg){
     if(a.phone) html+=`<br>${esc(a.phone)}`;
     if(a.email) html+=`<br>${esc(a.email)}`;
     $("#agentBox").innerHTML=html;
+  }
+  if(a.phone){
+    const digits=a.phone.replace(/[^0-9]/g,"");
+    const msg=encodeURIComponent("Tere, huvitab "+(tour.title||"objekt")+" virtuaaltuur.");
+    $("#waBtn").href="https://wa.me/"+digits+"?text="+msg;
+    $("#waBtn").style.display="inline-flex";
   }
 }
 $("#cta").addEventListener("click",()=>$("#mLead").classList.add("show"));
