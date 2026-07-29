@@ -192,7 +192,7 @@ function buildViewer(cfg){
   current = first;
   viewer = pannellum.viewer("pano", {
     default:{ firstScene:first, autoLoad:true, sceneFadeDuration:900, compass:false,
-      autoRotate: cfg.autoRotate ? -2 : 0, autoRotateInactivityDelay: cfg.autoRotate ? 8000 : -1 },
+      autoRotate: cfg.autoRotate ? -2 : 0, autoRotateInactivityDelay: cfg.autoRotate ? 8000 : -1 , orientationOnByDefault:true},
     scenes: scenes
   });
   viewer.on("scenechange", id=>{ current = id; markActive(); });
