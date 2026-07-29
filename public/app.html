@@ -1346,8 +1346,10 @@
           </div>
           <div class="section"><h3>360<span style="color:var(--gr);font-size:.62em;vertical-align:super;font-weight:800">m²</span> virtuaaltuur<i class="tip" tabindex="0" onclick="this.classList.toggle('on')">i<span class="tt">Loo sellele objektile 360° virtuaaltuur. Link seotakse objektiga ja selle saab panna kuulutusse. Vaatamised ja huviliste kontaktid koguneb tuuri juurde.</span></i></h3>
             <div class="coach" style="margin:0 0 10px">DJI 360 fotodest sirvitav tuur. Ava builder avab tööriista, mis seob tuuri selle objektiga automaatselt.</div>
-            <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn go" onclick="tour360open()">Ava 360m² builder</button><button class="btn gh" onclick="tour360link()">Selle objekti tuuri link</button><button class="btn gh" onclick="tour360view()">Vaata ringi</button></div>
+            <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn go" onclick="tour360open()">Ava 360m² builder</button><button class="btn gh" onclick="tour360link()">Selle objekti tuuri link</button><button class="btn gh" onclick="tour360view()">Vaata ringi</button>
+<button class="btn gh" onclick="tourLeadsShow()">Tuuri leadid</button></div>
             <div class="msg" id="tour360Msg" style="margin-top:8px"></div>
+<div id="tourLeadsBox" style="margin-top:10px"></div>
           </div>
           <div class="section"><h3>Kaaskiri</h3>
             <button class="btn mell" style="width:100%;justify-content:center;margin-bottom:10px" onclick="genCover()">✦ Kirjuta kaaskiri</button>
@@ -2035,6 +2037,51 @@ function miks(l,u,fr){var m2=(l.price&&l.area)?(' · '+eur(l.price/l.area)+' €
   function tour360open(){ if(!O){toast('Ava objekt');return;} window.open('/360m2.html?lead='+encodeURIComponent(O.id)+'&title='+encodeURIComponent(O.property_address||O.property_type||''),'_blank'); }
   async function tour360view(){ if(!O)return; var m=document.getElementById('tour360Msg'); if(m){m.style.color='#a3b4aa';m.textContent='Otsin\u2026';} var r=await sb.from('tours').select('slug').eq('lead_id',O.id).order('updated_at',{ascending:false}).limit(1); if(r.error){ if(m){m.style.color='#e0715f';m.textContent='Viga: '+r.error.message;} return;} if(!r.data||!r.data.length){ if(m){m.style.color='#d8a24e';m.textContent='Sellel objektil pole veel tuuri.';} return;} if(m){m.textContent='';} window.open(location.origin+'/t.html?id='+r.data[0].slug,'_blank'); }
   async function tour360link(){ if(!O)return; var m=document.getElementById('tour360Msg'); if(!m)return; m.style.color='#a3b4aa'; m.textContent='Otsin'; var r=await sb.from('tours').select('slug,views').eq('lead_id',O.id).order('updated_at',{ascending:false}).limit(1); if(r.error){m.style.color='#e0715f';m.textContent='Viga: '+r.error.message;return;} if(!r.data||!r.data.length){m.style.color='#d8a24e';m.textContent='Sellel objektil pole veel tuuri.';return;} var link=location.origin+'/t.html?id='+r.data[0].slug; try{await navigator.clipboard.writeText(link);}catch(e){} m.style.color='#48c281'; m.innerHTML='Tuur '+(r.data[0].views||0)+' vaatamist link kopeeritud: <a href="'+link+'" target="_blank" rel="noopener" style="color:var(--gr)">'+esc(link)+'</a>'; }
+  async function tourLeadsShow(){
+    if(!O) return;
+    var box=document.getElementById('tourLeadsBox'); if(!box) return;
+    box.innerHTML='<div class="msg" style="color:#a3b4aa">Otsin leade\u2026</div>';
+    var tr=await sb.from('tours').select('slug').eq('lead_id',O.id).order('updated_at',{ascending:false}).limit(1);
+    if(tr.error||!tr.data||!tr.data.length){ box.innerHTML='<div class="msg" style="color:#d8a24e">Sellel objektil pole veel tuuri.</div>'; return; }
+    var slug=tr.data[0].slug;
+    var lr=await sb.from('tour_leads').select('*').eq('tour_slug',slug).order('created_at',{ascending:false});
+    if(lr.error){ box.innerHTML='<div class="msg" style="color:#e0715f">Viga: '+esc(lr.error.message)+'</div>'; return; }
+    window.__tourLeads=lr.data||[];
+    renderTourLeadsList();
+  }
+  function renderTourLeadsList(){
+    var box=document.getElementById('tourLeadsBox'); if(!box) return;
+    var leads=window.__tourLeads||[];
+    if(!leads.length){ box.innerHTML='<div class="msg" style="color:#9aa3af">Selle tuuri kohta pole veel \u00fchtki huvilist.</div>'; return; }
+    box.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--gr);margin:8px 0 6px">\u25c7 '+leads.length+' huvilist tuurist</div>'+leads.map(function(l){
+      var digits=(l.phone||'').replace(/[^0-9]/g,'');
+      var match=(BUYERS||[]).find(function(b){
+        var bd=(b.phone||'').replace(/[^0-9]/g,'');
+        return (digits&&bd&&bd.slice(-8)===digits.slice(-8))||(l.email&&b.email&&b.email.toLowerCase()===l.email.toLowerCase());
+      });
+      var dt=l.created_at?new Date(l.created_at).toLocaleDateString('et-EE'):'';
+      var actionHtml=match
+        ? '<span style="color:#48c281;font-size:12px">\u2713 Ostjate nimekirjas: '+esc(match.name||'')+'</span>'
+        : '<button class="btn gh" style="font-size:12px;padding:4px 10px" onclick="tourLeadToBuyer(\''+l.id+'\')">+ Loo ostja</button>';
+      return '<div style="background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--ink)">'
+        +'<b>'+esc(l.name||'(nimeta)')+'</b> \u00b7 '+esc(l.phone||'')+(l.email?(' \u00b7 '+esc(l.email)):'')
+        +'<div style="color:var(--muted);margin-top:2px">'+dt+(l.message?(' \u2014 '+esc(l.message)):'')+'</div>'
+        +'<div style="margin-top:6px">'+actionHtml+'</div>'
+        +'</div>';
+    }).join('');
+  }
+  async function tourLeadToBuyer(id){
+    var lead=(window.__tourLeads||[]).find(function(l){ return l.id===id; });
+    if(!lead) return;
+    var addr=(O&&(O.property_address||O.property_type))||'objekt';
+    var note='Allikas: 360\u00b0 tuur \u2014 '+addr+(lead.created_at?(' ('+new Date(lead.created_at).toLocaleDateString('et-EE')+')'):'')+(lead.message?('\nS\u00f5num: '+lead.message):'');
+    var rec={created_by:(ME&&ME.id)||null, org_id:window._MYORG||null, name:lead.name, phone:lead.phone||null, email:lead.email||null, note:note};
+    var r=await sb.from('buyers').insert(rec).select();
+    if(r.error){ toast('Viga: '+r.error.message); return; }
+    toast('Ostja loodud: '+lead.name);
+    if(typeof loadBuyers==='function') await loadBuyers();
+    renderTourLeadsList();
+  }
   async function callScript(){if(!O)return;var m=document.getElementById('callMsg');m.style.color='#a3b4aa';m.textContent='Koostan spikri…';var ctx=buildLines()+(O.inspection?('\nÜlevaatus:\n'+inspectionSummary()):'');var out=await aiFetch({system:'Oled Uus Maa müügispetsialisti kõne-abi. Koosta LÜHIKE külmkõne-spikker eesti keeles selle objekti omanikule helistamiseks: (1) avalause — viisakas, konkreetne, kaardistav, mitte pushiv; (2) 2-3 objektipõhist juttu (turupositsioon/eelised ausalt); (3) 1 tõenäoline vastuväide + rahulik vastus. Aus, ilma surveta ja lubadusteta. Ilma vorminduse-märkideta.'+AI_STIIL,max_tokens:400,model:'claude-sonnet-4-6',messages:[{role:'user',content:'Objekt:\n'+ctx}]});if(out&&out.indexOf('Viga')!==0){var w=document.getElementById('callScriptBox');if(w){w.style.display='block';w.textContent=out;}m.style.color='#48c281';m.textContent='✓ Spikker valmis.';}else{m.style.color='#e0715f';m.textContent=out||'Viga';}}
   function openEdit(){if(!O)return;var s=document.getElementById('editSec');s.style.display=(s.style.display==='none')?'block':'none';if(s.style.display==='none')return;var g=function(id,v){var el=document.getElementById(id);if(el)el.value=(v==null?'':v);};g('ed_name',O.contact_name);g('ed_phone',O.phone);g('ed_addr',O.property_address);g('ed_asum',O.asum);document.getElementById('ed_type').value=O.property_type||'';document.getElementById('ed_cond').value=O.condition||'';g('ed_price',O.price);g('ed_area',O.area);g('ed_plot',O.plot_area);g('ed_rooms',O.rooms);g('ed_floor',O.floor);g('ed_year',O.build_year);}
   async function saveObjEdit(){if(!O)return;var m=document.getElementById('edMsg');m.style.color='#a3b4aa';m.textContent='Salvestan…';function t(id){var v=(document.getElementById(id).value||'').trim();return v===''?null:v;}function n(id){var v=(document.getElementById(id).value||'').trim().replace(/\s/g,'').replace(',','.');if(v==='')return null;var f=parseFloat(v);return isNaN(f)?null:f;}var patch={contact_name:t('ed_name'),phone:t('ed_phone'),property_address:t('ed_addr'),asum:t('ed_asum'),property_type:document.getElementById('ed_type').value||null,condition:document.getElementById('ed_cond').value||null,price:n('ed_price'),area:n('ed_area'),plot_area:n('ed_plot'),rooms:(n('ed_rooms')!=null?Math.round(n('ed_rooms')):null),floor:t('ed_floor'),build_year:(n('ed_year')!=null?Math.round(n('ed_year')):null)};var up=await sb.from('leads').update(patch).eq('id',O.id);if(up.error){m.style.color='#e0715f';m.textContent='Viga: '+up.error.message;return;}Object.assign(O,patch);var i=LEADS.findIndex(function(l){return l.id===O.id;});if(i>=0)Object.assign(LEADS[i],patch);m.style.color='#48c281';m.textContent='✓ Salvestatud';var loc=[O.asum,O.district,O.county].filter(Boolean).join(', ');document.getElementById('oTitle').textContent=(O.property_type||'Objekt')+(loc?(' — '+loc):'');document.getElementById('oSub').textContent=O.property_address||'';document.getElementById('oPrice').textContent=O.price!=null?eur(O.price)+' €':'—';document.getElementById('oM2').textContent=(O.price&&O.area)?eur(O.price/O.area)+' €/m²':'';var pe=document.getElementById('plot');if(pe)pe.value=O.plot_area!=null?O.plot_area:'';await factUpsert(O.id,'area',patch.area,'user','fakt');await factUpsert(O.id,'plot_area',patch.plot_area,'user','fakt');await factUpsert(O.id,'build_year',patch.build_year,'user','fakt');await factUpsert(O.id,'condition',patch.condition,'user','fakt');await factUpsert(O.id,'rooms',patch.rooms,'user','fakt');await factUpsert(O.id,'floor',patch.floor,'user','fakt');facts();mellChecks();analysis();calcReality();renderMkt();renderPricing();genSpikker();feeUpd();}
