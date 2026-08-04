@@ -228,9 +228,9 @@
       var j=await r.json();
       if(!r.ok){ if(st){st.style.color='#e0715f';st.textContent='Ei õnnestunud lugeda: '+(j.error||r.status);} if(b)b.disabled=false; return; }
       if(st){st.style.color='#93a89b';st.textContent='AI loeb kuulutust…';}
-      var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON kujul {"addr":"","type":"","condition":"","deal":"","price":"","area":"","rooms":"","floor":"","buildYear":"","name":"","phone":"","email":""}. type=ÜKS: Korter, Maja, Majaosa, Maa-krunt, Äripind, Garaaž. deal="muuk" kui müük, "uur" kui üür. condition=ÜKS kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". price=ainult number eurodes. area=üldpind m2 number. rooms=tubade arv number. floor="3/5" voi "3". buildYear=4-kohaline aasta. name/phone/email=kontakt. Puuduv jäta "".';
+      var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON kujul {"addr":"","type":"","condition":"","deal":"","price":"","area":"","rooms":"","floor":"","buildYear":"","name":"","phone":"","email":"","cadastral":"","heating":"","material":"","energyLabel":"","ownership":"","utilityCosts":""}. type=ÜKS: Korter, Maja, Majaosa, Maa-krunt, Äripind, Garaaž. deal="muuk" kui müük, "uur" kui üür. condition=ÜKS kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". price=ainult number eurodes. area=üldpind m2 number. rooms=tubade arv number. floor="3/5" voi "3". buildYear=4-kohaline aasta. name/phone/email=kontakt. cadastral=katastritunnus kujul 12345:678:9012 kui leidub, muidu "". heating=ÜKS: Kaugküte, Gaas, Elekter, Õhksoojuspump, "Ahi / kamin"; muidu "". material=ÜKS (ainult maja/majaosa): Kivi, Puit, Paneel, Karkass; muidu "". energyLabel=ÜKS TÄHT A kuni E kui leidub, muidu "". ownership=ÜKS: Korteriomand, Kinnisasi, Hoonestusõigus, Kaasomand; muidu "". utilityCosts=kommunaalkulud kujul "92 / 187" (suvi/talv numbrid) kui leidub, muidu "". Puuduv jäta "".';
       var usr='Pealkiri: '+(j.ogTitle||'')+'\nKirjeldus: '+(j.ogDesc||'')+'\nTelefon: '+(j.tel||'')+'\nE-post: '+(j.email||'')+'\nTekst: '+(j.text||'');
-      var ans=await aiFetch({system:sys,max_tokens:300,messages:[{role:'user',content:usr}]});
+      var ans=await aiFetch({system:sys,max_tokens:450,messages:[{role:'user',content:usr}]});
       var jm=(ans||'').match(/\{[\s\S]*\}/); var d=jm?JSON.parse(jm[0]):{};
       if(!d.addr&&!d.type&&!d.price&&!d.area&&!d.name){ if(st){st.style.color='#e0715f';st.textContent='AI ei leidnud andmeid — kontrolli URL või täida käsitsi.';} if(b)b.disabled=false; return; }
       var setV=function(id,val){var el=document.getElementById(id);if(el&&val!=null&&val!==''&&!el.value)el.value=val;};
@@ -238,11 +238,21 @@
       if(d.type){var tk=tmap[String(d.type).toLowerCase()];if(tk){var te=document.querySelector('.type[data-t="'+tk+'"]');if(te)te.click();}}
       if(d.deal){var dv=(String(d.deal).toLowerCase()==='uur')?'uur':'muuk';var db=document.querySelector('#dealSeg button[data-v="'+dv+'"]');if(db)db.click();}
       setV('address',d.addr); setV('condition',d.condition); setV('contactName',d.name); setV('phone',(function(v){if(!v)return null;var s=String(v).replace(/\D/g,'');if(s.indexOf('372')===0)s=s.slice(3);return (s.length>=7&&s.length<=8&&/^[3-9]/.test(s))?s:null;})(d.phone)); setV('email',d.email);
-      if(d.price)setV('price',String(d.price).replace(/[^\d]/g,''));
+      var priceRaw=(j&&j.priceHint)||d.price;
+      if(priceRaw)setV('price',String(priceRaw).replace(/[^\d]/g,''));
       if(d.area)setV('area',String(d.area).replace(/[^\d.,]/g,'').replace(',','.'));
       if(d.rooms)setV('rooms',String(d.rooms).replace(/[^\d]/g,''));
       if(d.floor)setV('floor',String(d.floor).trim());
       if(d.buildYear){var by=String(d.buildYear).replace(/[^\d]/g,'').slice(0,4);if(by.length===4)setV('buildYear',by);}
+      if(d.cadastral)setV('cadastral',String(d.cadastral).trim());
+      if(d.heating)setV('heating',String(d.heating).trim());
+      if(d.material)setV('material',String(d.material).trim());
+      if(d.energyLabel)setV('energy',String(d.energyLabel).trim().toUpperCase());
+      if(d.ownership)setV('ownership',String(d.ownership).trim());
+      if(d.utilityCosts)setV('utilityCosts',String(d.utilityCosts).trim());
+      if(j&&j.ogImage)setV('imgUrl',j.ogImage);
+      if(j&&j.videoUrl)setV('videoUrl',j.videoUrl);
+      if(j&&j.ogDesc)setV('mellNotes','Kuulutuselt: '+j.ogDesc);
       if(st){st.style.color='#48c281';st.textContent='✓ AI luges kuulutuse — kontrolli väljad ja salvesta. Aadressi järgi saab veel ✦ Maa-amet+EHR täita.';}
     }catch(e){ if(st){st.style.color='#e0715f';st.textContent='Viga: '+(e&&e.message||'tundmatu');} }
     if(b)b.disabled=false;
@@ -317,9 +327,9 @@
 async function applyListing(j){
   var st=document.getElementById('listingMsg'), b=document.getElementById('listingBtn');
   try{
-var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON kujul {"addr":"","type":"","condition":"","deal":"","price":"","area":"","rooms":"","floor":"","buildYear":"","name":"","phone":"","email":""}. type=ÜKS: Korter, Maja, Majaosa, Maa-krunt, Äripind, Garaaž. deal="muuk" kui müük, "uur" kui üür. condition=ÜKS kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". price=ainult number eurodes. area=üldpind m2 number. rooms=tubade arv number. floor="3/5" voi "3". buildYear=4-kohaline aasta. name/phone/email=kontakt. Puuduv jäta "".';
+var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON kujul {"addr":"","type":"","condition":"","deal":"","price":"","area":"","rooms":"","floor":"","buildYear":"","name":"","phone":"","email":"","cadastral":"","heating":"","material":"","energyLabel":"","ownership":"","utilityCosts":""}. type=ÜKS: Korter, Maja, Majaosa, Maa-krunt, Äripind, Garaaž. deal="muuk" kui müük, "uur" kui üür. condition=ÜKS kui selgub: Uusarendus, Uus, Renoveeritud, Heas korras, San. remont tehtud, Keskmine, Vajab san. remonti, Vajab renoveerimist; muidu "". price=ainult number eurodes. area=üldpind m2 number. rooms=tubade arv number. floor="3/5" voi "3". buildYear=4-kohaline aasta. name/phone/email=kontakt. cadastral=katastritunnus kujul 12345:678:9012 kui leidub, muidu "". heating=ÜKS: Kaugküte, Gaas, Elekter, Õhksoojuspump, "Ahi / kamin"; muidu "". material=ÜKS (ainult maja/majaosa): Kivi, Puit, Paneel, Karkass; muidu "". energyLabel=ÜKS TÄHT A kuni E kui leidub, muidu "". ownership=ÜKS: Korteriomand, Kinnisasi, Hoonestusõigus, Kaasomand; muidu "". utilityCosts=kommunaalkulud kujul "92 / 187" (suvi/talv numbrid) kui leidub, muidu "". Puuduv jäta "".';
       var usr='Pealkiri: '+(j.ogTitle||'')+'\nKirjeldus: '+(j.ogDesc||'')+'\nTelefon: '+(j.tel||'')+'\nE-post: '+(j.email||'')+'\nTekst: '+(j.text||'');
-      var ans=await aiFetch({system:sys,max_tokens:300,messages:[{role:'user',content:usr}]});
+      var ans=await aiFetch({system:sys,max_tokens:450,messages:[{role:'user',content:usr}]});
       var jm=(ans||'').match(/\{[\s\S]*\}/); var d=jm?JSON.parse(jm[0]):{};
       if(!d.addr&&!d.type&&!d.price&&!d.area&&!d.name){ if(st){st.style.color='#e0715f';st.textContent='AI ei leidnud andmeid — kontrolli URL või täida käsitsi.';} if(b)b.disabled=false; return; }
       var setV=function(id,val){var el=document.getElementById(id);if(el&&val!=null&&val!==''&&!el.value)el.value=val;};
@@ -327,11 +337,21 @@ var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON kujul {"a
       if(d.type){var tk=tmap[String(d.type).toLowerCase()];if(tk){var te=document.querySelector('.type[data-t="'+tk+'"]');if(te)te.click();}}
       if(d.deal){var dv=(String(d.deal).toLowerCase()==='uur')?'uur':'muuk';var db=document.querySelector('#dealSeg button[data-v="'+dv+'"]');if(db)db.click();}
       setV('address',d.addr); setV('condition',d.condition); setV('contactName',d.name); setV('phone',(function(v){if(!v)return null;var s=String(v).replace(/\D/g,'');if(s.indexOf('372')===0)s=s.slice(3);return (s.length>=7&&s.length<=8&&/^[3-9]/.test(s))?s:null;})(d.phone)); setV('email',d.email);
-      if(d.price)setV('price',String(d.price).replace(/[^\d]/g,''));
+      var priceRaw=(j&&j.priceHint)||d.price;
+      if(priceRaw)setV('price',String(priceRaw).replace(/[^\d]/g,''));
       if(d.area)setV('area',String(d.area).replace(/[^\d.,]/g,'').replace(',','.'));
       if(d.rooms)setV('rooms',String(d.rooms).replace(/[^\d]/g,''));
       if(d.floor)setV('floor',String(d.floor).trim());
       if(d.buildYear){var by=String(d.buildYear).replace(/[^\d]/g,'').slice(0,4);if(by.length===4)setV('buildYear',by);}
+      if(d.cadastral)setV('cadastral',String(d.cadastral).trim());
+      if(d.heating)setV('heating',String(d.heating).trim());
+      if(d.material)setV('material',String(d.material).trim());
+      if(d.energyLabel)setV('energy',String(d.energyLabel).trim().toUpperCase());
+      if(d.ownership)setV('ownership',String(d.ownership).trim());
+      if(d.utilityCosts)setV('utilityCosts',String(d.utilityCosts).trim());
+      if(j&&j.ogImage)setV('imgUrl',j.ogImage);
+      if(j&&j.videoUrl)setV('videoUrl',j.videoUrl);
+      if(j&&j.ogDesc)setV('mellNotes','Kuulutuselt: '+j.ogDesc);
       if(st){st.style.color='#48c281';st.textContent='✓ AI luges kuulutuse — kontrolli väljad ja salvesta. Aadressi järgi saab veel ✦ Maa-amet+EHR täita.';}
     
   }catch(e){ if(st){ st.style.color='#e0715f'; st.textContent='Import eba\u00f5nnestus.'; } }
