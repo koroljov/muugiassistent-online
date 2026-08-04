@@ -58,8 +58,10 @@ export async function POST(request: Request) {
   const ogTitle = meta(html, "og:title");
   const ogDesc = meta(html, "og:description");
   const ogImage = meta(html, "og:image");
+  const priceInputM = html.match(/<input[^>]*id=["']priceid1["'][^>]*>/i);
+  const priceInputVal = priceInputM ? (priceInputM[0].match(/value=["'](\d+)["']/i) || [])[1] : "";
   const priceMetaM = html.match(/"price"\s*:\s*"?(\d[\d\s.,]{3,12})"?/i) || html.match(/product:price:amount["']\s*content=["']([\d.,]+)/i);
-  const priceHint = priceMetaM ? priceMetaM[1].replace(/[^\d]/g, "") : "";
+  const priceHint = priceInputVal || (priceMetaM ? priceMetaM[1].replace(/[^\d]/g, "") : "");
   const videoM = html.match(/(?:youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/watch\?v=)([A-Za-z0-9_-]{6,})/i);
   const videoUrl = videoM ? ("https://www.youtube.com/watch?v=" + videoM[1]) : "";
   const text = html
