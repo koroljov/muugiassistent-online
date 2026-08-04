@@ -302,6 +302,15 @@
     btn.disabled=true; msg.style.color='#93a89b'; msg.textContent='Salvestan...';
     try{
       var patch=buildPatch(session.user.id);
+      if(patch.property_link && !window.__dupConfirmed){
+        var dup=await sb.from('leads').select('id,created_at').eq('property_link',patch.property_link).limit(1);
+        if(dup.data && dup.data.length){
+          var dd=new Date(dup.data[0].created_at);
+          msg.style.color='#e0a05f'; msg.innerHTML='See link on juba lisatud ('+dd.toLocaleDateString('et-EE')+'). <a href="/app.html" style="color:#e0a05f">Ava Töövoog</a> ja kontrolli, või vajuta Salvesta uuesti duplikaadi loomiseks.';
+          window.__dupConfirmed=true; btn.disabled=false; return;
+        }
+      }
+      window.__dupConfirmed=false;
       const { data, error } = await sb.from('leads').insert(patch).select().single();
       if(error){ msg.style.color='#e0715f'; msg.textContent='Viga: '+error.message; btn.disabled=false; return; }
       msg.style.color='#48c281'; msg.innerHTML='✓ Salvestatud! <a href="/app.html" style="color:#48c281">Ava Töövoog</a> · või lisa järgmine.';
