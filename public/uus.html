@@ -110,7 +110,7 @@
     <div class="grid2">
       <div class="field"><label>Aadress (tänav, nr)</label><input class="inp" id="address" placeholder="nt Sõpruse pst 257"><button class="btn go" type="button" onclick="autoNew()" style="margin-top:6px;font-size:12px;padding:6px 10px">✦ Täida aadressi järgi (Maa-amet + EHR)</button><div id="autoNewMsg" style="font-size:10.5px;margin-top:4px;color:var(--tx2)"></div></div>
       <div class="field"><label>Linnaosa / asum</label><input class="inp" id="asum" placeholder="nt Mustamäe"></div>
-      <div class="field"><label>Linn / vald</label><input class="inp" id="municipality" value="Tallinn"></div>
+      <div class="field"><label>Linn / vald</label><input class="inp" id="municipality" placeholder="Tallinn"></div>
       <div class="field"><label>Katastritunnus</label><input class="inp" id="cadastral" placeholder="nt 78405:501:0350"></div>
     </div>
   </div>
@@ -327,7 +327,7 @@
 
   async function autoNew(){var addr=v('address'),st=document.getElementById('autoNewMsg');if(!addr){if(st){st.style.color='#e0715f';st.textContent='Sisesta esmalt aadress.';}return;}if(st){st.style.color='#93a89b';st.textContent='Pärin Maa-amet + Ehitisregister…';}var filled=[];function setE(id,val){var el=document.getElementById(id);if(el&&!el.value&&val!=null&&val!==''){el.value=val;filled.push(id);}}
     try{var r1=await fetch('https://inaadress.maaamet.ee/inaadress/gazetteer?address='+encodeURIComponent(addr)+'&results=5',{headers:{accept:'application/json'}});var j1=await r1.json();var a=(j1.addresses||[])[0];if(a){setE('municipality',a.omavalitsus);setE('asum',a.asum||a.asustusyksus);}}catch(e){}
-    try{var s=(await sb.auth.getSession()).data.session,tok=s?s.access_token:'';var r2=await fetch('/api/ehr',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+tok},body:JSON.stringify({address:addr}),signal:AbortSignal.timeout(30000)});var j2=await r2.json();if(j2&&j2.found){var b=j2.building||{},apt=j2.apt||{};setE('area',(apt&&apt.pind)||b.net_area);setE('buildYear',b.build_year);setE('cadastral',b.cadastral);var en=document.getElementById('energy');if(en&&!en.value&&b.energy_class){for(var i=0;i<en.options.length;i++){if(en.options[i].value===String(b.energy_class)){en.value=b.energy_class;break;}}}}}catch(e){}
+    try{var s=(await sb.auth.getSession()).data.session,tok=s?s.access_token:'';var r2=await fetch('/api/ehr',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+tok},body:JSON.stringify({address:addr}),signal:AbortSignal.timeout(30000)});var j2=await r2.json();if(j2&&j2.found){var b=j2.building||{},apt=j2.apt||{};setE('area',(apt&&apt.pind)||(TYPE!=='korter'?b.net_area:null));setE('buildYear',b.build_year);setE('cadastral',b.cadastral);var en=document.getElementById('energy');if(en&&!en.value&&b.energy_class){for(var i=0;i<en.options.length;i++){if(en.options[i].value===String(b.energy_class)){en.value=b.energy_class;break;}}}}}catch(e){}
     if(st){st.style.color='#48c281';st.textContent=filled.length?('✓ Täidetud: '+filled.join(', ')+'. Kontrolli üle.'):'Uusi andmeid ei leidnud (aadress ei lahenenud või juba täidetud).';}}
   setType('korter','Korter');
   init();
