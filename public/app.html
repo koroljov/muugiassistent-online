@@ -949,10 +949,29 @@
     orb.addEventListener('click',function(e){e.stopPropagation();qm.classList.toggle('open');});
     qm.addEventListener('click',function(e){var b=e.target.closest('button');e.stopPropagation();if(!b)return;qm.classList.remove('open');
       var q=b.dataset.q;
-      if(q==='pudel'||q==='seisvad'){document.getElementById('twStages').scrollIntoView({behavior:'smooth',block:'center'});}
-      if(q==='edasi'){document.getElementById('twFeed').scrollIntoView({behavior:'smooth',block:'center'});}
-      if(q==='suurim'&&CTX.big){try{window.openObj&&window.openObj(CTX.big.id);}catch(_){}}
-      if(q==='kone'&&CTX.overdue&&CTX.overdue[0]){try{window.openObj&&window.openObj(CTX.overdue[0].id);}catch(_){}}
+      if(q==='pudel'){
+        var hs=(document.getElementById('twSc')||{}).textContent;
+        toast(hs?hs:'Selget pudelikaela pole, koormus jaotub ühtlaselt.');
+        document.getElementById('twStages').scrollIntoView({behavior:'smooth',block:'center'});
+      }
+      if(q==='seisvad'){
+        var sL=CTX.stalled||[];
+        toast(sL.length>0?(sL.length+' objekti seisnud üle 14 päeva. Esimene: '+nimi(sL[0])+'.'):'Ükski objekt pole üle 14 päeva seisnud.');
+        document.getElementById('twStages').scrollIntoView({behavior:'smooth',block:'center'});
+      }
+      if(q==='edasi'){
+        var mL=CTX.moved||[];
+        toast(mL.length>0?('Täna liikus edasi '+mL.length+' objekti: '+mL.slice(0,3).map(nimi).join(', ')+(mL.length>3?'…':'')+'.'):'Täna pole veel keegi edasi liikunud.');
+        document.getElementById('twFeed').scrollIntoView({behavior:'smooth',block:'center'});
+      }
+      if(q==='suurim'){
+        if(CTX.big){toast('Suurim: '+nimi(CTX.big)+' — '+fmtVal(+CTX.big.price||0)+'.');try{window.openObj&&window.openObj(CTX.big.id);}catch(_){}}
+        else toast('Aktiivseid tehinguid pole.');
+      }
+      if(q==='kone'){
+        if(CTX.overdue&&CTX.overdue[0]){var o=CTX.overdue[0];var d=Math.round((new Date()-new Date(o.next_action_at))/86400000);toast('Helista: '+nimi(o)+(d>0?(' — '+d+' päeva üle tähtaja.'):' — tähtaeg täna.'));try{window.openObj&&window.openObj(o.id);}catch(_){}}
+        else toast('Üle tähtaja objekte pole.');
+      }
     });
     document.addEventListener('click',function(){qm.classList.remove('open');});
   }
