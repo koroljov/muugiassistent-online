@@ -176,7 +176,7 @@
 
   <div class="section mell">
     <div class="mh"><span class="orb"></span><div><div class="mt">Vabas vormis Mellile</div><div class="ms">lisa kõik, mis struktuuri ei mahu — Mell arvestab seda kuulutuses, hinnangus ja esitluses</div></div></div>
-    <textarea class="ta" id="mellNotes" style="min-height:110px" placeholder="Nt: naabruses uus kool valmimas; omanik kiirustab kolimisega; katus vahetatud 2021; müügipõhjus pärand; ostja tahaks kiiret tehingut..."></textarea>
+    <div class="srcTags" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap"><button type="button" class="btn gh src-chip" data-src="Portaali kuulutus" onclick="toggleSrc(this)" style="font-size:11px;padding:5px 10px">Portaali kuulutus</button><button type="button" class="btn gh src-chip" data-src="Külmakõne" onclick="toggleSrc(this)" style="font-size:11px;padding:5px 10px">Külmakõne</button><button type="button" class="btn gh src-chip" data-src="Soovitus" onclick="toggleSrc(this)" style="font-size:11px;padding:5px 10px">Soovitus</button><button type="button" class="btn gh src-chip" data-src="Muu" onclick="toggleSrc(this)" style="font-size:11px;padding:5px 10px">Muu</button></div><textarea class="ta" id="mellNotes" style="min-height:110px" placeholder="Nt: naabruses uus kool valmimas; omanik kiirustab kolimisega; katus vahetatud 2021; müügipõhjus pärand; ostja tahaks kiiret tehingut..."></textarea>
   </div>
 
   <div class="bar">
@@ -301,6 +301,7 @@
     if(!v('address') && !v('contactName')){ msg.style.color='#e0715f'; msg.textContent='Lisa vähemalt aadress või omaniku nimi.'; return; }
     btn.disabled=true; msg.style.color='#93a89b'; msg.textContent='Salvestan...';
     try{
+      if(window.__srcTag){var mn=document.getElementById('mellNotes');if(mn&&mn.value.indexOf('Allikas:')===-1){mn.value='Allikas: '+window.__srcTag+(mn.value?('\n\n'+mn.value):'');}}
       var patch=buildPatch(session.user.id);
       if(patch.property_link && !window.__dupConfirmed){
         var dup=await sb.from('leads').select('id,created_at').eq('property_link',patch.property_link).limit(1);
@@ -321,10 +322,13 @@
   function resetForm(){
     document.querySelectorAll('.inp,.ta').forEach(function(el){ if(el.id!=='municipality') el.value=''; });
     document.querySelectorAll('.sel').forEach(function(el){ el.selectedIndex=0; });
+    document.querySelectorAll('.src-chip').forEach(function(b){b.classList.remove('active');b.style.background='';b.style.color='';});
+    window.__srcTag=null;
   }
   document.getElementById('saveBtn').addEventListener('click',save);
   document.getElementById('resetBtn').addEventListener('click',function(){ resetForm(); document.getElementById('msg').textContent=''; });
 
+  function toggleSrc(btn){var was=btn.classList.contains('active');document.querySelectorAll('.src-chip').forEach(function(b){b.classList.remove('active');b.style.background='';b.style.color='';});if(!was){btn.classList.add('active');btn.style.background='var(--gr,#4bbf83)';btn.style.color='#0e1512';window.__srcTag=btn.dataset.src;}else{window.__srcTag=null;}}
   async function autoNew(){var addr=v('address'),st=document.getElementById('autoNewMsg');if(!addr){if(st){st.style.color='#e0715f';st.textContent='Sisesta esmalt aadress.';}return;}if(st){st.style.color='#93a89b';st.textContent='Pärin Maa-amet + Ehitisregister…';}var filled=[];function setE(id,val){var el=document.getElementById(id);if(el&&!el.value&&val!=null&&val!==''){el.value=val;filled.push(id);}}
     try{var r1=await fetch('https://inaadress.maaamet.ee/inaadress/gazetteer?address='+encodeURIComponent(addr)+'&results=5',{headers:{accept:'application/json'}});var j1=await r1.json();var a=(j1.addresses||[])[0];if(a){setE('municipality',a.omavalitsus);setE('asum',a.asum||a.asustusyksus);}}catch(e){}
     try{var s=(await sb.auth.getSession()).data.session,tok=s?s.access_token:'';var r2=await fetch('/api/ehr',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+tok},body:JSON.stringify({address:addr}),signal:AbortSignal.timeout(30000)});var j2=await r2.json();if(j2&&j2.found){var b=j2.building||{},apt=j2.apt||{};setE('area',(apt&&apt.pind)||(TYPE!=='korter'?b.net_area:null));setE('buildYear',b.build_year);setE('cadastral',b.cadastral);var en=document.getElementById('energy');if(en&&!en.value&&b.energy_class){for(var i=0;i<en.options.length;i++){if(en.options[i].value===String(b.energy_class)){en.value=b.energy_class;break;}}}}}catch(e){}
