@@ -69,11 +69,11 @@
   <div class="topline">
     <span class="mark">UM</span><span class="brand">Mell · uus objekt</span>
     <span class="sp"></span>
-    <a class="back" href="/crm.html">← Töövoog</a>
+    <a class="back" href="/app.html">← Töövoog</a>
   </div>
   <div class="h1 serif">Uus objekt</div>
   <div class="lead">Vali tüüp → väljad kohanduvad. Kõik muudetav. All Mellile vabas vormis, mis struktuuri ei mahu. Salvestub otse su CRM-i.</div>
-  <div id="authWarn">Sa pole sisse logitud. <a href="/crm.html">Logi sisse Töövoos</a>, siis tule tagasi — objekti salvestamiseks on vaja sessiooni.</div>
+  <div id="authWarn">Sa pole sisse logitud. <a href="/app.html">Logi sisse Töövoos</a>, siis tule tagasi — objekti salvestamiseks on vaja sessiooni.</div>
 
   <div class="typebar" id="typebar">
     <div class="type on" data-t="korter" data-pt="Korter">Korter</div>
@@ -294,7 +294,7 @@
       var patch=buildPatch(session.user.id);
       const { data, error } = await sb.from('leads').insert(patch).select().single();
       if(error){ msg.style.color='#e0715f'; msg.textContent='Viga: '+error.message; btn.disabled=false; return; }
-      msg.style.color='#48c281'; msg.innerHTML='✓ Salvestatud! <a href="/crm.html" style="color:#48c281">Ava Töövoog</a> · või lisa järgmine.';
+      msg.style.color='#48c281'; msg.innerHTML='✓ Salvestatud! <a href="/app.html" style="color:#48c281">Ava Töövoog</a> · või lisa järgmine.';
       btn.disabled=false;
       resetForm();
     }catch(e){ msg.style.color='#e0715f'; msg.textContent='Viga: '+(e.message||e); btn.disabled=false; }
