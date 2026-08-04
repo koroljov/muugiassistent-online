@@ -313,7 +313,7 @@
       window.__dupConfirmed=false;
       const { data, error } = await sb.from('leads').insert(patch).select().single();
       if(error){ msg.style.color='#e0715f'; msg.textContent='Viga: '+error.message; btn.disabled=false; return; }
-      msg.style.color='#48c281'; msg.innerHTML='✓ Salvestatud! <a href="/app.html" style="color:#48c281">Ava Töövoog</a> · või lisa järgmine.';
+      msg.style.color='#48c281'; msg.innerHTML='✓ Salvestatud! <a href="/app.html?id='+data.id+'&kabi=1" style="color:#48c281">Ava objekt + Kõneabi</a> · <a href="/app.html" style="color:#48c281">Töövoog</a> · või lisa järgmine.';
       btn.disabled=false;
       resetForm();
     }catch(e){ msg.style.color='#e0715f'; msg.textContent='Viga: '+(e.message||e); btn.disabled=false; }
