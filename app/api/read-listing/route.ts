@@ -57,6 +57,11 @@ export async function POST(request: Request) {
   // Eralda väljad (klient annab need importExtractAI-le)
   const ogTitle = meta(html, "og:title");
   const ogDesc = meta(html, "og:description");
+  const ogImage = meta(html, "og:image");
+  const priceMetaM = html.match(/"price"\s*:\s*"?(\d[\d\s.,]{3,12})"?/i) || html.match(/product:price:amount["']\s*content=["']([\d.,]+)/i);
+  const priceHint = priceMetaM ? priceMetaM[1].replace(/[^\d]/g, "") : "";
+  const videoM = html.match(/(?:youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/watch\?v=)([A-Za-z0-9_-]{6,})/i);
+  const videoUrl = videoM ? ("https://www.youtube.com/watch?v=" + videoM[1]) : "";
   const text = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
@@ -71,7 +76,7 @@ export async function POST(request: Request) {
 
   await reportHealth("portaalid", "ok");
   return NextResponse.json({
-    ogTitle, ogDesc, text,
+    ogTitle, ogDesc, ogImage, priceHint, videoUrl, text,
     tel: telM ? telM[0].trim() : "",
     email: emailM ? emailM[0].trim() : "",
   });
