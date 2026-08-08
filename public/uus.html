@@ -253,7 +253,8 @@
       if(j&&j.ogImage)setV('imgUrl',j.ogImage);
       if(j&&j.videoUrl)setV('videoUrl',j.videoUrl);
       if(d.notes)setV('mellNotes','Kuulutuselt: '+d.notes); else if(j&&j.ogDesc)setV('mellNotes','Kuulutuselt: '+j.ogDesc);
-      if(st){st.style.color='#48c281';st.textContent='✓ AI luges kuulutuse — kontrolli väljad ja salvesta. Aadressi järgi saab veel ✦ Maa-amet+EHR täita.';}
+      if(st){st.style.color='#48c281';st.textContent='✓ AI luges kuulutuse — kontrolli väljad ja salvesta.';}
+      if(v('address')){ try{ await autoNew(); }catch(e){} }
     }catch(e){ if(st){st.style.color='#e0715f';st.textContent='Viga: '+(e&&e.message||'tundmatu');} }
     if(b)b.disabled=false;
   }
@@ -366,7 +367,8 @@ var sys='Oled andmeeraldaja kinnisvarakuulutusest. Tagasta AINULT JSON kujul {"a
       if(j&&j.ogImage)setV('imgUrl',j.ogImage);
       if(j&&j.videoUrl)setV('videoUrl',j.videoUrl);
       if(d.notes)setV('mellNotes','Kuulutuselt: '+d.notes); else if(j&&j.ogDesc)setV('mellNotes','Kuulutuselt: '+j.ogDesc);
-      if(st){st.style.color='#48c281';st.textContent='✓ AI luges kuulutuse — kontrolli väljad ja salvesta. Aadressi järgi saab veel ✦ Maa-amet+EHR täita.';}
+      if(st){st.style.color='#48c281';st.textContent='✓ AI luges kuulutuse — kontrolli väljad ja salvesta.';}
+    if(v('address')){ try{ await autoNew(); }catch(e){} }
     
   }catch(e){ if(st){ st.style.color='#e0715f'; st.textContent='Import eba\u00f5nnestus.'; } }
   if(b)b.disabled=false;
