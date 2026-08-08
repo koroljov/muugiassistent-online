@@ -1,6 +1,18 @@
 # Mell — üks backlog (kõik ootel ühes kohas)
 
-Uuendatud 13.07.2026. Ainus koht — hoia elus, kustuta tehtud read. Tagasiulatuv: kajastab kogu tehtut, ka viimase seansi tööd.
+Uuendatud 08.08.2026. Ainus koht — hoia elus, kustuta tehtud read. Tagasiulatuv: kajastab kogu tehtut, ka viimase seansi tööd.
+
+## Seanss 08.08.2026 (uus.html asukoha-parandus + auto-käivitus)
+
+Leitud ja parandatud: Maa-amet aadressiotsing (in-ADS gazetteer) ei parsi rohkem kui 2-osalist AI-genereeritud aadressi (nt "Sõle 11-29, Pelgulinn, Põhja-Tallinn, Tallinn, Harjumaa") — autoNew() proovib nüüd fallback'ina tänav+viimane osa, kui täisstring 0 vastet annab. buildPatch() ei salvestanud district/county lahtreid üldse (ainult municipality+asum) — lisatud, koos kahe peidetud väljaga vormis. autoNew() (Maa-amet+EHR) käivitub nüüd AUTOMAATSELT pärast "Loe kuulutus" (nii URL- kui bookmarklet-vooshema) — enam pole vaja eraldi nuppu vajutada, väiksem oht unustada. Kõik kolm live-testitud (Sõle 11-29 täisvoog + Uusmaa tee 4 regressioonitest, konsool puhas).
+
+Andmeparandus: üks Meelise päris objekt (Sõle 11-29, id b0c2fff6) oli salvestatud tühjade asukoha-väljadega, mistõttu Turu-kaart võrdles kogu Harju maakonnaga (9951 tehingut) — parandatud otse DB-s, nüüd võrdleb Pelgulinna asumiga (223 tehingut).
+
+Vajab pilku (leitud tervisepaneelist Postkast → allikate-ikoon, EI ole täna tekkinud ega puudutatud):
+- Maa-amet turuhind, maakond-tase T13 — päring ebaõnnestus 5.08 13:29
+- EHR ehitise faktid — vastas 400, 5.08 14:20 (täna live-testitud, töötas korrektselt — võib olla ühekordne)
+- Naabruskond POI (Overpass) — vastas 504, 5.08 13:19
+- Seaded → AI hääl: kontol praegu valitud "Mari"; vana mälumärkme järgi peaks vaikeväärtus olema "Tambet" (meeshääl) — kontrolli, kas teadlik valik või vana jääk.
 
 ## ✅ Tehtud ja live
 
@@ -61,6 +73,7 @@ Ainus tõeallikas tegemata tööle. Avalik Uuendused näitab ainult TEHTUT — s
 - **Digiallkiri** — Smart-ID / DigiDoc leping.
 - **Supabase parool-lüliti** — dashboard toggle (leaked password protection).
 - **AI-vendori valik** · **Scrapfly kvoodi-hoiatus**.
+- Tervisepaneeli 3 kollast (vt 08.08 seanss ülal) — Maa-amet maakond-tase, EHR 400, Overpass 504.
 
 ## Reeglid
 Üks muudatus korraga · additiivne · süntaks + live-test · **deploy: GitHub veebiredaktor (github.com → edit → commit) → Vercel auto (~70s); ei võta Meelise arvutit üle** · crm.html EI puutu (Raul) · miski pole lukus (välju/naase/muuda tagasiulatuvalt) · lahendus mitte takistus.
