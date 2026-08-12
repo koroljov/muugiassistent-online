@@ -257,7 +257,7 @@
 
   function photoCell(m){
     var w=Math.round(photoW), h=Math.round(photoW/aspect), rad=(shape==="50")?(aspect===1?"50%":"26px"):(shape+"px");
-    var src = processedPhoto||val("photoUrl");
+    var src = (rawImage&&processedPhoto)?processedPhoto:val("photoUrl");
     if(src) return '<img src="'+esc(src)+'" alt="'+esc(val("name"))+'" width="'+w+'" height="'+h+'" style="display:block;width:'+w+'px;height:'+h+'px;border-radius:'+rad+';object-fit:cover;">';
     var ini=(val("name")||"MK").split(/\s+/).map(function(x){return x[0];}).join("").slice(0,2).toUpperCase();
     return '<div style="width:'+w+'px;height:'+h+'px;border-radius:'+rad+';background:linear-gradient(135deg,#22336e,#14235c);color:#fff;font-size:'+Math.round(w*0.32)+'px;font-weight:bold;text-align:center;line-height:'+h+'px;">'+ini+'</div>';
