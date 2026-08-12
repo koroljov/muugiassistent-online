@@ -2707,5 +2707,45 @@ async function init(){const{data:{session}}=await sb.auth.getSession();if(!sessi
 
   <style id="pw-fix1">#v-fookus .pw-tile .num{width:auto;height:auto;min-width:0;background:none;border:0;border-radius:0;display:block;flex:0 1 auto;padding:0;place-items:initial}</style>
   <div style="position:fixed;bottom:6px;left:50%;transform:translateX(-50%);font-size:10px;color:#a59e91;opacity:.5;pointer-events:none;z-index:99999;white-space:nowrap">© 2026 Meelis Koroljov. Kõik õigused kaitstud. Süsteemi kopeerimine, levitamine või taasloomine ilma kirjaliku loata on keelatud.</div>
+  <div id="tosBack" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.72);align-items:center;justify-content:center">
+    <div style="max-width:420px;margin:16px;background:var(--sf);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:var(--sh)">
+      <div style="font-size:18px;font-weight:600;color:var(--ink);margin-bottom:10px">Kasutustingimused</div>
+      <div style="font-size:13px;line-height:1.5;color:var(--ink2);margin-bottom:18px">Süsteem on autoriõigusega kaitstud ja mõeldud kasutamiseks ainult volitatud kasutajatele. Süsteemi kopeerimine, levitamine, taasloomine või kolmandale osapoolele edastamine ilma kirjaliku loata on keelatud. Jätkates kinnitad, et oled sellest teadlik ja nõustud tingimustega.</div>
+      <button id="tosAcceptBtn" style="width:100%;padding:12px;border-radius:10px;border:0;background:var(--gr);color:var(--bg);font-weight:600;font-size:14px;cursor:pointer">Nõustun ja jätkan</button>
+      <div id="tosErr" style="display:none;color:var(--red);font-size:12px;margin-top:8px">Salvestamine ebaõnnestus, proovi uuesti.</div>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var TOS_VERSION='v1';
+      async function checkTerms(){
+        try{
+          var s=await sb.auth.getSession();
+          var user=s&&s.data&&s.data.session&&s.data.session.user;
+          if(!user)return;
+          var r=await sb.from('terms_acceptances').select('id').eq('user_id',user.id).eq('terms_version',TOS_VERSION).maybeSingle();
+          if(r.error){console.error('terms check',r.error);return;}
+          if(!r.data){showModal(user.id);}
+        }catch(e){console.error('terms check failed',e);}
+      }
+      function showModal(userId){
+        var back=document.getElementById('tosBack');
+        back.style.display='flex';
+        document.getElementById('tosAcceptBtn').onclick=async function(){
+          var btn=this;btn.disabled=true;btn.textContent='Salvestan...';
+          try{
+            var ins=await sb.from('terms_acceptances').insert({user_id:userId,terms_version:TOS_VERSION});
+            if(ins.error)throw ins.error;
+            back.style.display='none';
+          }catch(e){
+            var err=document.getElementById('tosErr');
+            err.style.display='block';
+            btn.disabled=false;btn.textContent='Nõustun ja jätkan';
+          }
+        };
+      }
+      if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',checkTerms);}else{checkTerms();}
+    })();
+  </script>
 </body>
 </html>
