@@ -190,7 +190,7 @@
 
 <script>
   var rawImage=null, processedPhoto="", tone="orig", shape="14";
-  var side="left", accent="gold", dens=1, bgStyle="card", logoScale=1, logoAlign="left";
+  var side="left", accent="gold", dens=1, bgStyle="card", logoScale=1, logoAlign="left", logoAspect=null;
   var zoom=1, offX=0, offY=0, photoW=112, aspect=1, logoData="";
   var ec=document.createElement("canvas"); ec.width=360; ec.height=360;
 
@@ -246,7 +246,7 @@
     if(!chk("tBrand")) return "";
     var s=m*logoScale;
     var src=val("logoUrl")||logoData;
-    if(src) return '<div style="padding-top:15px;text-align:'+logoAlign+';"><img src="'+esc(src)+'" height="'+Math.round(30*s)+'" style="height:'+Math.round(30*s)+'px;display:inline-block;"></div>';
+    if(src){ var lh=Math.round(30*s), lw=Math.round(lh*(logoAspect||3.3)); return '<div style="padding-top:15px;text-align:'+logoAlign+';"><img src="'+esc(src)+'" width="'+lw+'" height="'+lh+'" alt="UUS MAA | Arena" style="height:'+lh+'px;width:'+lw+'px;display:inline-block;"></div>'; }
     var mk=Math.round(30*s);
     var mark='<img src="data:image/svg+xml,'+encodeURIComponent(UM_MARK)+'" width="'+mk+'" height="'+mk+'" style="vertical-align:middle;margin-right:10px;">';
     var txt='<span style="display:inline-block;vertical-align:middle;line-height:1.02;text-align:left;">'+
@@ -257,7 +257,7 @@
 
   function photoCell(m){
     var w=Math.round(photoW), h=Math.round(photoW/aspect), rad=(shape==="50")?(aspect===1?"50%":"26px"):(shape+"px");
-    var src=val("photoUrl")||processedPhoto;
+    var src = processedPhoto||val("photoUrl");
     if(src) return '<img src="'+esc(src)+'" alt="'+esc(val("name"))+'" width="'+w+'" height="'+h+'" style="display:block;width:'+w+'px;height:'+h+'px;border-radius:'+rad+';object-fit:cover;">';
     var ini=(val("name")||"MK").split(/\s+/).map(function(x){return x[0];}).join("").slice(0,2).toUpperCase();
     return '<div style="width:'+w+'px;height:'+h+'px;border-radius:'+rad+';background:linear-gradient(135deg,#22336e,#14235c);color:#fff;font-size:'+Math.round(w*0.32)+'px;font-weight:bold;text-align:center;line-height:'+h+'px;">'+ini+'</div>';
@@ -303,6 +303,7 @@
   function render(){document.getElementById("sig").innerHTML=buildSignature();}
 
   ["name","title","phone","email","facebook","instagram","linkedin","tiktok","youtube","photoUrl","logoUrl","ctaLabel","ctaUrl"].forEach(function(id){document.getElementById(id).addEventListener("input",render);});
+  document.getElementById("logoUrl").addEventListener("change",function(){var u=val("logoUrl"); if(!u){logoAspect=null;return;} var im=new Image(); im.crossOrigin="anonymous"; im.onload=function(){logoAspect=im.naturalWidth/im.naturalHeight; render();}; im.onerror=function(){logoAspect=null;}; im.src=u;});
   ["tTitle","tSocial","tBrand","tCta"].forEach(function(id){document.getElementById(id).addEventListener("change",render);});
 
   function seg(id,cb){document.querySelectorAll("#"+id+" button").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#"+id+" button").forEach(function(x){x.classList.remove("on");});b.classList.add("on");cb(b);});});}
@@ -356,7 +357,7 @@
   logoDrop.addEventListener("dragover",function(e){e.preventDefault();});
   logoDrop.addEventListener("drop",function(e){e.preventDefault();if(e.dataTransfer.files[0])handleLogo(e.dataTransfer.files[0]);});
   logoInput.addEventListener("change",function(e){handleLogo(e.target.files[0]);});
-  function handleLogo(f){ if(!f||!/^image\//.test(f.type))return; var r=new FileReader(); r.onload=function(ev){logoData=ev.target.result; logoDrop.querySelector("b").textContent="Logo laetud ✓ (klõpsa vahetamiseks)"; render();}; r.readAsDataURL(f); }
+  function handleLogo(f){ if(!f||!/^image\//.test(f.type))return; var r=new FileReader(); r.onload=function(ev){logoData=ev.target.result; logoDrop.querySelector("b").textContent="Logo laetud ✓ (klõpsa vahetamiseks)"; var im=new Image(); im.onload=function(){logoAspect=im.naturalWidth/im.naturalHeight; render();}; im.src=logoData; render();}; r.readAsDataURL(f); }
 
   // vaheta / eemalda foto + logo
   document.getElementById("changePhoto").addEventListener("click",function(){ fileInput.click(); });
@@ -368,7 +369,7 @@
     document.getElementById("dlPhoto").disabled=true; render();
   });
   document.getElementById("removeLogo").addEventListener("click",function(){
-    logoData=""; document.getElementById("logoUrl").value="";
+    logoData = ""; logoAspect=null; document.getElementById("logoUrl").value = "";
     logoDrop.querySelector("b").textContent="Lae UM logo"; render();
   });
 
